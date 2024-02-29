@@ -8,7 +8,6 @@
  */
 
 #include "../inc/sm_modbus.hpp"
-#include "sm_modbus.hpp"
 
 namespace
 {
@@ -60,10 +59,10 @@ namespace sm
         return buffer;
     }
 
-    std::vector<std::uint8_t> &ModbusClient::msgReadRegisters(const std::uint8_t addr, const std::uint16_t address, const std::uint16_t quantity)
+    std::vector<std::uint8_t> &ModbusClient::msgReadRegisters(const std::uint8_t addr, const std::uint16_t reg, const std::uint16_t quantity)
     {
         std::vector<std::uint8_t> data;
-        insertHalfWord(data,address);
+        insertHalfWord(data,reg);
         insertHalfWord(data,quantity);
         createMessage(addr,static_cast<std::uint8_t>(FunctionCodes::read_registers),data);
         return buffer;
@@ -81,12 +80,12 @@ namespace sm
         switch (mode)
         {
             case ModbusMode::rtu:    
-                buffer.insert(buffer.end(),&rtu_start_end[0],&rtu_start_end[0] + sizeof(rtu_start_end));
+                buffer.insert(buffer.begin(),&rtu_start_end[0],&rtu_start_end[0] + sizeof(rtu_start_end));
                 buffer.insert(buffer.end(),&rtu_start_end[0],&rtu_start_end[0] + sizeof(rtu_start_end));
                 break;
 
             case ModbusMode::ascii:
-                buffer.insert(buffer.end(),&ascii_start[0],&ascii_start[0] + sizeof(ascii_start));
+                buffer.insert(buffer.begin(),&ascii_start[0],&ascii_start[0] + sizeof(ascii_start));
                 buffer.insert(buffer.end(),&ascii_stop[0],&ascii_stop[0] + sizeof(ascii_stop));
                 break;
 

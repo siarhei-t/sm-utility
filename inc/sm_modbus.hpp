@@ -63,10 +63,10 @@ namespace sm
         std::vector<std::uint8_t>& msgWriteRegister(const std::uint8_t addr, const std::uint16_t reg, const std::uint16_t value);
         /// @brief read holding registers according to Modbus protocol
         /// @param addr server address
-        /// @param address register start address
+        /// @param reg register start address
         /// @param quantity amount of registers to read
         /// @return reference to vector with created message
-        std::vector<std::uint8_t>& msgReadRegisters(const std::uint8_t addr, const std::uint16_t address,const std::uint16_t quantity);
+        std::vector<std::uint8_t>& msgReadRegisters(const std::uint8_t addr, const std::uint16_t reg,const std::uint16_t quantity);
 
         private:
             ModbusMode mode = ModbusMode::rtu;

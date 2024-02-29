@@ -1,0 +1,34 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "Build",
+            "command": "cmake --build build",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "options": {"cwd": "${workspaceFolder}/tests"},
+            "problemMatcher": []
+        },
+        {
+            "type": "shell",
+            "label": "Rebuild",
+            "command": "cmake --build build --clean-first",
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "options": {"cwd": "${workspaceFolder}/tests"},
+            "problemMatcher": []
+        },
+        {
+            "type": "shell",
+            "label": "Configure",
+            "command": "cmake -Bbuild",
+            "options": {"cwd": "${workspaceFolder}/tests"},
+            "problemMatcher": []
+        },
+    ]
+}
