@@ -16,7 +16,7 @@ int main(void)
     std::uint16_t reg      = 1;
     std::uint16_t quantity = 10;
 
-    sm::ModbusClient client;
+    modbus::ModbusClient client;
     
     std::vector<std::uint8_t> mes = client.msgReadRegisters(address,reg,quantity);
     
@@ -29,7 +29,7 @@ int main(void)
         //std::cout<<byte<<" ";
     }
     std::cout<<"\n";
-    client.setMode(sm::ModbusMode::ascii);
+    client.setMode(modbus::ModbusMode::ascii);
     mes = client.msgReadRegisters(address,reg,quantity);
     std::cout<<"ASCII mode "<<"\n";
     std::cout<<"msg size "<<mes.size()<<"\n";

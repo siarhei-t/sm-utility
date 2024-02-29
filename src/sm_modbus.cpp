@@ -22,7 +22,7 @@ namespace
     }
 }
 
-namespace sm
+namespace modbus
 {
     std::vector<std::uint8_t>& ModbusClient::msgWriteFileRecord(const std::uint8_t addr, const std::uint16_t file_id, const std::uint16_t record_id, const std::vector<std::uint8_t> &record_data)
     {

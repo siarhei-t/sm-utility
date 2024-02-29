@@ -13,7 +13,7 @@
 #include <cstdint>
 #include <vector>
 
-namespace sm
+namespace modbus
 {
     enum class FunctionCodes
     {
@@ -23,6 +23,7 @@ namespace sm
         write_file     = 0x15, // write file records 
         undefined      = 0xFF, // illegal function code
     };
+    
     enum class ModbusMode
     {
         rtu,
