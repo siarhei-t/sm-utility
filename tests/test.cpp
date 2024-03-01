@@ -8,7 +8,7 @@
  */
 
 #include <iostream>
-#include "../inc/sm_modbus.hpp"
+#include "../inc/sm_client.hpp"
 
 int main(void)
 {
@@ -25,8 +25,7 @@ int main(void)
     
     for(auto& byte : mes)
     {
-        std::printf("0x%x ",byte);
-        //std::cout<<byte<<" ";
+        std::cout<<"0x"<<std::hex<<int(byte)<<" ";
     }
     std::cout<<"\n";
     client.setMode(modbus::ModbusMode::ascii);
@@ -36,8 +35,9 @@ int main(void)
     
     for(auto& byte : mes)
     {
-        std::printf("0x%x ",byte);
-        //std::cout<<byte<<" ";
+        std::cout<<"0x"<<std::hex<<int(byte)<<" ";
+        //std::printf("0x%x ",byte);
     }
+
     return 0;
 }
