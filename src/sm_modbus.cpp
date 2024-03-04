@@ -24,6 +24,12 @@ namespace
 
 namespace modbus
 {
+    std::vector<std::uint8_t>& ModbusClient::msgCustom(const std::uint8_t addr, const std::uint8_t func, const std::vector<std::uint8_t>& data)
+    {
+        createMessage(addr,func,data);
+        return buffer;
+    }
+
     std::vector<std::uint8_t>& ModbusClient::msgWriteFileRecord(const std::uint8_t addr, const std::uint16_t file_id, const std::uint16_t record_id, const std::vector<std::uint8_t> &record_data)
     {
         const std::uint8_t rec_data_length = record_data.size() + 7; //7 additional bytes for record data

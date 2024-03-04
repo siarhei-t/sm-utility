@@ -25,8 +25,9 @@ int main(void)
     
     for(auto& byte : mes)
     {
-        std::cout<<"0x"<<std::hex<<int(byte)<<" ";
+        std::printf("0x%x ",byte);
     }
+    
     std::cout<<"\n";
     client.setMode(modbus::ModbusMode::ascii);
     mes = client.msgReadRegisters(address,reg,quantity);
@@ -35,9 +36,11 @@ int main(void)
     
     for(auto& byte : mes)
     {
-        std::cout<<"0x"<<std::hex<<int(byte)<<" ";
-        //std::printf("0x%x ",byte);
+        std::printf("0x%x ",byte);
     }
-
+    std::cout<<"\n";
+    sm::Client test;
+    test.connect(0x11);
+    while(1);
     return 0;
 }

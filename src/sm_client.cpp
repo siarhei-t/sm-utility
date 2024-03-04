@@ -32,8 +32,11 @@ namespace sm
             //create server and select server first
             addServer(address);
         }
-        //ping server
-        //if ping success -> load info
+        if(servers[server_id].info.status != ServerStatus::Available)
+        {
+            ping();
+            //if ping success -> load info
+        }
     }
 
     void Client::disconnect()
@@ -67,12 +70,55 @@ namespace sm
         using namespace std::chrono_literals;
         while (!thread_stop.load(std::memory_order_relaxed))
         {
-            std::cout<<"test output..."<<"\n";
             std::this_thread::sleep_for(500ms);
         }
     }
+    
+    void Client::ping()
+    {
+        if(server_id != not_connected)
+        {
+            
+            std::uint8_t address  = servers[server_id].info.addr;
+            std::uint8_t function = static_cast<uint8_t>(modbus::FunctionCodes::undefined);
+            std::vector<uint8_t> message{0x00,0x00,0x00,0x00};
+            std::uint8_t length;
+
+            switch(modbus_client.getMode())
+            {
+                case modbus::ModbusMode::rtu:
+                    length = rtu_adu_size;
+                    break;
+                
+                case modbus::ModbusMode::ascii:
+                    length = ascii_adu_size;
+                    break;
+                
+                default:
+                    length = 0;
+                    break;
+            }
+            TaskAttributes attr = 
+            {
+                .code   = modbus::FunctionCodes::undefined,
+                .length = static_cast<size_t>(length + 2) // 1 byte for exception + 1 byte for func + modbus required part
+            };
+        
+            request_data = modbus_client.msgCustom(address,function,message);
+            createServerRequest(attr);
+            task.wait();
+        }
+    }
+    
+    void Client::createServerRequest(const TaskAttributes& attr)
+    {
+        task_info.attributes = attr;
+        task = std::async(&Client::callServerExchange,this,attr.length);
+    }
+
     void Client::callServerExchange(const size_t resp_length)
     {
-        
+        //to be written
+        std::cout<<"task done!"<<"\n";
     }
 }
