@@ -42,7 +42,7 @@ namespace sm
     {
         undefined,
         ping,
-        appErase, 
+        app_erase, 
         app_upload,
         app_download,
         app_start
@@ -58,6 +58,7 @@ namespace sm
     {
         ClientTasks task = ClientTasks::undefined;
         TaskAttributes attributes;
+        bool done = false;
     };
 
     #pragma pack(push)
@@ -118,7 +119,7 @@ namespace sm
             std::future<void> task;
             /// @brief info about actual pending task and function
             TaskInfo task_info;
-            
+            /// @brief ping command
             void ping();
             /// @brief create new server instance
             /// @param address server address

@@ -10,7 +10,6 @@
 #include <algorithm>
 #include <iostream>
 #include "../inc/sm_client.hpp"
-#include "sm_client.hpp"
 
 namespace sm
 {
@@ -61,6 +60,7 @@ namespace sm
         else
         {
             servers.push_back(ServerData());
+            servers.back().info.addr = address;
             server_id = servers.size() - 1;
         }
     }
@@ -70,15 +70,14 @@ namespace sm
         using namespace std::chrono_literals;
         while (!thread_stop.load(std::memory_order_relaxed))
         {
-            std::this_thread::sleep_for(500ms);
+            std::this_thread::sleep_for(50ms);
         }
     }
-    
+
     void Client::ping()
     {
         if(server_id != not_connected)
         {
-            
             std::uint8_t address  = servers[server_id].info.addr;
             std::uint8_t function = static_cast<uint8_t>(modbus::FunctionCodes::undefined);
             std::vector<uint8_t> message{0x00,0x00,0x00,0x00};
@@ -103,13 +102,14 @@ namespace sm
                 .code   = modbus::FunctionCodes::undefined,
                 .length = static_cast<size_t>(length + 2) // 1 byte for exception + 1 byte for func + modbus required part
             };
-        
+            task_info.task = ClientTasks::ping; 
             request_data = modbus_client.msgCustom(address,function,message);
             createServerRequest(attr);
             task.wait();
+            task_info = TaskInfo();
         }
     }
-    
+
     void Client::createServerRequest(const TaskAttributes& attr)
     {
         task_info.attributes = attr;
@@ -119,6 +119,10 @@ namespace sm
     void Client::callServerExchange(const size_t resp_length)
     {
         //to be written
-        std::cout<<"task done!"<<"\n";
+        for(auto i = 0; i < request_data.size(); ++i)
+        {
+            std::printf("0x%x ",request_data[i]);
+        }
+        std::printf("\n");
     }
 }
