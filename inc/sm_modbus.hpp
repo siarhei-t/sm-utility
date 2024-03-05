@@ -15,6 +15,20 @@
 
 namespace modbus
 {
+    ////////////////////////////////MODBUS CONSTANTS////////////////////////////////
+    constexpr int crc_size         = 2;
+    constexpr int address_size     = 1;
+    constexpr int function_size    = 1;
+    constexpr int rtu_start_size   = 4;
+    constexpr int rtu_stop_size    = 4;
+    constexpr int ascii_start_size = 1;
+    constexpr int ascii_stop_size  = 2;
+    constexpr int rtu_msg_edge     = (rtu_start_size + rtu_stop_size);
+    constexpr int ascii_msg_edge   = (ascii_start_size + ascii_stop_size);
+    constexpr int rtu_adu_size     = (rtu_msg_edge + crc_size + address_size);
+    constexpr int ascii_adu_size   = (ascii_msg_edge + crc_size + address_size);                               
+    ////////////////////////////////////////////////////////////////////////////////
+
     enum class FunctionCodes
     {
         read_registers = 0x03, // read holding registers
@@ -73,6 +87,10 @@ namespace modbus
             /// @param quantity amount of registers to read
             /// @return reference to vector with created message
             std::vector<std::uint8_t>& msgReadRegisters(const std::uint8_t addr, const std::uint16_t reg,const std::uint16_t quantity);
+            /// @brief 
+            /// @param data 
+            /// @return 
+            bool isChecksumValid(const std::vector<std::uint8_t>& data);
 
         private:
             ModbusMode mode = ModbusMode::rtu;

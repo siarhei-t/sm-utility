@@ -14,6 +14,7 @@
 #include <atomic>
 #include <memory>
 #include <future>
+#include <queue>
 
 #include "../inc/sm_modbus.hpp"
 
@@ -24,24 +25,13 @@ namespace sm
     constexpr int boot_name_size    = 33;
     constexpr int amount_of_regs    = 7;
     constexpr int not_connected     = -1;
-    ////////////////////////////////MODBUS CONSTANTS////////////////////////////////
-    constexpr int crc_size         = 2;
-    constexpr int address_size     = 1;
-    constexpr int function_size    = 1;
-    constexpr int rtu_start_size   = 4;
-    constexpr int rtu_stop_size    = 4;
-    constexpr int ascii_start_size = 1;
-    constexpr int ascii_stop_size  = 2;
-    constexpr int rtu_msg_edge     = (rtu_start_size + rtu_stop_size);
-    constexpr int ascii_msg_edge   = (ascii_start_size + ascii_stop_size);
-    constexpr int rtu_adu_size     = (rtu_msg_edge + crc_size + address_size);
-    constexpr int ascii_adu_size   = (ascii_msg_edge + crc_size + address_size);                               
     ////////////////////////////////////////////////////////////////////////////////
     
     enum class ClientTasks
     {
         undefined,
         ping,
+        info_download,
         app_erase, 
         app_upload,
         app_download,
@@ -53,12 +43,17 @@ namespace sm
         modbus::FunctionCodes code = modbus::FunctionCodes::undefined;
         size_t length = 0;
     };
-
-    struct TaskInfo
+    
+    class TaskInfo
     {
-        ClientTasks task = ClientTasks::undefined;
-        TaskAttributes attributes;
-        bool done = false;
+        public:
+            TaskInfo(ClientTasks task,int num_of_exchanges):task(task),num_of_exchanges(num_of_exchanges){};
+            ClientTasks task;
+            TaskAttributes attributes;
+            int num_of_exchanges;
+            int counter = 0;
+            bool done   = false;
+            bool error  = false;
     };
 
     #pragma pack(push)
@@ -119,8 +114,30 @@ namespace sm
             std::future<void> task;
             /// @brief info about actual pending task and function
             TaskInfo task_info;
+            /// @brief queue with client-server exchanges
+            std::queue<std::function<void()>> q_exchange;
+            /// @brief queue with client tasks
+            std::queue<std::function<void()>> q_task;
             /// @brief ping command
             void ping();
+            /// @brief write record in file with new data
+            /// @param file_id  file index
+            /// @param record_id record index in file
+            /// @param data new record data
+            void writeRecord(const std::uint16_t file_id, const std::uint16_t record_id, const std::vector<std::uint8_t>& data);
+            /// @brief read record from file
+            /// @param file_id  file index
+            /// @param record_id record index in file
+            /// @param length length to read
+            void readRecord(const std::uint16_t file_id, const std::uint16_t record_id, const std::uint16_t length);
+            /// @brief write register command
+            /// @param address address of register
+            /// @param value register value
+            void writeRegister(const std::uint16_t address, const std::uint16_t value);
+            /// @brief read registers command
+            /// @param address start address to read
+            /// @param quantity amount of registers to read
+            void readRegisters(const std::uint16_t address, const std::uint16_t quantity);
             /// @brief create new server instance
             /// @param address server address
             void addServer(const std::uint8_t address);
@@ -132,6 +149,11 @@ namespace sm
             /// @brief call request/response exchange on data prepared in request_data
             /// @param resp_length expected responce length
             void callServerExchange(const size_t resp_length);
+            /// @brief callback called for every function in q_exchange
+            void exchangeCallback();
+            /// @brief get actual length of ADU- PDU
+            /// @return length in bytes
+            std::uint8_t getModbusRequriedLength() const;
     };
 }
 

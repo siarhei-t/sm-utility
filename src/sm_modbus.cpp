@@ -74,6 +74,48 @@ namespace modbus
         return buffer;
     }
 
+    bool ModbusClient::isChecksumValid(const std::vector<std::uint8_t> &data)
+    {
+        std::vector<std::uint8_t> message;
+        int start_size = 0;
+        int stop_size = 0;
+        int adu_suze  = 0;
+        switch (mode)
+        {
+            case ModbusMode::rtu:    
+                start_size = rtu_start_size;
+                stop_size  = rtu_stop_size;
+                adu_suze   = rtu_adu_size;
+                break;
+
+            case ModbusMode::ascii:
+                start_size = ascii_start_size;
+                stop_size  = ascii_stop_size;
+                adu_suze   = ascii_adu_size;
+                break;
+
+            default:
+                start_size = 0;
+                stop_size  = 0;
+                adu_suze   = 0;
+                break;
+        }
+        const int crc_idx = data.size() - stop_size - crc_size;
+        if(data.size() <= adu_suze)
+        {
+            return false; //undefined data in vector
+        }
+        else
+        {
+            message.insert(message.end(),data.begin() + start_size,data.end() - stop_size - crc_size);  
+            std::uint16_t rec_crc = data[crc_idx];
+                        rec_crc = (rec_crc<<8)| data[crc_idx + 1];        
+            std::uint16_t actual_crc = crc16(message);
+            if(actual_crc == rec_crc){return true;}
+            else{return false;}
+        }
+    }
+
     void ModbusClient::createMessage(const std::uint8_t addr, const std::uint8_t func, const std::vector<std::uint8_t> &data)
     {
         buffer.clear();
