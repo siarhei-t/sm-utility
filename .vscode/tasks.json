@@ -9,7 +9,7 @@
                 "kind": "build",
                 "isDefault": true
             },
-            "options": {"cwd": "${workspaceFolder}/tests"},
+            "options": {"cwd": "${workspaceFolder}/cli"},
             "problemMatcher": []
         },
         {
@@ -20,14 +20,14 @@
                 "kind": "build",
                 "isDefault": false
             },
-            "options": {"cwd": "${workspaceFolder}/tests"},
+            "options": {"cwd": "${workspaceFolder}/cli"},
             "problemMatcher": []
         },
         {
             "type": "shell",
             "label": "Configure",
             "command": "cmake -Bbuild",
-            "options": {"cwd": "${workspaceFolder}/tests"},
+            "options": {"cwd": "${workspaceFolder}/cli"},
             "problemMatcher": []
         },
     ]
