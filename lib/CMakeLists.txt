@@ -14,6 +14,10 @@ set(COMMON_HEADERS
 )
 
 add_library (${PROJECT_NAME} STATIC ${COMMON_SOURCES} ${COMMON_HEADERS})
+
+add_subdirectory(../external/simple-serial-port/src serial-port)
+get_directory_property(TARGET_PLATFORM DIRECTORY ../external/simple-serial-port/src DEFINITION TARGET_PLATFORM)
+
 target_include_directories(${PROJECT_NAME} PRIVATE
         inc
         )
