@@ -13,6 +13,16 @@
 int main(void)
 {
     sm::Client client;
-    client.connect(0x11);
+    
+    std::error_code error;
+    sp::PortConfig config;
+    config.baudrate = sp::PortBaudRate::BD_19200;
+    
+    error = client.start("COM1");
+    error = client.configure(config);
+
+    client.connect(0x01);
+    client.connect(0x02);
+    
     return 0;
 }

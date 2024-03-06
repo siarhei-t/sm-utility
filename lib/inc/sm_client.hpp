@@ -17,6 +17,7 @@
 #include <queue>
 
 #include "../inc/sm_modbus.hpp"
+#include "../../external/simple-serial-port/inc/serial_port.hpp"
 
 namespace sm
 {
@@ -50,10 +51,11 @@ namespace sm
             TaskInfo(ClientTasks task,int num_of_exchanges):task(task),num_of_exchanges(num_of_exchanges){};
             ClientTasks task;
             TaskAttributes attributes;
+            std::error_code error_code;
             int num_of_exchanges;
             int counter = 0;
             bool done   = false;
-            bool error  = false;
+            bool error   = false;
     };
 
     #pragma pack(push)
@@ -90,6 +92,14 @@ namespace sm
         public:
             Client();
             ~Client();
+            /// @brief start client
+            /// @param device device name to use
+            /// @return error code
+            std::error_code start(std::string device);
+            /// @brief client device configure
+            /// @param config used config
+            /// @return error code
+            std::error_code configure(sp::PortConfig config){return serial_port.setup(config);}
             /// @brief connect to server with selected id
             /// @param address server address
             void connect(const std::uint8_t address);
@@ -102,6 +112,8 @@ namespace sm
             std::vector<std::uint8_t> responce_data;
             /// @brief modbus protocol message generator
             modbus::ModbusClient modbus_client;
+            /// @brief serial port instance
+            sp::SerialPort serial_port;
             /// @brief vector with actual available modbus devices
             std::vector<ServerData> servers;
             /// @brief connected server index in servers
@@ -113,7 +125,7 @@ namespace sm
             /// @brief async client task variable
             std::future<void> task;
             /// @brief info about actual pending task and function
-            TaskInfo task_info;
+            TaskInfo task_info = TaskInfo(ClientTasks::undefined,0);
             /// @brief queue with client-server exchanges
             std::queue<std::function<void()>> q_exchange;
             /// @brief queue with client tasks

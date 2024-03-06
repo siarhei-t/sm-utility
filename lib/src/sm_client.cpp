@@ -13,24 +13,43 @@
 
 namespace sm
 {
-    Client::Client():task_info(TaskInfo(ClientTasks::undefined,0))
+    Client::Client()
     {
         client_thread = std::make_unique<std::thread>(std::thread(&Client::clientThread,this));
     }
-
+    
     Client::~Client()
     {
         thread_stop.store(true, std::memory_order_relaxed);
         client_thread->join();
     }
 
+    std::error_code Client::start(std::string device)
+    {
+        std::error_code error;
+        if(serial_port.getState() != sp::PortState::Open)
+        {
+            error = serial_port.open(device);
+        }
+        else
+        {
+            if(device != serial_port.getPath())
+            {
+                serial_port.port.closePort();
+                error = serial_port.open(device);
+            }
+        }
+        return error;
+    }
+
     void Client::connect(const std::uint8_t address)
     {
-        if(server_id == not_connected)
-        {
-            //create server and select server first
-            addServer(address);
-        }
+        //server is not selected now
+        if(server_id == not_connected){addServer(address);}
+        //current server has different address
+        if(servers[server_id].info.addr != address){addServer(address);}
+        
+        //ping server if it is not connected
         if(servers[server_id].info.status != ServerStatus::Available)
         {
             task_info = TaskInfo(ClientTasks::ping,1);
@@ -40,10 +59,10 @@ namespace sm
             };
             q_task.push(lambda);
             while(!task_info.done);
-            if(servers[server_id].info.status == ServerStatus::Available)
-            {
-                //if ping success -> load info
-            }
+        }
+        if(servers[server_id].info.status == ServerStatus::Available)
+        {
+            //if ping success -> load info
         }
     }
 
@@ -61,6 +80,7 @@ namespace sm
         auto it = std::find_if(servers.begin(),servers.end(),[]( ServerData& server){return server.info.status == ServerStatus::Unavailable;} );
         if(it != servers.end())
         {
+            //use existed slot
             int index =  std::distance(servers.begin(), it);
             servers[index] = ServerData();
             servers[index].info.addr = address;
@@ -68,6 +88,7 @@ namespace sm
         }
         else
         {
+            //create new one
             servers.push_back(ServerData());
             servers.back().info.addr = address;
             server_id = servers.size() - 1;
@@ -193,7 +214,14 @@ namespace sm
             switch(task_info.task)
             {
                 case ClientTasks::ping:
-                    if(server_id != not_connected){servers[server_id].info.status = ServerStatus::Available;}
+                    if(server_id != not_connected)
+                    {
+                        if(responce_data.size() == task_info.attributes.length)
+                        {
+                            servers[server_id].info.status = ServerStatus::Available;
+                            std::printf("connected to server : 0x%x \n", servers[server_id].info.addr);
+                        }
+                    }
                     break;
                 
                 default:
@@ -216,12 +244,13 @@ namespace sm
 
     void Client::callServerExchange(const size_t resp_length)
     {
-        //to be written
-        for(auto i = 0; i < request_data.size(); ++i)
-        {
-            std::printf("0x%x ",request_data[i]);
-        }
-        std::printf("\n");
+        responce_data.clear();
+        //write to server
+        try{serial_port.port.writeBinary(request_data);}
+        catch(const std::system_error& e){task_info.error_code = e.code();}
+        //read from server
+        try{serial_port.port.readBinary(responce_data,task_info.attributes.length);}
+        catch(const std::system_error& e){task_info.error_code = e.code();}
     }
     
     std::uint8_t sm::Client::getModbusRequriedLength() const
