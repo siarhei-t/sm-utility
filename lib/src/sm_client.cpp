@@ -47,16 +47,16 @@ namespace sm
         return task_info.error_code;
     }
 
-    void Client::connect(const std::uint8_t address)
+    std::error_code& Client::connect(const std::uint8_t address)
     {
         //server is not selected now
         if(server_id == not_connected){addServer(address);}
         //current server has different address
         if(servers[server_id].info.addr != address){addServer(address);}
         
-        //ping server if it is not connected
         if(servers[server_id].info.status != ServerStatus::Available)
         {
+            //ping server if it is not connected
             task_info = TaskInfo(ClientTasks::ping,1);
             auto lambda = [this]() 
             {
@@ -68,7 +68,16 @@ namespace sm
         if(servers[server_id].info.status == ServerStatus::Available)
         {
             //if ping success -> load info
+            //ping server if it is not connected
+            task_info = TaskInfo(ClientTasks::info_download,1);
+            auto lambda = [this]() 
+            {
+                q_exchange.push([this]{readRegisters(0,amount_of_regs);});
+            };
+            q_task.push(lambda);
+            while(!task_info.done);
         }
+        return task_info.error_code;
     }
 
     void Client::disconnect()
@@ -150,7 +159,7 @@ namespace sm
             request_data = modbus_client.msgReadFileRecord(servers[server_id].info.addr,file_id,record_id,length);
             // amount of half words + 1 byte for ref type + 1 byte for data length 
             // + 1 byte for resp length + 1 byte for func + modbus required part
-            TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::read_file,static_cast<size_t>((length * 2) + 4)); 
+            TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::read_file,static_cast<size_t>(modbus_client.getRequriedLength() + (length * 2) + 4)); 
             createServerRequest(attr);
         }
     }
@@ -172,7 +181,7 @@ namespace sm
         {
             request_data = modbus_client.msgReadRegisters(servers[server_id].info.addr,address,quantity);
             // amount of 16 bit registers + 1 byte for length + 1 byte for func + modbus required part
-            TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::read_registers,static_cast<size_t>(getModbusRequriedLength() + (quantity * 2) + 2)); 
+            TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::read_registers,static_cast<size_t>(modbus_client.getRequriedLength() + (quantity * 2) + 2)); 
             createServerRequest(attr);
         }
     }
@@ -186,26 +195,49 @@ namespace sm
             std::vector<uint8_t> message{0x00,0x00,0x00,0x00};
             request_data = modbus_client.msgCustom(address,function,message);
             // 1 byte for exception + 1 byte for func + modbus required part
-            TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::undefined,static_cast<size_t>(getModbusRequriedLength() + 2)); 
+            TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::undefined,static_cast<size_t>(modbus_client.getRequriedLength() + 2)); 
             createServerRequest(attr);
         }
     }
     
     void Client::exchangeCallback()
     {
+        auto readRegs = [](ServerData& server,const std::vector<uint8_t>& message)
+        {
+            const int id_length = 2;
+            const int id_start  = 3;
+                  int counter   = 0;
+            if(message[id_start] > (message.size() - (modbus::crc_size + modbus::address_size + modbus::function_size + 1))){return;}
+            
+            for(int i = id_start; i < (id_start + message[id_length]); i = i + 2)
+            {
+                server.regs[counter] = static_cast<std::uint16_t>(message[i])<<8;
+                server.regs[counter] |= message[i + 1];
+                ++counter;    
+            }
+        };
+
+        if(server_id == not_connected){return;}
         ++task_info.counter;
         if(modbus_client.isChecksumValid(responce_data))
         {
+            std::vector<std::uint8_t> message;
+            modbus_client.extractData(responce_data,message);
+
             switch(task_info.task)
             {
                 case ClientTasks::ping:
-                    if(server_id != not_connected)
+                    if(responce_data.size() == task_info.attributes.length)
                     {
-                        if(responce_data.size() == task_info.attributes.length)
-                        {
-                            servers[server_id].info.status = ServerStatus::Available;
-                            std::printf("connected to server : 0x%x \n", servers[server_id].info.addr);
-                        }
+                        servers[server_id].info.status = ServerStatus::Available;
+                        std::printf("connected to server : 0x%x \n", servers[server_id].info.addr);
+                    }
+                     break;
+                
+                case ClientTasks::info_download:
+                    if(responce_data.size() == task_info.attributes.length)
+                    {
+                        readRegs(servers[server_id],message);
                     }
                     break;
                 
@@ -236,25 +268,5 @@ namespace sm
         //read from server
         try{serial_port.port.readBinary(responce_data,task_info.attributes.length);}
         catch(const std::system_error& e){task_info.error_code = e.code();}
-    }
-    
-    std::uint8_t sm::Client::getModbusRequriedLength() const
-    {
-        std::uint8_t length;
-        switch(modbus_client.getMode())
-        {
-            case modbus::ModbusMode::rtu:
-                length = modbus::rtu_adu_size;
-                break;
-            
-            case modbus::ModbusMode::ascii:
-                length = modbus::ascii_adu_size;
-                break;
-            
-            default:
-                length = 0;
-                break;
-        }
-        return length;
     }
 }

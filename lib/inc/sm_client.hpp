@@ -103,7 +103,9 @@ namespace sm
             std::error_code& configure(sp::PortConfig config);
             /// @brief connect to server with selected id
             /// @param address server address
-            void connect(const std::uint8_t address);
+            /// @return error code
+            std::error_code& connect(const std::uint8_t address);
+            /// @brief diconnect from server
             void disconnect();
 
         private:
@@ -163,9 +165,6 @@ namespace sm
             void callServerExchange();
             /// @brief callback called for every function in q_exchange
             void exchangeCallback();
-            /// @brief get actual length of ADU- PDU
-            /// @return length in bytes
-            std::uint8_t getModbusRequriedLength() const;
     };
 }
 

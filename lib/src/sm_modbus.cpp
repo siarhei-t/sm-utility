@@ -8,6 +8,7 @@
  */
 
 #include "../inc/sm_modbus.hpp"
+#include "sm_modbus.hpp"
 
 namespace
 {
@@ -114,6 +115,51 @@ namespace modbus
             if(actual_crc == rec_crc){return true;}
             else{return false;}
         }
+    }
+
+    void ModbusClient::extractData(const std::vector<std::uint8_t> &data, std::vector<std::uint8_t> &message)
+    {
+        int start = 0;
+        int stop  = 0;
+
+        switch(getMode())
+        {
+            case ModbusMode::rtu:
+                start = rtu_start_size;
+                stop  = rtu_stop_size;
+                break;
+            
+            case ModbusMode::ascii:
+                start = ascii_start_size;
+                stop  = ascii_stop_size;;
+                break;
+            
+            default:
+                start = 0;
+                stop  = 0;
+                break;
+        }
+        message.insert(message.end(),data.begin() + start, data.end() - stop);
+    }
+    
+    std::uint8_t ModbusClient::getRequriedLength() const
+    {
+        std::uint8_t length;
+        switch(getMode())
+        {
+            case ModbusMode::rtu:
+                length = rtu_adu_size;
+                break;
+            
+            case ModbusMode::ascii:
+                length = ascii_adu_size;
+                break;
+            
+            default:
+                length = 0;
+                break;
+        }
+        return length;
     }
 
     void ModbusClient::createMessage(const std::uint8_t addr, const std::uint8_t func, const std::vector<std::uint8_t> &data)

@@ -87,11 +87,18 @@ namespace modbus
             /// @param quantity amount of registers to read
             /// @return reference to vector with created message
             std::vector<std::uint8_t>& msgReadRegisters(const std::uint8_t addr, const std::uint16_t reg,const std::uint16_t quantity);
-            /// @brief 
-            /// @param data 
-            /// @return 
+            /// @brief checking if Modbus package checksum is valid
+            /// @param data vector with package to check
+            /// @return true in case of success
             bool isChecksumValid(const std::vector<std::uint8_t>& data);
-
+            /// @brief extract PDU from Modbus package
+            /// @param data vector with Modbus package
+            /// @param message vector to insert PDU
+            void extractData(const std::vector<std::uint8_t>& data,std::vector<std::uint8_t>& message);
+            /// @brief get actual length of ADU- PDU
+            /// @return length in bytes
+            std::uint8_t getRequriedLength() const;
+        
         private:
             ModbusMode mode = ModbusMode::rtu;
              /// @brief internal message buffer, used to store last created message
