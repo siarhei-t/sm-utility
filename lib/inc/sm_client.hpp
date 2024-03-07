@@ -17,6 +17,7 @@
 #include <queue>
 
 #include "../inc/sm_modbus.hpp"
+#include "../inc/sm_file.hpp"
 #include "../inc/sm_error.hpp"
 #include "../../external/simple-serial-port/inc/serial_port.hpp"
 
@@ -115,6 +116,8 @@ namespace sm
             std::vector<std::uint8_t> responce_data;
             /// @brief modbus protocol message generator
             modbus::ModbusClient modbus_client;
+            /// @brief file control instance
+            File file;
             /// @brief serial port instance
             sp::SerialPort serial_port;
             /// @brief vector with actual available modbus devices

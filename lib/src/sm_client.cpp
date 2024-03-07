@@ -26,6 +26,8 @@ namespace sm
 
     std::error_code& Client::start(std::string device)
     {
+        task_info.error_code = std::error_code();
+
         if(serial_port.getState() != sp::PortState::Open)
         {
             task_info.error_code = serial_port.open(device);
