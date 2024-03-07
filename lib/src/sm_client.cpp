@@ -129,7 +129,7 @@ namespace sm
                         std::cerr << e.what() << std::endl;
                     }
                     exchangeCallback();
-                    if(task_info.error == true)
+                    if(task_info.error_code.value())
                     {
                         std::queue<std::function<void()>> empty;
                         std::swap(q_exchange,empty);
@@ -248,7 +248,7 @@ namespace sm
         }
         else
         {
-            task_info.error = true;
+            task_info.error_code = make_error_code(ClientErrors::crc_error);
             task_info.done = true;
         }
     }

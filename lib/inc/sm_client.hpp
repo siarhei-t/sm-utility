@@ -17,6 +17,7 @@
 #include <queue>
 
 #include "../inc/sm_modbus.hpp"
+#include "../inc/sm_error.hpp"
 #include "../../external/simple-serial-port/inc/serial_port.hpp"
 
 namespace sm
@@ -56,7 +57,6 @@ namespace sm
         int num_of_exchanges;
         int counter = 0;
         bool done   = false;
-        bool error  = false;
     };
 
     #pragma pack(push)
