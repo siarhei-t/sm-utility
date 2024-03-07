@@ -10,7 +10,7 @@
 #include <iostream>
 #include "../inc/sm_client.hpp"
 
-int main(void)
+int main()
 {
     sm::Client client;
     
@@ -22,7 +22,6 @@ int main(void)
     error = client.configure(config);
 
     client.connect(0x01);
-    client.connect(0x02);
-    
+
     return 0;
 }

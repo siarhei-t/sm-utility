@@ -24,22 +24,27 @@ namespace sm
         client_thread->join();
     }
 
-    std::error_code Client::start(std::string device)
+    std::error_code& Client::start(std::string device)
     {
-        std::error_code error;
         if(serial_port.getState() != sp::PortState::Open)
         {
-            error = serial_port.open(device);
+            task_info.error_code = serial_port.open(device);
         }
         else
         {
             if(device != serial_port.getPath())
             {
                 serial_port.port.closePort();
-                error = serial_port.open(device);
+                task_info.error_code = serial_port.open(device);
             }
         }
-        return error;
+        return task_info.error_code;
+    }
+
+    std::error_code& Client::configure(sp::PortConfig config)
+    {
+        task_info.error_code = serial_port.setup(config);
+        return task_info.error_code;
     }
 
     void Client::connect(const std::uint8_t address)
@@ -132,12 +137,8 @@ namespace sm
         if(server_id != not_connected)
         {
             request_data = modbus_client.msgWriteFileRecord(servers[server_id].info.addr,file_id,record_id,data);
-            TaskAttributes attr = 
-            {
-                .code   = modbus::FunctionCodes::write_file,
-                // in case of success we expect message with the same length
-                .length = request_data.size()
-            };
+            // in case of success we expect message with the same length
+            TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::write_file,request_data.size()); 
             createServerRequest(attr);
         }
     }
@@ -147,13 +148,9 @@ namespace sm
         if(server_id != not_connected)
         {
             request_data = modbus_client.msgReadFileRecord(servers[server_id].info.addr,file_id,record_id,length);
-            TaskAttributes attr = 
-            {
-                .code   = modbus::FunctionCodes::read_file,
-                // amount of half words + 1 byte for ref type + 1 byte for data length 
-                // + 1 byte for resp length + 1 byte for func + modbus required part
-                .length = static_cast<size_t>((length * 2) + 4)
-            };
+            // amount of half words + 1 byte for ref type + 1 byte for data length 
+            // + 1 byte for resp length + 1 byte for func + modbus required part
+            TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::read_file,static_cast<size_t>((length * 2) + 4)); 
             createServerRequest(attr);
         }
     }
@@ -163,12 +160,8 @@ namespace sm
         if(server_id != not_connected)
         {
             request_data = modbus_client.msgWriteRegister(servers[server_id].info.addr,address,value);
-            TaskAttributes attr = 
-            {
-                .code   = modbus::FunctionCodes::write_register,
-                // in case of success we expect message with the same length
-                .length = request_data.size()
-            };
+            // in case of success we expect message with the same length
+            TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::write_register,request_data.size()); 
             createServerRequest(attr);
         }
     }
@@ -178,12 +171,8 @@ namespace sm
         if(server_id != not_connected)
         {
             request_data = modbus_client.msgReadRegisters(servers[server_id].info.addr,address,quantity);
-            TaskAttributes attr = 
-            {
-                .code   = modbus::FunctionCodes::read_registers,
-                // amount of 16 bit registers + 1 byte for length + 1 byte for func + modbus required part
-                .length = static_cast<size_t>(getModbusRequriedLength() + (quantity * 2) + 2)
-            };
+            // amount of 16 bit registers + 1 byte for length + 1 byte for func + modbus required part
+            TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::read_registers,static_cast<size_t>(getModbusRequriedLength() + (quantity * 2) + 2)); 
             createServerRequest(attr);
         }
     }
@@ -196,12 +185,8 @@ namespace sm
             std::uint8_t function = static_cast<uint8_t>(modbus::FunctionCodes::undefined);
             std::vector<uint8_t> message{0x00,0x00,0x00,0x00};
             request_data = modbus_client.msgCustom(address,function,message);
-            TaskAttributes attr = 
-            {
-                .code   = modbus::FunctionCodes::undefined,
-                // 1 byte for exception + 1 byte for func + modbus required part
-                .length = static_cast<size_t>(getModbusRequriedLength() + 2) 
-            };
+            // 1 byte for exception + 1 byte for func + modbus required part
+            TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::undefined,static_cast<size_t>(getModbusRequriedLength() + 2)); 
             createServerRequest(attr);
         }
     }
@@ -239,10 +224,10 @@ namespace sm
     void Client::createServerRequest(const TaskAttributes& attr)
     {
         task_info.attributes = attr;
-        task = std::async(&Client::callServerExchange,this,attr.length);
+        task = std::async(&Client::callServerExchange,this);
     }
 
-    void Client::callServerExchange(const size_t resp_length)
+    void Client::callServerExchange()
     {
         responce_data.clear();
         //write to server

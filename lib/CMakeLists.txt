@@ -27,3 +27,9 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         ../external/simple-serial-port/inc
         ../external/simple-serial-port/inc/platform
         )
+
+target_compile_options(${PROJECT_NAME} PRIVATE
+        $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -Wpedantic>
+        $<$<CXX_COMPILER_ID:Clang>:-Wall -Wpedantic>
+        $<$<CXX_COMPILER_ID:MSVC>:/W4>
+)

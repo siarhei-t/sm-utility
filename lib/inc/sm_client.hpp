@@ -41,21 +41,22 @@ namespace sm
 
     struct TaskAttributes
     {
+        TaskAttributes() = default;
+        TaskAttributes(modbus::FunctionCodes code,size_t length):code(code),length(length){}
         modbus::FunctionCodes code = modbus::FunctionCodes::undefined;
         size_t length = 0;
     };
     
-    class TaskInfo
+    struct TaskInfo
     {
-        public:
-            TaskInfo(ClientTasks task,int num_of_exchanges):task(task),num_of_exchanges(num_of_exchanges){};
-            ClientTasks task;
-            TaskAttributes attributes;
-            std::error_code error_code;
-            int num_of_exchanges;
-            int counter = 0;
-            bool done   = false;
-            bool error   = false;
+        TaskInfo(ClientTasks task,int num_of_exchanges):task(task),num_of_exchanges(num_of_exchanges){};
+        ClientTasks task;
+        TaskAttributes attributes;
+        std::error_code error_code;
+        int num_of_exchanges;
+        int counter = 0;
+        bool done   = false;
+        bool error  = false;
     };
 
     #pragma pack(push)
@@ -95,11 +96,11 @@ namespace sm
             /// @brief start client
             /// @param device device name to use
             /// @return error code
-            std::error_code start(std::string device);
+            std::error_code& start(std::string device);
             /// @brief client device configure
             /// @param config used config
             /// @return error code
-            std::error_code configure(sp::PortConfig config){return serial_port.setup(config);}
+            std::error_code& configure(sp::PortConfig config);
             /// @brief connect to server with selected id
             /// @param address server address
             void connect(const std::uint8_t address);
@@ -159,8 +160,7 @@ namespace sm
             /// @param attr new task attributes
             void createServerRequest(const TaskAttributes& attr);
             /// @brief call request/response exchange on data prepared in request_data
-            /// @param resp_length expected responce length
-            void callServerExchange(const size_t resp_length);
+            void callServerExchange();
             /// @brief callback called for every function in q_exchange
             void exchangeCallback();
             /// @brief get actual length of ADU- PDU

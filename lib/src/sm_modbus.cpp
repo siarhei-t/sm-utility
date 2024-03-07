@@ -101,7 +101,7 @@ namespace modbus
                 break;
         }
         const int crc_idx = data.size() - stop_size - crc_size;
-        if(data.size() <= adu_suze)
+        if(data.size() <= static_cast<size_t>(adu_suze))
         {
             return false; //undefined data in vector
         }
@@ -165,7 +165,7 @@ namespace modbus
             } 
         };
 
-        for(int i = 0; i < data.size();i++)
+        for(std::size_t i = 0; i < data.size(); ++i)
         {
             result = ibm_byte(result,data[i]);
         }
