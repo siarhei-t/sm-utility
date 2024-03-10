@@ -21,13 +21,16 @@ namespace sm
     {
         public:
             void fileDelete();
+            
+            std::uint16_t getRecordLength(const int index) const;
         
         private:
             std::unique_ptr<std::uint8_t> data;
-            size_t size = 0;
+            size_t file_size = 0;
             std::uint16_t num_of_records = 0;
             std::uint16_t counter = 0;
             std::uint8_t  record_size = 0;
+            std::uint16_t getNumOfRecords(const size_t file_size) const;
     };
 }
 

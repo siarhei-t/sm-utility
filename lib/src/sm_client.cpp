@@ -70,7 +70,7 @@ namespace sm
         if(servers[server_id].info.status == ServerStatus::Available)
         {
             //if ping success -> load info
-            //ping server if it is not connected
+            //download registers
             task_info = TaskInfo(ClientTasks::info_download,1);
             auto lambda = [this]() 
             {
