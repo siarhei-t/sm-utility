@@ -24,12 +24,31 @@
 namespace sm
 {
     //////////////////////////////SERVER CONSTANTS//////////////////////////////////
-    constexpr int boot_version_size = 17;
-    constexpr int boot_name_size    = 33;
-    constexpr int amount_of_regs    = 7;
-    constexpr int not_connected     = -1;
+    constexpr int           boot_version_size  = 17;
+    constexpr int           boot_name_size     = 33;
+    constexpr int           amount_of_regs     = 7;
+    constexpr int           not_connected      = -1;
+    constexpr std::uint16_t file_read_prepare  = 1;
+    constexpr std::uint16_t file_write_prepare = 2;
     ////////////////////////////////////////////////////////////////////////////////
     
+    enum class ServerRegisters
+    {
+        file_control = 0,
+        app_size     = 1,
+        app_erase    = 2,
+        app_start    = 3,
+        boot_control = 4,
+        boot_status  = 5,
+        record_size  = 6
+    };
+
+    enum class ServerFiles
+    {
+        app  = 1,
+        info = 2
+    };
+
     enum class ClientTasks
     {
         undefined,
@@ -136,6 +155,9 @@ namespace sm
             std::queue<std::function<void()>> q_exchange;
             /// @brief queue with client tasks
             std::queue<std::function<void()>> q_task;
+            /// @brief read file from the server with passed id
+            /// @param file_id file id 
+            void readFile(const ServerFiles file_id);
             /// @brief ping command
             void ping();
             /// @brief write record in file with new data

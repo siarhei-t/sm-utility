@@ -20,7 +20,6 @@ int main()
     
     error = client.start("COM1");
     error = client.configure(config);
-
     client.connect(0x01);
 
     return 0;

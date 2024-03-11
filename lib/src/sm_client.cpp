@@ -10,6 +10,7 @@
 #include <iostream>
 #include <algorithm>
 #include "../inc/sm_client.hpp"
+#include "sm_client.hpp"
 
 namespace sm
 {
@@ -27,7 +28,7 @@ namespace sm
     std::error_code& Client::start(std::string device)
     {
         task_info.error_code = std::error_code();
-
+        
         if(serial_port.getState() != sp::PortState::Open)
         {
             task_info.error_code = serial_port.open(device);
@@ -40,6 +41,7 @@ namespace sm
                 task_info.error_code = serial_port.open(device);
             }
         }
+        
         return task_info.error_code;
     }
 
@@ -67,18 +69,21 @@ namespace sm
             q_task.push(lambda);
             while(!task_info.done);
         }
+        if(task_info.error_code.value()){return task_info.error_code;}
+        //download registers
         if(servers[server_id].info.status == ServerStatus::Available)
         {
-            //if ping success -> load info
-            //download registers
             task_info = TaskInfo(ClientTasks::info_download,1);
             auto lambda = [this]() 
             {
                 q_exchange.push([this]{readRegisters(0,amount_of_regs);});
             };
             q_task.push(lambda);
+
             while(!task_info.done);
         }
+        if(task_info.error_code.value()){return task_info.error_code;}
+        //download file with general information
         return task_info.error_code;
     }
 
@@ -143,6 +148,8 @@ namespace sm
         }
     }
 
+
+
     void Client::writeRecord(const std::uint16_t file_id, const std::uint16_t record_id, const std::vector<std::uint8_t>& data)
     {
         if(server_id != not_connected)
@@ -185,6 +192,35 @@ namespace sm
             // amount of 16 bit registers + 1 byte for length + 1 byte for func + modbus required part
             TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::read_registers,static_cast<size_t>(modbus_client.getRequriedLength() + (quantity * 2) + 2)); 
             createServerRequest(attr);
+        }
+    }
+
+    void Client::readFile(const ServerFiles file_id)
+    {
+        if(server_id == not_connected){return;}
+        
+        size_t file_size = 0;
+        switch(file_id)
+        {
+            case ServerFiles::app:
+                file_size = servers[server_id].regs[static_cast<int>(ServerRegisters::app_size)];
+                break;
+            
+            case ServerFiles::info:
+                file_size = sizeof(sizeof(BootloaderInfo));
+                break;
+
+            default:
+                file_size = 0;
+                break;
+        }
+        if(file.fileReadSetup(file_size,servers[server_id].regs[static_cast<int>(ServerRegisters::record_size)]))
+        {
+            auto num_of_records = file.getNumOfRecords();
+            for(auto i = 0; i < num_of_records; ++i)
+            {
+                auto words_in_record = 
+            }
         }
     }
 
