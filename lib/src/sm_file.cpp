@@ -37,6 +37,8 @@ namespace sm
 
     bool File::fileWriteSetup(const std::string path_to_file, const std::uint8_t record_size)
     {
+        (void)(path_to_file);
+        (void)(record_size);
         return false;
     }
 

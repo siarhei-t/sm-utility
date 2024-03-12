@@ -53,6 +53,7 @@ namespace sm
     {
         undefined,
         ping,
+        regs_download,
         info_download,
         app_erase, 
         app_upload,

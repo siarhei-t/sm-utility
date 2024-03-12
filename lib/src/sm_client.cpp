@@ -53,7 +53,7 @@ namespace sm
 
     std::error_code& Client::connect(const std::uint8_t address)
     {
-        //server is not selected now
+        //server is not selected yet
         if(server_id == not_connected){addServer(address);}
         //current server has different address
         if(servers[server_id].info.addr != address){addServer(address);}
@@ -73,17 +73,17 @@ namespace sm
         //download registers
         if(servers[server_id].info.status == ServerStatus::Available)
         {
-            task_info = TaskInfo(ClientTasks::info_download,1);
+            task_info = TaskInfo(ClientTasks::regs_download,1);
             auto lambda = [this]() 
             {
                 q_exchange.push([this]{readRegisters(0,amount_of_regs);});
             };
-            q_task.push(lambda);
-
+            q_task.push(lambda); 
             while(!task_info.done);
         }
         if(task_info.error_code.value()){return task_info.error_code;}
         //download file with general information
+        
         return task_info.error_code;
     }
 
@@ -147,7 +147,6 @@ namespace sm
             std::this_thread::sleep_for(50ms);
         }
     }
-
 
 
     void Client::writeRecord(const std::uint16_t file_id, const std::uint16_t record_id, const std::vector<std::uint8_t>& data)
@@ -219,7 +218,10 @@ namespace sm
             auto num_of_records = file.getNumOfRecords();
             for(auto i = 0; i < num_of_records; ++i)
             {
-                auto words_in_record = 
+                auto words_in_record = file.getActualRecordLength(i);
+                q_exchange.push([this,words_in_record,file_id,i] {readRecord(static_cast<std::uint16_t>(file_id),
+                                                                             static_cast<std::uint16_t>(i),
+                                                                             words_in_record);} );
             }
         }
     }
@@ -272,7 +274,7 @@ namespace sm
                     }
                      break;
                 
-                case ClientTasks::info_download:
+                case ClientTasks::regs_download:
                     if(responce_data.size() == task_info.attributes.length)
                     {
                         readRegs(servers[server_id],message);
