@@ -74,15 +74,19 @@ namespace sm
         if(servers[server_id].info.status == ServerStatus::Available)
         {
             task_info = TaskInfo(ClientTasks::regs_download,1);
-            auto lambda = [this]() 
-            {
-                q_exchange.push([this]{readRegisters(0,amount_of_regs);});
-            };
-            q_task.push(lambda); 
+            q_task.push([this](){q_exchange.push([this]{readRegisters(0,amount_of_regs);});}); 
             while(!task_info.done);
         }
         if(task_info.error_code.value()){return task_info.error_code;}
-        //download file with general information
+        //download file with general information  
+        //prepare to read
+        task_info = TaskInfo(ClientTasks::reg_write,1);
+        q_task.push([this](){q_exchange.push([this]{writeRegister(static_cast<std::uint16_t>(ServerRegisters::file_control),file_read_prepare);});}); 
+        while(!task_info.done);
+        //reading
+        task_info = TaskInfo();
+        q_task.push([this](){readFile(ServerFiles::info);});
+        while(!task_info.done);
         
         return task_info.error_code;
     }
@@ -197,28 +201,35 @@ namespace sm
     void Client::readFile(const ServerFiles file_id)
     {
         if(server_id == not_connected){return;}
-        
         size_t file_size = 0;
+        ClientTasks file_task = ClientTasks::undefined;
+        
         switch(file_id)
         {
             case ServerFiles::app:
                 file_size = servers[server_id].regs[static_cast<int>(ServerRegisters::app_size)];
+                file_task = ClientTasks::app_download;
                 break;
             
             case ServerFiles::info:
-                file_size = sizeof(sizeof(BootloaderInfo));
+                file_size = sizeof(BootloaderInfo);
+                std::printf("file size : %d \n",file_size);
+                file_task = ClientTasks::info_download;
                 break;
 
             default:
                 file_size = 0;
+                file_task = ClientTasks::undefined;
                 break;
         }
         if(file.fileReadSetup(file_size,servers[server_id].regs[static_cast<int>(ServerRegisters::record_size)]))
         {
             auto num_of_records = file.getNumOfRecords();
+            task_info = TaskInfo(file_task,num_of_records);
+            std::printf("records to read : %d, reading...\n",num_of_records);
             for(auto i = 0; i < num_of_records; ++i)
             {
-                auto words_in_record = file.getActualRecordLength(i);
+                auto words_in_record = file.getActualRecordLength(i)/2;
                 q_exchange.push([this,words_in_record,file_id,i] {readRecord(static_cast<std::uint16_t>(file_id),
                                                                              static_cast<std::uint16_t>(i),
                                                                              words_in_record);} );
@@ -281,13 +292,34 @@ namespace sm
                     }
                     break;
                 
+                case ClientTasks::reg_write:
+                    if(responce_data.size() == task_info.attributes.length)
+                    {
+                        std::printf("register write successfull. \n");
+                    }
+                    break;
+                
+                case ClientTasks::info_download:
+                    if(responce_data.size() == task_info.attributes.length)
+                    {
+                        std::printf("record %d readed. \n",task_info.counter);
+                    }
+                    else
+                    {
+                        std::printf("expected length : %d ;\n",task_info.attributes.length);
+                        std::printf("actual length : %d ;\n",responce_data.size());
+                    }
+                    break;
+
                 default:
+                
                     break;
             }
             if(task_info.counter == task_info.num_of_exchanges){task_info.done = true;}
         }
         else
         {
+            std::printf("CRC error! \n");
             task_info.error_code = make_error_code(ClientErrors::crc_error);
             task_info.done = true;
         }
@@ -303,10 +335,22 @@ namespace sm
     {
         responce_data.clear();
         //write to server
+        for(auto & byte : request_data)
+        {
+            std::printf("%d ",byte);
+        }
+        std::printf("\n");
+        
         try{serial_port.port.writeBinary(request_data);}
         catch(const std::system_error& e){task_info.error_code = e.code();}
         //read from server
         try{serial_port.port.readBinary(responce_data,task_info.attributes.length);}
         catch(const std::system_error& e){task_info.error_code = e.code();}
+        for(auto & byte : responce_data)
+        {
+            std::printf("%d ",byte);
+        }
+        std::printf("\n");
+        
     }
 }

@@ -34,7 +34,8 @@ namespace sm
             /// @param index record index in file
             /// @return record size in bytes
             std::uint16_t getActualRecordLength(const int index) const;
-            
+            /// @brief get actual number of records
+            /// @return number of records
             std::uint16_t getNumOfRecords() const {return num_of_records;};
         
         private:

@@ -18,9 +18,9 @@ int main()
     sp::PortConfig config;
     config.baudrate = sp::PortBaudRate::BD_19200;
     
-    error = client.start("COM1");
+    error = client.start("ttyUSB0");
     error = client.configure(config);
     client.connect(0x01);
-
+    
     return 0;
 }

@@ -54,6 +54,7 @@ namespace sm
         undefined,
         ping,
         regs_download,
+        reg_write,
         info_download,
         app_erase, 
         app_upload,
@@ -71,11 +72,12 @@ namespace sm
     
     struct TaskInfo
     {
+        TaskInfo() = default;
         TaskInfo(ClientTasks task,int num_of_exchanges):task(task),num_of_exchanges(num_of_exchanges){};
-        ClientTasks task;
+        ClientTasks task = ClientTasks::undefined;
         TaskAttributes attributes;
         std::error_code error_code;
-        int num_of_exchanges;
+        int num_of_exchanges = 0;
         int counter = 0;
         bool done   = false;
     };
