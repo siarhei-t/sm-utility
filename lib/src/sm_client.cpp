@@ -99,6 +99,30 @@ namespace sm
         return task_info.error_code;
     }
 
+    std::error_code& Client::eraseApp()
+    {
+        task_info.error_code = make_error_code(ClientErrors::server_not_connected);
+
+        if(server_id != not_connected)
+        {
+            if(servers[server_id].info.status == ServerStatus::Available)
+            {
+                //erase request
+                task_info = TaskInfo(ClientTasks::reg_write,1);
+                q_task.push([this](){q_exchange.push([this]{writeRegister(static_cast<std::uint16_t>(ServerRegisters::app_erase),app_erase_request);});}); 
+                while(!task_info.done);
+                task_info = TaskInfo(ClientTasks::regs_download,1);
+                q_task.push([this](){q_exchange.push([this]{readRegisters(0,amount_of_regs);});}); 
+                while(!task_info.done);
+                if(servers[server_id].regs[static_cast<int>(ServerRegisters::boot_status)] != static_cast<std::uint16_t>(BootloaderStatus::empty))
+                {
+                    task_info.error_code = make_error_code(ClientErrors::internal);
+                }
+            }
+        }
+        return task_info.error_code;
+    }
+
     void Client::disconnect()
     {
         if(server_id != not_connected)

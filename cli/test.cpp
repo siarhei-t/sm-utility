@@ -13,14 +13,15 @@
 int main()
 {
     const std::string port = "COM1";
-    const std::uint8_t address = 2;
+    const std::uint8_t address = 1;
     sm::ServerData server_data;
     sm::Client client;
     
     std::error_code error;
     sp::PortConfig config;
     config.baudrate = sp::PortBaudRate::BD_19200;
-    
+    config.timeout_ms = 2000;
+
     error = client.start(port);
     if(error)
     {
@@ -49,5 +50,14 @@ int main()
     std::printf("boot version  : %s \n",server_data.data.boot_version);
     std::printf("available ROM : %d KB \n",server_data.data.available_rom/1024);
     
+    std::printf("app erase request... \n");
+    error = client.eraseApp(); 
+    if(error)
+    {
+        std::printf("failed to erase app on server. \n");
+        std::cout<<"error: "<<error.message()<<"\n";
+        return 0;
+    }
+
     return 0;
 }

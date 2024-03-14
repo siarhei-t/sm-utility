@@ -20,6 +20,7 @@ namespace sm
         bad_crc,
         timeout,
         server_exception,
+        server_not_connected,
         internal
     };
 

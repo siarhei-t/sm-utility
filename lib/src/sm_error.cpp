@@ -32,6 +32,9 @@ namespace
 
                 case sm::ClientErrors::server_exception: 
                     return "the server did not process the command and returned an exception";
+                
+                case sm::ClientErrors::server_not_connected: 
+                    return "the server is not connected";
 
                 case sm::ClientErrors::internal: 
                     return "internal logic error";    

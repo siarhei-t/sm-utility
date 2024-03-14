@@ -30,6 +30,7 @@ namespace sm
     constexpr int           not_connected      = -1;
     constexpr std::uint16_t file_read_prepare  = 1;
     constexpr std::uint16_t file_write_prepare = 2;
+    constexpr std::uint16_t app_erase_request  = 1;
     ////////////////////////////////////////////////////////////////////////////////
     
     enum class ServerRegisters
@@ -41,6 +42,14 @@ namespace sm
         boot_control = 4,
         boot_status  = 5,
         record_size  = 6
+    };
+
+    enum class BootloaderStatus
+    {
+        unknown = 0,
+        empty   = 1,
+        ready   = 3,
+        error   = 4
     };
 
     enum class ServerFiles
@@ -128,6 +137,9 @@ namespace sm
             /// @param address server address
             /// @return error code
             std::error_code& connect(const std::uint8_t address);
+            /// @brief erase firmware on the server
+            /// @return error code
+            std::error_code& eraseApp();
             /// @brief diconnect from server
             void disconnect();
             /// @brief 
