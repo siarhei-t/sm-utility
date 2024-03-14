@@ -77,7 +77,7 @@ namespace sm
             q_task.push(lambda);
             while(!task_info.done);
         }
-        if(task_info.error_code.value()){return task_info.error_code;}
+        if(task_info.error_code){return task_info.error_code;}
         //download registers
         if(servers[server_id].info.status == ServerStatus::Available)
         {
@@ -159,7 +159,6 @@ namespace sm
             std::this_thread::sleep_for(50ms);
         }
     }
-
 
     void Client::writeRecord(const std::uint16_t file_id, const std::uint16_t record_id, const std::vector<std::uint8_t>& data)
     {
@@ -320,7 +319,8 @@ namespace sm
         }
         else
         {
-            task_info.error_code = make_error_code(ClientErrors::bad_crc);
+            if(responce_data.size() == 0){task_info.error_code = make_error_code(ClientErrors::timeout);}
+            else{task_info.error_code = make_error_code(ClientErrors::bad_crc);}
             task_info.done = true;
         }
     }

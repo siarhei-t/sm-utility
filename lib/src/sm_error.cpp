@@ -27,6 +27,15 @@ namespace
                 case sm::ClientErrors::bad_crc: 
                     return "crc check error";
                 
+                case sm::ClientErrors::timeout: 
+                    return "no response from server, conenction timeout";
+
+                case sm::ClientErrors::server_exception: 
+                    return "the server did not process the command and returned an exception";
+
+                case sm::ClientErrors::internal: 
+                    return "internal logic error";    
+
                 default: return "unknown error";
             }
         }

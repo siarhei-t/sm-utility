@@ -18,6 +18,7 @@ namespace sm
     {
         no_error,
         bad_crc,
+        timeout,
         server_exception,
         internal
     };
