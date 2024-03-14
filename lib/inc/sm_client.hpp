@@ -130,6 +130,9 @@ namespace sm
             std::error_code& connect(const std::uint8_t address);
             /// @brief diconnect from server
             void disconnect();
+            /// @brief 
+            /// @param data 
+            void getServerData(ServerData& data);
 
         private:
             /// @brief buffer for request message data

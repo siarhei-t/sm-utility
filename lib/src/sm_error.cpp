@@ -24,9 +24,9 @@ namespace
                 case sm::ClientErrors::no_error: 
                     return "success";
                 
-                case sm::ClientErrors::crc_error: 
+                case sm::ClientErrors::bad_crc: 
                     return "crc check error";
-
+                
                 default: return "unknown error";
             }
         }

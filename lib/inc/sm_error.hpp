@@ -17,7 +17,9 @@ namespace sm
     enum class ClientErrors
     {
         no_error,
-        crc_error
+        bad_crc,
+        server_exception,
+        internal
     };
 
     const std::error_category& sm_category();

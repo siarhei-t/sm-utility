@@ -37,6 +37,16 @@ namespace sm
             /// @brief get actual number of records
             /// @return number of records
             std::uint16_t getNumOfRecords() const {return num_of_records;};
+            /// @brief load record from Modbus PDU 
+            /// @param message vector with PDU
+            /// @return true in case of success 
+            bool getRecordFromMessage(const std::vector<std::uint8_t>& message);
+            /// @brief check if file is loaded completely
+            /// @return true if yes false if not
+            bool isFileReady() const {return ready;}
+            /// @brief get pointer to file
+            /// @return pointer to buffer with file
+            std::uint8_t* getData() const {return data.get();}
         
         private:
             std::unique_ptr<std::uint8_t> data;
@@ -44,6 +54,7 @@ namespace sm
             std::uint16_t num_of_records = 0;
             std::uint16_t counter = 0;
             std::uint8_t  record_size = 0;
+            bool ready = false;
             /// @brief get num of records in file
             /// @param file_size file size in bytes
             /// @return expected number of records

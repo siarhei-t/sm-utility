@@ -21,12 +21,12 @@ namespace sm
         record_size    = 0;
         counter        = 0;
         file_size      = 0;
+        ready          = false;
     }
 
     bool File::fileReadSetup(const size_t file_size, const std::uint8_t record_size)
     {
         if(data){fileDelete();}
-
         data =  std::unique_ptr<std::uint8_t>(new std::uint8_t(file_size));    
         this->file_size = file_size;
         this->record_size = record_size;
@@ -40,6 +40,24 @@ namespace sm
         (void)(path_to_file);
         (void)(record_size);
         return false;
+    }
+
+    bool File::getRecordFromMessage(const std::vector<std::uint8_t>& message)
+    {
+        const std::uint8_t data_idx = 5;
+        const std::uint8_t data_size  = message[2] - 1;
+        const int          record_idx = counter * record_size;
+
+        if(static_cast<size_t>(record_idx + data_size) <= file_size)
+        {
+            std::copy(&message[data_idx],
+                      &message[data_idx + data_size],
+                      &data.get()[record_idx]);
+            ++counter;
+            if(counter == num_of_records){ready = true;}
+            return true;
+        }
+        else{ return false;}
     }
 
     std::uint16_t File::calcNumOfRecords(const size_t file_size) const

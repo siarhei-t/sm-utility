@@ -8,9 +8,9 @@
  */
 
 #include <iostream>
+#include <cstring>
 #include <algorithm>
 #include "../inc/sm_client.hpp"
-#include "sm_client.hpp"
 
 namespace sm
 {
@@ -23,6 +23,14 @@ namespace sm
     {
         thread_stop.store(true, std::memory_order_relaxed);
         client_thread->join();
+    }
+
+    void Client::getServerData(ServerData& data)
+    {
+        if(server_id != not_connected)
+        {
+            data = servers[server_id];
+        }
     }
 
     std::error_code& Client::start(std::string device)
@@ -213,7 +221,6 @@ namespace sm
             
             case ServerFiles::info:
                 file_size = sizeof(BootloaderInfo);
-                std::printf("file size : %d \n",file_size);
                 file_task = ClientTasks::info_download;
                 break;
 
@@ -226,7 +233,6 @@ namespace sm
         {
             auto num_of_records = file.getNumOfRecords();
             task_info = TaskInfo(file_task,num_of_records);
-            std::printf("records to read : %d, reading...\n",num_of_records);
             for(auto i = 0; i < num_of_records; ++i)
             {
                 auto words_in_record = file.getActualRecordLength(i)/2;
@@ -274,53 +280,47 @@ namespace sm
         {
             std::vector<std::uint8_t> message;
             modbus_client.extractData(responce_data,message);
-
-            switch(task_info.task)
+            if(responce_data.size() != task_info.attributes.length)
             {
-                case ClientTasks::ping:
-                    if(responce_data.size() == task_info.attributes.length)
-                    {
-                        servers[server_id].info.status = ServerStatus::Available;
-                        std::printf("connected to server : 0x%x \n", servers[server_id].info.addr);
-                    }
-                     break;
-                
-                case ClientTasks::regs_download:
-                    if(responce_data.size() == task_info.attributes.length)
-                    {
-                        readRegs(servers[server_id],message);
-                    }
-                    break;
-                
-                case ClientTasks::reg_write:
-                    if(responce_data.size() == task_info.attributes.length)
-                    {
-                        std::printf("register write successfull. \n");
-                    }
-                    break;
-                
-                case ClientTasks::info_download:
-                    if(responce_data.size() == task_info.attributes.length)
-                    {
-                        std::printf("record %d readed. \n",task_info.counter);
-                    }
-                    else
-                    {
-                        std::printf("expected length : %d ;\n",task_info.attributes.length);
-                        std::printf("actual length : %d ;\n",responce_data.size());
-                    }
-                    break;
-
-                default:
-                
-                    break;
+                task_info.error_code = make_error_code(ClientErrors::server_exception);
             }
+            else
+            {
+                switch(task_info.task)
+                {
+                    case ClientTasks::ping:
+                        servers[server_id].info.status = ServerStatus::Available;
+                        break;
+                    
+                    case ClientTasks::regs_download:
+                        readRegs(servers[server_id],message);
+                        break;
+                    
+                    case ClientTasks::info_download:
+                        if(!file.getRecordFromMessage(message))
+                        {
+                            task_info.error_code = make_error_code(ClientErrors::internal);
+                        }
+                        else
+                        {
+                            if(file.isFileReady())
+                            {
+                                std::memcpy(&servers[server_id].data,&file.getData()[0],sizeof(BootloaderInfo));
+                            }
+                        }
+                        break;
+
+                    default:
+                        task_info.error_code = make_error_code(ClientErrors::internal);
+                        break;
+                }
+            }
+
             if(task_info.counter == task_info.num_of_exchanges){task_info.done = true;}
         }
         else
         {
-            std::printf("CRC error! \n");
-            task_info.error_code = make_error_code(ClientErrors::crc_error);
+            task_info.error_code = make_error_code(ClientErrors::bad_crc);
             task_info.done = true;
         }
     }
@@ -333,24 +333,11 @@ namespace sm
 
     void Client::callServerExchange()
     {
-        responce_data.clear();
-        //write to server
-        for(auto & byte : request_data)
-        {
-            std::printf("%d ",byte);
-        }
-        std::printf("\n");
-        
+        responce_data.clear();        
         try{serial_port.port.writeBinary(request_data);}
         catch(const std::system_error& e){task_info.error_code = e.code();}
         //read from server
         try{serial_port.port.readBinary(responce_data,task_info.attributes.length);}
         catch(const std::system_error& e){task_info.error_code = e.code();}
-        for(auto & byte : responce_data)
-        {
-            std::printf("%d ",byte);
-        }
-        std::printf("\n");
-        
     }
 }
