@@ -17,6 +17,9 @@ int main()
     sm::ServerData server_data;
     sm::Client client;
     
+    client.uploadApp("test.bin");
+
+    
     std::error_code error;
     sp::PortConfig config;
     config.baudrate = sp::PortBaudRate::BD_19200;
@@ -50,6 +53,7 @@ int main()
     std::printf("boot version  : %s \n",server_data.data.boot_version);
     std::printf("available ROM : %d KB \n",server_data.data.available_rom/1024);
     
+    /*
     std::printf("app erase request... \n");
     error = client.eraseApp(); 
     if(error)
@@ -58,6 +62,6 @@ int main()
         std::cout<<"error: "<<error.message()<<"\n";
         return 0;
     }
-
+    */
     return 0;
 }

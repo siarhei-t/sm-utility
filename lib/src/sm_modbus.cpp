@@ -8,7 +8,6 @@
  */
 
 #include "../inc/sm_modbus.hpp"
-#include "sm_modbus.hpp"
 
 namespace
 {

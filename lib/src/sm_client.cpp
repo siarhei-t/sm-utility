@@ -122,6 +122,12 @@ namespace sm
         }
         return task_info.error_code;
     }
+    
+    std::error_code& Client::uploadApp(const std::string path_to_file)
+    {
+        file.fileWriteSetup(path_to_file,0x40);
+        return task_info.error_code;
+    }
 
     void Client::disconnect()
     {

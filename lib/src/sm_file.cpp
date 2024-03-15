@@ -10,7 +10,7 @@
 
 #include "../inc/sm_file.hpp"
 #include <iostream>
-
+#include <cstring>
 
 namespace sm
 {
@@ -27,7 +27,7 @@ namespace sm
     bool File::fileReadSetup(const size_t file_size, const std::uint8_t record_size)
     {
         if(data){fileDelete();}
-        data =  std::unique_ptr<std::uint8_t>(new std::uint8_t(file_size));    
+        data =  std::unique_ptr<std::uint8_t>(new std::uint8_t[file_size]);
         this->file_size = file_size;
         this->record_size = record_size;
         num_of_records = calcNumOfRecords(file_size);
@@ -37,9 +37,29 @@ namespace sm
 
     bool File::fileWriteSetup(const std::string path_to_file, const std::uint8_t record_size)
     {
-        (void)(path_to_file);
-        (void)(record_size);
-        return false;
+        if(data){fileDelete();}
+        size_t length = 0;
+        std::ifstream tmp (path_to_file, std::ifstream::binary);
+        if(tmp)
+        {
+            tmp.seekg (0, tmp.end);
+            length = tmp.tellg();
+            tmp.seekg (0, tmp.beg);
+            data = std::unique_ptr<std::uint8_t>(new std::uint8_t[length]);
+            //load all file to RAM buffer at one time
+            tmp.read(reinterpret_cast <char*>(&data.get()[0]),length);                
+            if(tmp){file_size = length;}
+            else{file_size = tmp.gcount();}
+            tmp.close();
+            std::cout<<"file size : "<<file_size<<" bytes \n";     
+        }
+        if(file_size == length)
+        {
+            this->record_size = record_size;
+            num_of_records = calcNumOfRecords(file_size);
+            return true;
+        }
+        else{return false;}
     }
 
     bool File::getRecordFromMessage(const std::vector<std::uint8_t>& message)

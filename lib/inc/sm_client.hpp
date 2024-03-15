@@ -65,7 +65,6 @@ namespace sm
         regs_download,
         reg_write,
         info_download,
-        app_erase, 
         app_upload,
         app_download,
         app_start
@@ -140,6 +139,10 @@ namespace sm
             /// @brief erase firmware on the server
             /// @return error code
             std::error_code& eraseApp();
+            /// @brief upload new firmware
+            /// @param path_to_file path to file
+            /// @return error code
+            std::error_code& uploadApp(const std::string path_to_file);
             /// @brief diconnect from server
             void disconnect();
             /// @brief 
