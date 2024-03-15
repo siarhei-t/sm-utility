@@ -62,7 +62,7 @@ size_t SerialPortLinux::readBinary(std::vector<std::uint8_t>& data, size_t lengt
     data.resize(length);
     while(bytes_to_read != 0)
     {
-        size_t n = read(port_desc, &(data.data()[bytes_read]), bytes_to_read);
+        size_t n = read(port_desc, data.data() + bytes_read, bytes_to_read);
         std::printf("bytes readed : %d \n",n);
         if(n < 0){throw std::system_error(sp::make_error_code(errno));}
         else if((n > 0) && (n <= bytes_to_read))//reading 

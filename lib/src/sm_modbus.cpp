@@ -20,6 +20,27 @@ namespace
         arr.push_back((value >> 8) & 0xFF);
         arr.push_back(value & 0xFF);
     }
+    
+    struct Sizes
+    {
+        int start_size;
+        int stop_size;
+        int adu_size;
+    };
+
+    Sizes get_sizes(ModbusMode mode)
+    {
+        switch (mode)
+        {
+        case ModbusMode::ascii:
+        return Sizes{1, 2, 3};
+        case ModbusMode::rtu:
+        return Sizes{4, 5, 6};
+        // no default => warning if not all enums specified
+        }
+        return {};
+    }
+
 }
 
 namespace modbus
@@ -130,7 +151,7 @@ namespace modbus
             
             case ModbusMode::ascii:
                 start = ascii_start_size;
-                stop  = ascii_stop_size;;
+                stop  = ascii_stop_size;
                 break;
             
             default:

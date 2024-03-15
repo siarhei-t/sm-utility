@@ -27,12 +27,11 @@ namespace sm
     bool File::fileReadSetup(const size_t file_size, const std::uint8_t record_size)
     {
         if(data){fileDelete();}
-        data =  std::unique_ptr<std::uint8_t>(new std::uint8_t[file_size]);
+        data = std::make_unique<std::uint8_t[]>(file_size);
         this->file_size = file_size;
         this->record_size = record_size;
         num_of_records = calcNumOfRecords(file_size);
-        if(!data){return false;}
-        else{return true;}
+        return data != nullptr;
     }
 
     bool File::fileWriteSetup(const std::string path_to_file, const std::uint8_t record_size)
@@ -42,16 +41,17 @@ namespace sm
         std::ifstream tmp (path_to_file, std::ifstream::binary);
         if(tmp)
         {
+            //move to separate function
             tmp.seekg (0, tmp.end);
             length = tmp.tellg();
             tmp.seekg (0, tmp.beg);
-            data = std::unique_ptr<std::uint8_t>(new std::uint8_t[length]);
+
+            data = std::make_unique<std::uint8_t[]>(length);
             //load all file to RAM buffer at one time
-            tmp.read(reinterpret_cast <char*>(&data.get()[0]),length);                
+            tmp.read(reinterpret_cast <char*>(data.get()),length);                
             if(tmp){file_size = length;}
             else{file_size = tmp.gcount();}
-            tmp.close();
-            std::cout<<"file size : "<<file_size<<" bytes \n";     
+            tmp.close();    
         }
         if(file_size == length)
         {
@@ -70,9 +70,9 @@ namespace sm
 
         if(static_cast<size_t>(record_idx + data_size) <= file_size)
         {
-            std::copy(&message[data_idx],
-                      &message[data_idx + data_size],
-                      &data.get()[record_idx]);
+            std::copy(message.data() + data_idx ,
+                      message.data()+ data_idx + data_size,
+                      data.get() + record_idx);
             ++counter;
             if(counter == num_of_records){ready = true;}
             return true;

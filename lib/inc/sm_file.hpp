@@ -49,7 +49,7 @@ namespace sm
             std::uint8_t* getData() const {return data.get();}
         
         private:
-            std::unique_ptr<std::uint8_t> data;
+            std::unique_ptr<std::uint8_t[]> data;
             size_t file_size = 0;
             std::uint16_t num_of_records = 0;
             std::uint16_t counter = 0;

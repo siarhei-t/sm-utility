@@ -122,27 +122,27 @@ namespace sm
     class Client
     {
         public:
-            Client();
+            Client() : client_thread(&Client::clientThread,this){}
             ~Client();
             /// @brief start client
             /// @param device device name to use
             /// @return error code
-            std::error_code& start(std::string device);
+            std::error_code start(std::string device);
             /// @brief client device configure
             /// @param config used config
             /// @return error code
-            std::error_code& configure(sp::PortConfig config);
+            std::error_code configure(sp::PortConfig config);
             /// @brief connect to server with selected id
             /// @param address server address
             /// @return error code
-            std::error_code& connect(const std::uint8_t address);
+            std::error_code connect(const std::uint8_t address);
             /// @brief erase firmware on the server
             /// @return error code
-            std::error_code& eraseApp();
+            std::error_code eraseApp();
             /// @brief upload new firmware
             /// @param path_to_file path to file
             /// @return error code
-            std::error_code& uploadApp(const std::string path_to_file);
+            std::error_code uploadApp(const std::string path_to_file);
             /// @brief diconnect from server
             void disconnect();
             /// @brief 
@@ -165,7 +165,7 @@ namespace sm
             /// @brief connected server index in servers
             int server_id = not_connected;
             /// @brief client-server data thread
-            std::unique_ptr<std::thread> client_thread;
+            std::thread client_thread;
             /// @brief logic semaphore to stop client_thread
             std::atomic<bool> thread_stop{false};
             /// @brief async client task variable

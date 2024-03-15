@@ -14,15 +14,11 @@
 
 namespace sm
 {
-    Client::Client()
-    {
-        client_thread = std::make_unique<std::thread>(std::thread(&Client::clientThread,this));
-    }
     
     Client::~Client()
     {
         thread_stop.store(true, std::memory_order_relaxed);
-        client_thread->join();
+        client_thread.join();
     }
 
     void Client::getServerData(ServerData& data)
@@ -33,7 +29,7 @@ namespace sm
         }
     }
 
-    std::error_code& Client::start(std::string device)
+    std::error_code Client::start(std::string device)
     {
         task_info.error_code = std::error_code();
         
@@ -53,13 +49,13 @@ namespace sm
         return task_info.error_code;
     }
 
-    std::error_code& Client::configure(sp::PortConfig config)
+    std::error_code Client::configure(sp::PortConfig config)
     {
         task_info.error_code = serial_port.setup(config);
         return task_info.error_code;
     }
 
-    std::error_code& Client::connect(const std::uint8_t address)
+    std::error_code Client::connect(const std::uint8_t address)
     {
         //server is not selected yet
         if(server_id == not_connected){addServer(address);}
@@ -70,22 +66,18 @@ namespace sm
         {
             //ping server if it is not connected
             task_info = TaskInfo(ClientTasks::ping,1);
-            auto lambda = [this]() 
-            {
-                q_exchange.push([this]{ping();});
-            };
-            q_task.push(lambda);
-            while(!task_info.done);
+            q_task.push([this](){ q_exchange.push([this]{ ping(); }); });
+            while (!task_info.done);
         }
         if(task_info.error_code){return task_info.error_code;}
-        //download registers
-        if(servers[server_id].info.status == ServerStatus::Available)
+        if (servers[server_id].info.status == ServerStatus::Available)
         {
+            //download registers
             task_info = TaskInfo(ClientTasks::regs_download,1);
             q_task.push([this](){q_exchange.push([this]{readRegisters(0,amount_of_regs);});}); 
-            while(!task_info.done);
+            while (!task_info.done);
         }
-        if(task_info.error_code.value()){return task_info.error_code;}
+        if (task_info.error_code.value()) { return task_info.error_code; }
         //download file with general information  
         //prepare to read
         task_info = TaskInfo(ClientTasks::reg_write,1);
@@ -95,14 +87,12 @@ namespace sm
         task_info = TaskInfo();
         q_task.push([this](){readFile(ServerFiles::info);});
         while(!task_info.done);
-        
         return task_info.error_code;
     }
 
-    std::error_code& Client::eraseApp()
+    std::error_code Client::eraseApp()
     {
         task_info.error_code = make_error_code(ClientErrors::server_not_connected);
-
         if(server_id != not_connected)
         {
             if(servers[server_id].info.status == ServerStatus::Available)
@@ -123,9 +113,20 @@ namespace sm
         return task_info.error_code;
     }
     
-    std::error_code& Client::uploadApp(const std::string path_to_file)
+    std::error_code Client::uploadApp(const std::string path_to_file)
     {
-        file.fileWriteSetup(path_to_file,0x40);
+        task_info.error_code = make_error_code(ClientErrors::server_not_connected);
+        if(server_id != not_connected)
+        {
+            if(servers[server_id].info.status == ServerStatus::Available)
+            {
+                
+                if(file.fileWriteSetup(path_to_file,servers[server_id].regs[static_cast<int>(ServerRegisters::record_size)]))
+                {
+                    
+                }
+            }
+        }
         return task_info.error_code;
     }
 
