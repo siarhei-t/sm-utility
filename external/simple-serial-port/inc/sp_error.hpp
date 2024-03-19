@@ -1,7 +1,7 @@
 /**
  * @file sp_error.hpp
  *
- * @brief 
+ * @brief custom system error code generator
  *
  * @author Siarhei Tatarchanka
  *
@@ -14,12 +14,12 @@
 
 namespace sp
 {
-    const std::error_category& sp_category();
-    
-    inline std::error_code make_error_code(int error) noexcept
-    {
-         return std::error_code(error, sp_category());
-    }
-}
+const std::error_category& sp_category();
 
-#endif //SP_ERROR_H
+inline std::error_code make_error_code(int error) noexcept
+{
+    return std::error_code(error, sp_category());
+}
+} // namespace sp
+
+#endif // SP_ERROR_H

@@ -1,5 +1,7 @@
 # simple-serial-port
 
+[![CMake](https://github.com/gbmhunter/CppLinuxSerial/actions/workflows/cmake.yml/badge.svg)](https://github.com/gbmhunter/CppLinuxSerial/actions/workflows/cmake.yml)
+
 A small library written in modern C++ for working with a serial port with limited configuration options, designed to work with chips such as ft232, ch340, etc. Can be built for Windows and Linux.
 
 ## Table of contents

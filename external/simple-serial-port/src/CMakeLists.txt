@@ -14,7 +14,6 @@ message("target platform selected as Windows.")
 set(TARGET_PLATFORM PLATFORM_WINDOWS)
 set(PLATFORM_SOURCES
         sp_windows.cpp
-        sp_error_windows.cpp
 )
 set(PLATFORM_HEADERS
         ../inc/platform/sp_windows.hpp
@@ -26,7 +25,6 @@ message("target platform selected as Linux.")
 set(TARGET_PLATFORM PLATFORM_LINUX)
 set(PLATFORM_SOURCES
         sp_linux.cpp
-        sp_error_linux.cpp
 )
 set(PLATFORM_HEADERS
         ../inc/platform/sp_linux.hpp
@@ -35,7 +33,9 @@ endif()
 
 set(COMMON_SOURCES
         serial_port.cpp
+        sp_error.cpp
 )
+
 set(COMMON_HEADERS
         ../inc/sp_types.hpp
         ../inc/serial_port.hpp
