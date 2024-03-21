@@ -12,7 +12,7 @@
 
 int main()
 {
-    const std::string port = "COM8";
+    const std::string port = "COM1";
     const std::uint8_t address = 1;
     sm::ServerData server_data;
     sm::Client client;

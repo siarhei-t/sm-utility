@@ -23,24 +23,29 @@ namespace
     
     struct Sizes
     {
-        int start_size;
-        int stop_size;
-        int adu_size;
+        int start_seq_size;
+        int stop_seq_size;
+        int adu_header_size;
     };
-
-    Sizes get_sizes(ModbusMode mode)
+    
+    Sizes get_sizes(modbus::ModbusMode mode)
     {
         switch (mode)
         {
-        case ModbusMode::ascii:
-        return Sizes{1, 2, 3};
-        case ModbusMode::rtu:
-        return Sizes{4, 5, 6};
-        // no default => warning if not all enums specified
+        
+            case modbus::ModbusMode::ascii:
+                return Sizes{modbus::ascii_start_size, 
+                             modbus::ascii_stop_size, 
+                             modbus::ascii_adu_size};
+            
+            case modbus::ModbusMode::rtu:
+                return Sizes{modbus::rtu_start_size, 
+                             modbus::rtu_stop_size, 
+                             modbus::rtu_adu_size};
+
         }
         return {};
     }
-
 }
 
 namespace modbus
@@ -98,37 +103,16 @@ namespace modbus
     bool ModbusClient::isChecksumValid(const std::vector<std::uint8_t> &data)
     {
         std::vector<std::uint8_t> message;
-        int start_size = 0;
-        int stop_size = 0;
-        int adu_suze  = 0;
-        switch (mode)
-        {
-            case ModbusMode::rtu:    
-                start_size = rtu_start_size;
-                stop_size  = rtu_stop_size;
-                adu_suze   = rtu_adu_size;
-                break;
+        Sizes sizes = get_sizes(mode);
 
-            case ModbusMode::ascii:
-                start_size = ascii_start_size;
-                stop_size  = ascii_stop_size;
-                adu_suze   = ascii_adu_size;
-                break;
-
-            default:
-                start_size = 0;
-                stop_size  = 0;
-                adu_suze   = 0;
-                break;
-        }
-        const int crc_idx = data.size() - stop_size - crc_size;
-        if(data.size() <= static_cast<size_t>(adu_suze))
+        const int crc_idx = data.size() - sizes.stop_seq_size - crc_size;
+        if(data.size() <= static_cast<size_t>(sizes.adu_header_size))
         {
             return false; //undefined data in vector
         }
         else
         {
-            message.insert(message.end(),data.begin() + start_size,data.end() - stop_size - crc_size);  
+            message.insert(message.end(),data.begin() + sizes.start_seq_size,data.end() - sizes.stop_seq_size - crc_size);  
             std::uint16_t rec_crc = data[crc_idx];
                         rec_crc = (rec_crc<<8)| data[crc_idx + 1];        
             std::uint16_t actual_crc = crc16(message);
@@ -139,33 +123,14 @@ namespace modbus
 
     void ModbusClient::extractData(const std::vector<std::uint8_t> &data, std::vector<std::uint8_t> &message)
     {
-        int start = 0;
-        int stop  = 0;
-
-        switch(getMode())
-        {
-            case ModbusMode::rtu:
-                start = rtu_start_size;
-                stop  = rtu_stop_size;
-                break;
-            
-            case ModbusMode::ascii:
-                start = ascii_start_size;
-                stop  = ascii_stop_size;
-                break;
-            
-            default:
-                start = 0;
-                stop  = 0;
-                break;
-        }
-        message.insert(message.end(),data.begin() + start, data.end() - stop);
+        Sizes sizes = get_sizes(mode);
+        message.insert(message.end(),data.begin() + sizes.start_seq_size, data.end() - sizes.stop_seq_size);
     }
     
     std::uint8_t ModbusClient::getRequriedLength() const
     {
         std::uint8_t length;
-        switch(getMode())
+        switch(mode)
         {
             case ModbusMode::rtu:
                 length = rtu_adu_size;
