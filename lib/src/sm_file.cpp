@@ -10,9 +10,25 @@
 #include "../inc/sm_file.hpp"
 #include <cstring>
 #include <iostream>
+#include "sm_file.hpp"
 
 namespace sm
 {
+
+size_t File::getFileSize(const std::string path_to_file) const
+{
+    size_t length = 0;
+    std::ifstream tmp(path_to_file, std::ifstream::binary);
+    if (tmp)
+    {
+        tmp.seekg(0, tmp.end);
+        length = tmp.tellg();
+        tmp.seekg(0, tmp.beg);
+        tmp.close();
+    }
+    return length;
+}
+
 void File::fileDelete()
 {
     data.reset();
@@ -43,33 +59,35 @@ bool File::fileWriteSetup(const std::string path_to_file,
     {
         fileDelete();
     }
-    size_t length = 0;
-    std::ifstream tmp(path_to_file, std::ifstream::binary);
-    if (tmp)
+    size_t length = getFileSize(path_to_file);
+    if(length > 0)
     {
-        // move to separate function
-        tmp.seekg(0, tmp.end);
-        length = tmp.tellg();
-        tmp.seekg(0, tmp.beg);
-
-        data = std::make_unique<std::uint8_t[]>(length);
-        // load all file to RAM buffer at one time
-        tmp.read(reinterpret_cast<char*>(data.get()), length);
+        std::ifstream tmp(path_to_file, std::ifstream::binary);
         if (tmp)
+        {   
+           data = std::make_unique<std::uint8_t[]>(length);
+            // load all file to RAM buffer at one time
+            tmp.read(reinterpret_cast<char*>(data.get()), length);
+            if (tmp)
+            {
+                file_size = length;
+            }
+            else
+            {
+                file_size = tmp.gcount();
+            }
+            tmp.close();
+        }
+        if (file_size == length)
         {
-            file_size = length;
+            this->record_size = record_size;
+            num_of_records = calcNumOfRecords(file_size);
+            return true;
         }
         else
         {
-            file_size = tmp.gcount();
+            return false;
         }
-        tmp.close();
-    }
-    if (file_size == length)
-    {
-        this->record_size = record_size;
-        num_of_records = calcNumOfRecords(file_size);
-        return true;
     }
     else
     {
