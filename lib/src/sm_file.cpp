@@ -8,9 +8,9 @@
  */
 
 #include "../inc/sm_file.hpp"
+#include "sm_file.hpp"
 #include <cstring>
 #include <iostream>
-#include "sm_file.hpp"
 
 namespace sm
 {
@@ -60,12 +60,12 @@ bool File::fileWriteSetup(const std::string path_to_file,
         fileDelete();
     }
     size_t length = getFileSize(path_to_file);
-    if(length > 0)
+    if (length > 0)
     {
         std::ifstream tmp(path_to_file, std::ifstream::binary);
         if (tmp)
-        {   
-           data = std::make_unique<std::uint8_t[]>(length);
+        {
+            data = std::make_unique<std::uint8_t[]>(length);
             // load all file to RAM buffer at one time
             tmp.read(reinterpret_cast<char*>(data.get()), length);
             if (tmp)

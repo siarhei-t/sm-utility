@@ -154,7 +154,7 @@ void ModbusClient::extractData(const std::vector<std::uint8_t>& data,
 
 std::uint8_t ModbusClient::getRequriedLength() const
 {
-    std::uint8_t length;
+    std::uint8_t length = 0;
     switch (mode)
     {
         case ModbusMode::rtu:
@@ -163,10 +163,6 @@ std::uint8_t ModbusClient::getRequriedLength() const
 
         case ModbusMode::ascii:
             length = ascii_adu_size;
-            break;
-
-        default:
-            length = 0;
             break;
     }
     return length;
@@ -197,10 +193,6 @@ void ModbusClient::createMessage(const std::uint8_t addr,
                           &ascii_start[0] + sizeof(ascii_start));
             buffer.insert(buffer.end(), &ascii_stop[0],
                           &ascii_stop[0] + sizeof(ascii_stop));
-            break;
-
-        default:
-            buffer.clear();
             break;
     }
 }

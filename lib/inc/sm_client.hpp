@@ -183,6 +183,9 @@ private:
     /// @brief read file from the server with passed id
     /// @param file_id file id
     void readFile(const ServerFiles file_id);
+    /// @brief write file with firmware to server
+    /// @param path_to_file path to file
+    void writeFirmware(const std::string path_to_file);
     /// @brief ping command
     void ping();
     /// @brief write record in file with new data

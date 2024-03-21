@@ -90,7 +90,7 @@ std::error_code Client::connect(const std::uint8_t address)
         while (!task_info.done)
             ;
     }
-    if (task_info.error_code.value())
+    if (task_info.error_code)
     {
         return task_info.error_code;
     }
@@ -161,17 +161,40 @@ std::error_code Client::eraseApp()
 
 std::error_code Client::uploadApp(const std::string path_to_file)
 {
+    (void)path_to_file;
     task_info.error_code = make_error_code(ClientErrors::server_not_connected);
     if (server_id != not_connected)
     {
         if (servers[server_id].info.status == ServerStatus::Available)
         {
-
-            if (file.fileWriteSetup(path_to_file,
-                                    servers[server_id].regs[static_cast<int>(
-                                        ServerRegisters::record_size)]))
+            BootloaderStatus bootloader_status = static_cast<BootloaderStatus>(
+                servers[server_id]
+                    .regs[static_cast<int>(ServerRegisters::boot_status)]);
+            // erase app file if we have some another state except
+            // BootloaderStatus::empty
+            if (bootloader_status != BootloaderStatus::empty)
             {
+                (void)eraseApp();
+                if (task_info.error_code)
+                {
+                    return task_info.error_code;
+                }
             }
+            // prepare file to write
+            task_info = TaskInfo(ClientTasks::reg_write, 1);
+            q_task.push(
+                [this]()
+                {
+                    q_exchange.push(
+                        [this]
+                        {
+                            writeRegister(static_cast<std::uint16_t>(
+                                              ServerRegisters::app_size),
+                                          file.getNumOfRecords());
+                        });
+                });
+            while (!task_info.done)
+                ;
         }
     }
     return task_info.error_code;
@@ -310,6 +333,33 @@ void Client::readRegisters(const std::uint16_t address,
     }
 }
 
+void Client::writeFirmware(const std::string path_to_file)
+{
+    if (server_id == not_connected)
+    {
+        return;
+    }
+    std::uint8_t block_size =
+        servers[server_id].regs[static_cast<int>(ServerRegisters::record_size)];
+    std::uint16_t file_id = static_cast<std::uint16_t>(ServerFiles::app);
+
+    if (file.fileWriteSetup(path_to_file, block_size))
+    {
+        auto num_of_records = file.getNumOfRecords();
+        task_info = TaskInfo(ClientTasks::app_upload, num_of_records);
+        for (auto i = 0; i < num_of_records; ++i)
+        {
+
+            std::vector<uint8_t> data;
+            data.assign(&(file.getData()[i * block_size]),
+                        &(file.getData()[i * block_size]) + block_size);
+            q_exchange.push(
+                [this, data, file_id, i]
+                { writeRecord(file_id, static_cast<std::uint16_t>(i), data); });
+        }
+    }
+}
+
 void Client::readFile(const ServerFiles file_id)
 {
     if (server_id == not_connected)
@@ -330,11 +380,6 @@ void Client::readFile(const ServerFiles file_id)
         case ServerFiles::info:
             file_size = sizeof(BootloaderInfo);
             file_task = ClientTasks::info_download;
-            break;
-
-        default:
-            file_size = 0;
-            file_task = ClientTasks::undefined;
             break;
     }
     if (file.fileReadSetup(file_size, servers[server_id].regs[static_cast<int>(
