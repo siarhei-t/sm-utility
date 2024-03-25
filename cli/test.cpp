@@ -12,7 +12,7 @@
 
 int main()
 {
-    const std::string port = "COM1";
+    const std::string port = "ttyUSB0";
     const std::uint8_t address = 1;
     sm::ServerData server_data;
     sm::Client client;
@@ -53,6 +53,13 @@ int main()
     std::printf("boot version  : %s \n",server_data.data.boot_version);
     std::printf("available ROM : %d KB \n",server_data.data.available_rom/1024);
     
+    error = client.uploadApp("test.bin");
+    if(error)
+    {
+        std::printf("failed to upload firmware. \n");
+        std::cout<<"error: "<<error.message()<<"\n";
+        return 0;
+    }
     /*
     std::printf("app erase request... \n");
     error = client.eraseApp(); 
