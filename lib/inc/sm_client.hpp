@@ -152,6 +152,7 @@ public:
     /// @brief
     /// @param data
     void getServerData(ServerData& data);
+    int getActualTaskProgress() const;
 
 private:
     /// @brief buffer for request message data

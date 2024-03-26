@@ -11,7 +11,7 @@
 #include "../inc/sm_client.hpp"
 
 const std::string interactive_text = "program started in interactive mode, type help for available commands \n";
-const std::string error_text = "unsupported command passed, exit... \n";
+const std::string error_text = "unsupported command passed. \n";
 const std::string input_start = ">";
 const std::string help_text = "help";
 const std::string exit_text = "exit";
@@ -19,6 +19,9 @@ const std::string scanport_text = "scanport";
 const std::string status_text = "status";
 const std::string start_text = "start";
 const std::string connect_text = "connect";
+const std::string disconnect_text = "disconnect";
+const std::string upload_text = "upload";
+const std::string erase_text = "erase";
 
 enum class Commands
 {
@@ -28,11 +31,15 @@ enum class Commands
     scanport,
     start,
     status,
-    connect
+    connect,
+    disconnect,
+    upload,
+    erase
 };
 
 sm::ServerData server_data;
 std::string port = "NULL";
+std::string firmware_file = "NULL";
 std::uint8_t server_address = 0;
 
 static void print_devices(std::vector<std::string>& devices);
@@ -58,6 +65,9 @@ void print_help()
             <<scanport_text<<" - used for scan for available serial ports in system; \n\n"
             <<start_text<<" - start client on selected port, usage example : start COM1; \n\n"
             <<connect_text<<" - connect to server with passed id, usage example : connect 77; \n\n"
+            <<disconnect_text<<" - disconnect from server; \n\n"
+            <<upload_text<<" - upload new firmware to the server, usage example : upload firmware.bin; \n\n"
+            <<erase_text<<" - erase firmware from server; \n\n"
             ;
 }
 
@@ -139,6 +149,40 @@ int main(int argc, char* argv[])
                     }
                     break;
                 
+                case Commands::upload:
+                    error = client.uploadApp(firmware_file);
+                    if(error)
+                    {
+                        std::printf("failed to upload firmware. \n");
+                        std::cout<<"error: "<<error.message()<<"\n";
+                    }
+                    else
+                    {
+                        std::cout<<"new firmware uploaded.\n";
+                    }
+                    break;
+                
+                case Commands::disconnect:
+                    client.disconnect();
+                    client.getServerData(server_data);
+                    std::printf("disconnected from server with id : %d \n",server_address);
+                    server_address = 0;
+                    break;
+                
+                case Commands::erase:
+                    error = client.eraseApp(); 
+                    if(error)
+                    {
+                        std::printf("failed to erase app on server. \n");
+                        std::cout<<"error: "<<error.message()<<"\n";
+                        return 0;
+                    }
+                    else
+                    {
+                         std::cout<<"firmware erased.\n";
+                    }
+                    break;
+
                 case Commands::connect:
                     error = client.connect(server_address);
                     if(error)
@@ -150,7 +194,6 @@ int main(int argc, char* argv[])
                     {
                         client.getServerData(server_data);
                         std::printf("connected to server with id : %d \n",server_address);
-                        client.getServerData(server_data);
                         std::printf("device name   : %s \n",server_data.data.boot_name);
                         std::printf("boot version  : %s \n",server_data.data.boot_version);
                         std::printf("available ROM : %d KB \n",server_data.data.available_rom/1024);
@@ -163,29 +206,6 @@ int main(int argc, char* argv[])
             }
         }
     }
-    return 0;
-
-    
-    /*
-    
-    
-    error = client.uploadApp("test.bin");
-    if(error)
-    {
-        std::printf("failed to upload firmware. \n");
-        std::cout<<"error: "<<error.message()<<"\n";
-        return 0;
-    }
-    /*
-    std::printf("app erase request... \n");
-    error = client.eraseApp(); 
-    if(error)
-    {
-        std::printf("failed to erase app on server. \n");
-        std::cout<<"error: "<<error.message()<<"\n";
-        return 0;
-    }
-    */
     return 0;
 }
 
@@ -207,10 +227,11 @@ Commands process_cmd(std::string& str)
         }
         argv.push_back(arg);
     };
+
+    Commands cmd = Commands::unknown;
     std::vector<std::string> argv;
     get_argv(argv,str);
 
-    Commands cmd = Commands::unknown;
     if(argv[0] == help_text)
     {
         cmd = Commands::help;
@@ -227,6 +248,14 @@ Commands process_cmd(std::string& str)
     {
         cmd = Commands::status;
     }
+    if(argv[0] == erase_text)
+    {
+        cmd = Commands::erase;
+    }
+    if(argv[0] == disconnect_text)
+    {
+        cmd = Commands::disconnect;
+    }
     if(argv[0] == connect_text)
     {
         if(argv.size() == 2)
@@ -240,6 +269,14 @@ Commands process_cmd(std::string& str)
             {
                 std::cerr << e.what() << '\n';
             }
+        }
+    }
+    if(argv[0] == upload_text)
+    {
+        if(argv.size() == 2)
+        {
+            firmware_file = argv[1];
+            cmd = Commands::upload;
         }
     }
     if(argv[0] == start_text)

@@ -29,6 +29,11 @@ void Client::getServerData(ServerData& data)
     }
 }
 
+int Client::getActualTaskProgress() const 
+{ 
+    return (task_info.counter * 100)/task_info.num_of_exchanges; 
+}
+
 std::error_code Client::start(std::string device)
 {
     task_info.error_code = std::error_code();
@@ -425,7 +430,11 @@ void Client::exchangeCallback()
                         }
                     }
                     break;
+
                 case ClientTasks::app_upload:
+                    std::printf("progress: %d% \r",getActualTaskProgress());
+                    break;
+
                 default:
                     //nothing to to for now
                     break;
