@@ -17,6 +17,8 @@ const std::string help_text = "help";
 const std::string exit_text = "exit";
 const std::string scanport_text = "scanport";
 const std::string status_text = "status";
+const std::string start_text = "start";
+const std::string connect_text = "connect";
 
 enum class Commands
 {
@@ -24,15 +26,14 @@ enum class Commands
     help,
     exit,
     scanport,
-    status
+    start,
+    status,
+    connect
 };
 
-//struct used to store server data
 sm::ServerData server_data;
-//serial port address in system
 std::string port = "NULL";
-//server address
-std::uint8_t address = 0;
+std::uint8_t server_address = 0;
 
 static void print_devices(std::vector<std::string>& devices);
 static void print_help();
@@ -55,6 +56,8 @@ void print_help()
             <<exit_text<<" - used to exit from program; \n\n"
             <<status_text<<" - print actual client status; \n\n"
             <<scanport_text<<" - used for scan for available serial ports in system; \n\n"
+            <<start_text<<" - start client on selected port, usage example : start COM1; \n\n"
+            <<connect_text<<" - connect to server with passed id, usage example : connect 77; \n\n"
             ;
 }
 
@@ -63,7 +66,7 @@ void print_status()
     std::cout<<"used port : "<<port<<"\n";
     if(server_data.info.status == sm::ServerStatus::Available)
     {
-        std::cout<<"connected to server with id  : "<<server_data.info.addr<<"\n";
+        std::printf("connected to server with id : %d \n",server_address);
     }
     else
     {
@@ -73,13 +76,20 @@ void print_status()
 
 int main(int argc, char* argv[])
 {
+    std::error_code error;
+    sp::PortConfig config;
+
     //instance used to search for available serial ports
     sp::SerialDevice serial_device;
     //main client instance
-    //sm::Client client;
+    sm::Client client;
     //vector with available serial ports
     std::vector<std::string> devices;
     
+    //hardcoded port parameters
+    config.baudrate = sp::PortBaudRate::BD_19200;
+    config.timeout_ms = 2000;
+
     if(argc == 1)
     {
         std::cout<<interactive_text;
@@ -96,6 +106,7 @@ int main(int argc, char* argv[])
                     break;
                 
                 case Commands::status:
+                    client.getServerData(server_data);
                     print_status();
                     break;
 
@@ -109,10 +120,46 @@ int main(int argc, char* argv[])
                     std::cout<<"program stopped, exit.\n";
                     return 0;
                 
+                case Commands::start:
+                    error = client.start(port);
+                    if(error)
+                    {
+                        std::cout<<"failed to start client. \n"; 
+                        std::cout<<"error: "<<error.message()<<"\n";
+                    }
+                    error = client.configure(config);
+                    if(error)
+                    {
+                        std::cout<<"failed to configure client. \n";
+                        std::cout<<"error: "<<error.message()<<"\n";
+                    }
+                    else
+                    {
+                        std::cout<<"client started at "<<port<<" ...\n";
+                    }
+                    break;
+                
+                case Commands::connect:
+                    error = client.connect(server_address);
+                    if(error)
+                    {
+                        std::printf("failed to conect to server. \n");
+                        std::cout<<"error: "<<error.message()<<"\n";
+                    }
+                    else
+                    {
+                        client.getServerData(server_data);
+                        std::printf("connected to server with id : %d \n",server_address);
+                        client.getServerData(server_data);
+                        std::printf("device name   : %s \n",server_data.data.boot_name);
+                        std::printf("boot version  : %s \n",server_data.data.boot_version);
+                        std::printf("available ROM : %d KB \n",server_data.data.available_rom/1024);
+                    }
+                    break;
+
                 case Commands::unknown:
                 default:    
                     std::cout<<error_text;
-                    return 0;
             }
         }
     }
@@ -120,38 +167,7 @@ int main(int argc, char* argv[])
 
     
     /*
-    std::error_code error;
-    sp::PortConfig config;
-    config.baudrate = sp::PortBaudRate::BD_19200;
-    config.timeout_ms = 2000;
-
-    error = client.start(port);
-    if(error)
-    {
-        std::printf("failed to start client. \n"); 
-        std::cout<<"error: "<<error.message()<<"\n";
-        return 0;
-    }
-    error = client.configure(config);
-    if(error)
-    {
-        std::printf("failed to configure client. \n");
-        std::cout<<"error: "<<error.message()<<"\n";
-        return 0;
-    }
-    error = client.connect(address);
-    if(error)
-    {
-        std::printf("failed to conect to server. \n");
-        std::cout<<"error: "<<error.message()<<"\n";
-        return 0;
-    }
-
-    std::printf("connected to server with id : %d \n",address);
-    client.getServerData(server_data);
-    std::printf("device name   : %s \n",server_data.data.boot_name);
-    std::printf("boot version  : %s \n",server_data.data.boot_version);
-    std::printf("available ROM : %d KB \n",server_data.data.available_rom/1024);
+    
     
     error = client.uploadApp("test.bin");
     if(error)
@@ -174,23 +190,65 @@ int main(int argc, char* argv[])
 }
 
 Commands process_cmd(std::string& str) 
-{
+{    
+    auto get_argv = [](std::vector<std::string>& argv, std::string& str)
+    {
+        std::string arg = "";
+        for (auto x : str) 
+        {
+            if (x == ' ')
+            {
+                argv.push_back(arg);
+                arg = "";
+            }
+            else {
+                arg = arg + x;
+            }
+        }
+        argv.push_back(arg);
+    };
+    std::vector<std::string> argv;
+    get_argv(argv,str);
+
     Commands cmd = Commands::unknown;
-    if(str == help_text)
+    if(argv[0] == help_text)
     {
         cmd = Commands::help;
     }
-    if(str == exit_text)
+    if(argv[0] == exit_text)
     {
         cmd = Commands::exit;
     }
-    if(str == scanport_text)
+    if(argv[0] == scanport_text)
     {
         cmd = Commands::scanport;
     }
-    if(str == status_text)
+    if(argv[0] == status_text)
     {
         cmd = Commands::status;
+    }
+    if(argv[0] == connect_text)
+    {
+        if(argv.size() == 2)
+        {
+            try
+            {
+                server_address = std::stoi(argv[1]);
+                cmd = Commands::connect;
+            }
+            catch(const std::exception& e)
+            {
+                std::cerr << e.what() << '\n';
+            }
+        }
+    }
+    if(argv[0] == start_text)
+    {
+        if(argv.size() == 2)
+        {
+            port = argv[1];
+            cmd = Commands::start;
+        }
     }
     return cmd; 
 }
