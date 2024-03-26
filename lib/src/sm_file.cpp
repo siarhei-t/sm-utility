@@ -52,8 +52,7 @@ bool File::fileReadSetup(const size_t file_size, const std::uint8_t record_size)
     return data != nullptr;
 }
 
-bool File::fileWriteSetup(const std::string path_to_file,
-                          const std::uint8_t record_size)
+bool File::fileWriteSetup(const std::string path_to_file, const std::uint8_t record_size)
 {
     if (data)
     {
@@ -103,9 +102,7 @@ bool File::getRecordFromMessage(const std::vector<std::uint8_t>& message)
 
     if (static_cast<size_t>(record_idx + data_size) <= file_size)
     {
-        std::copy(message.data() + data_idx,
-                  message.data() + data_idx + data_size,
-                  data.get() + record_idx);
+        std::copy(message.data() + data_idx, message.data() + data_idx + data_size, data.get() + record_idx);
         ++counter;
         if (counter == num_of_records)
         {
@@ -124,9 +121,7 @@ std::uint16_t File::calcNumOfRecords(const size_t file_size) const
     std::uint16_t num_of_records = 0;
     if ((record_size > 0) && (file_size > 0))
     {
-        num_of_records = (file_size % record_size)
-                             ? ((file_size / record_size) + 1)
-                             : (file_size / record_size);
+        num_of_records = (file_size % record_size) ? ((file_size / record_size) + 1) : (file_size / record_size);
         if (num_of_records > modbus::max_num_of_records)
         {
             num_of_records = 0;
@@ -142,8 +137,7 @@ std::uint16_t File::getActualRecordLength(const int index) const
     {
         if ((index + 1) == num_of_records)
         {
-            length = (file_size == record_size) ? (file_size)
-                                                : (file_size % record_size);
+            length = (file_size == record_size) ? (file_size) : (file_size % record_size);
         }
         else
         {

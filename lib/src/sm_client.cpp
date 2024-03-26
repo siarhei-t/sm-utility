@@ -73,8 +73,7 @@ std::error_code Client::connect(const std::uint8_t address)
         // ping server if it is not connected
         task_info = TaskInfo(ClientTasks::ping, 1);
         q_task.push([this]() { q_exchange.push([this] { ping(); }); });
-        while (!task_info.done)
-            ;
+        while (!task_info.done);
     }
     if (task_info.error_code)
     {
@@ -84,11 +83,8 @@ std::error_code Client::connect(const std::uint8_t address)
     {
         // download registers
         task_info = TaskInfo(ClientTasks::regs_download, 1);
-        q_task.push(
-            [this]()
-            { q_exchange.push([this] { readRegisters(0, amount_of_regs); }); });
-        while (!task_info.done)
-            ;
+        q_task.push([this]() { q_exchange.push([this] { readRegisters(0, amount_of_regs); }); });
+        while (!task_info.done);
     }
     if (task_info.error_code)
     {
@@ -97,24 +93,13 @@ std::error_code Client::connect(const std::uint8_t address)
     // download file with general information
     // prepare to read
     task_info = TaskInfo(ClientTasks::reg_write, 1);
-    q_task.push(
-        [this]()
-        {
-            q_exchange.push(
-                [this]
-                {
-                    writeRegister(static_cast<std::uint16_t>(
-                                      ServerRegisters::file_control),
-                                  file_read_prepare);
-                });
-        });
-    while (!task_info.done)
-        ;
+    q_task.push([this]() { q_exchange.push([this] { writeRegister(static_cast<std::uint16_t>(ServerRegisters::file_control), file_read_prepare); }); });
+    while (!task_info.done);
     // reading
     task_info = TaskInfo();
     q_task.push([this]() { readFile(ServerFiles::info); });
-    while (!task_info.done)
-        ;
+    while (!task_info.done);
+
     return task_info.error_code;
 }
 
@@ -127,30 +112,12 @@ std::error_code Client::eraseApp()
         {
             // erase request
             task_info = TaskInfo(ClientTasks::reg_write, 1);
-            q_task.push(
-                [this]()
-                {
-                    q_exchange.push(
-                        [this]
-                        {
-                            writeRegister(static_cast<std::uint16_t>(
-                                              ServerRegisters::app_erase),
-                                          app_erase_request);
-                        });
-                });
-            while (!task_info.done)
-                ;
+            q_task.push([this]() { q_exchange.push([this] { writeRegister(static_cast<std::uint16_t>(ServerRegisters::app_erase), app_erase_request); }); });
+            while (!task_info.done);
             task_info = TaskInfo(ClientTasks::regs_download, 1);
-            q_task.push(
-                [this]() {
-                    q_exchange.push([this]
-                                    { readRegisters(0, amount_of_regs); });
-                });
-            while (!task_info.done)
-                ;
-            if (servers[server_id]
-                    .regs[static_cast<int>(ServerRegisters::boot_status)] !=
-                static_cast<std::uint16_t>(BootloaderStatus::empty))
+            q_task.push([this]() { q_exchange.push([this] { readRegisters(0, amount_of_regs); }); });
+            while (!task_info.done);
+            if (servers[server_id].regs[static_cast<int>(ServerRegisters::boot_status)] != static_cast<std::uint16_t>(BootloaderStatus::empty))
             {
                 task_info.error_code = make_error_code(ClientErrors::internal);
             }
@@ -166,9 +133,7 @@ std::error_code Client::uploadApp(const std::string path_to_file)
     {
         if (servers[server_id].info.status == ServerStatus::Available)
         {
-            BootloaderStatus bootloader_status = static_cast<BootloaderStatus>(
-                servers[server_id]
-                    .regs[static_cast<int>(ServerRegisters::boot_status)]);
+            BootloaderStatus bootloader_status = static_cast<BootloaderStatus>(servers[server_id].regs[static_cast<int>(ServerRegisters::boot_status)]);
             // erase app file if we have some another state except
             // BootloaderStatus::empty
             if (bootloader_status != BootloaderStatus::empty)
@@ -184,53 +149,28 @@ std::error_code Client::uploadApp(const std::string path_to_file)
             {
                 // send file size
                 task_info = TaskInfo(ClientTasks::reg_write, 1);
-                q_task.push(
-                    [this]()
-                    {
-                        q_exchange.push(
-                            [this]
-                            {
-                                writeRegister(static_cast<std::uint16_t>(
-                                                  ServerRegisters::app_size),
-                                              file.getNumOfRecords());
-                            });
-                    });
+                q_task.push([this]()
+                            { q_exchange.push([this] { writeRegister(static_cast<std::uint16_t>(ServerRegisters::app_size), file.getNumOfRecords()); }); });
                 while (!task_info.done);
                 // prepare to write
                 task_info = TaskInfo(ClientTasks::reg_write, 1);
-                q_task.push(
-                    [this]()
-                    {
-                        q_exchange.push(
-                            [this]
-                            {
-                                writeRegister(static_cast<std::uint16_t>(
-                                                  ServerRegisters::file_control),
-                                              file_write_prepare);
-                            });
-                    });
+                q_task.push([this]()
+                            { q_exchange.push([this] { writeRegister(static_cast<std::uint16_t>(ServerRegisters::file_control), file_write_prepare); }); });
                 while (!task_info.done);
-                
+
                 // writing
                 task_info = TaskInfo();
-                q_task.push([this,path_to_file]() { writeFile(ServerFiles::app); });
+                q_task.push([this, path_to_file]() { writeFile(ServerFiles::app); });
                 while (!task_info.done);
-                //read status back
+                // read status back
                 task_info = TaskInfo(ClientTasks::regs_download, 1);
-                q_task.push(
-                    [this]() {
-                        q_exchange.push([this]
-                                        { readRegisters(0, amount_of_regs); });
-                    });
+                q_task.push([this]() { q_exchange.push([this] { readRegisters(0, amount_of_regs); }); });
                 while (!task_info.done);
-                //check status again
-                BootloaderStatus bootloader_status = static_cast<BootloaderStatus>(
-                servers[server_id]
-                    .regs[static_cast<int>(ServerRegisters::boot_status)]);
+                // check status again
+                BootloaderStatus bootloader_status = static_cast<BootloaderStatus>(servers[server_id].regs[static_cast<int>(ServerRegisters::boot_status)]);
                 // BootloaderStatus::empty
                 if (bootloader_status != BootloaderStatus::ready)
                 {
-                    std::printf("Actual status : %d",(int)(bootloader_status));
                     task_info.error_code = make_error_code(ClientErrors::internal);
                 }
             }
@@ -254,11 +194,7 @@ void Client::disconnect()
 
 void Client::addServer(const std::uint8_t address)
 {
-    auto it =
-        std::find_if(servers.begin(), servers.end(),
-                     [](ServerData& server) {
-                         return server.info.status == ServerStatus::Unavailable;
-                     });
+    auto it = std::find_if(servers.begin(), servers.end(), [](ServerData& server) { return server.info.status == ServerStatus::Unavailable; });
     if (it != servers.end())
     {
         // use existed slot
@@ -283,6 +219,7 @@ void Client::clientThread()
     {
         while (!q_task.empty())
         {
+            bool error_in_task = false;
             q_task.front()();
             while (!q_exchange.empty())
             {
@@ -293,9 +230,13 @@ void Client::clientThread()
                 }
                 catch (const std::system_error& e)
                 {
-                    std::cerr << e.what() << std::endl;
+                    error_in_task = true;
+                    task_info.error_code = e.code();
                 }
-                exchangeCallback();
+                if(!error_in_task)
+                {
+                    exchangeCallback();
+                }
                 if (task_info.error_code.value())
                 {
                     std::queue<std::function<void()>> empty;
@@ -312,66 +253,49 @@ void Client::clientThread()
     }
 }
 
-void Client::writeRecord(const std::uint16_t file_id,
-                         const std::uint16_t record_id,
-                         const std::vector<std::uint8_t>& data)
+void Client::writeRecord(const std::uint16_t file_id, const std::uint16_t record_id, const std::vector<std::uint8_t>& data)
 {
     if (server_id != not_connected)
     {
-        request_data = modbus_client.msgWriteFileRecord(
-            servers[server_id].info.addr, file_id, record_id, data);
+        request_data = modbus_client.msgWriteFileRecord(servers[server_id].info.addr, file_id, record_id, data);
         // in case of success we expect message with the same length
-        TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::write_file,
-                                             request_data.size());
+        TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::write_file, request_data.size());
         createServerRequest(attr);
     }
 }
 
-void Client::readRecord(const std::uint16_t file_id,
-                        const std::uint16_t record_id,
-                        const std::uint16_t length)
+void Client::readRecord(const std::uint16_t file_id, const std::uint16_t record_id, const std::uint16_t length)
 {
     if (server_id != not_connected)
     {
-        request_data = modbus_client.msgReadFileRecord(
-            servers[server_id].info.addr, file_id, record_id, length);
+        request_data = modbus_client.msgReadFileRecord(servers[server_id].info.addr, file_id, record_id, length);
         // amount of half words + 1 byte for ref type + 1 byte for data length
         // + 1 byte for resp length + 1 byte for func + modbus required part
-        TaskAttributes attr = TaskAttributes(
-            modbus::FunctionCodes::read_file,
-            static_cast<size_t>(modbus_client.getRequriedLength() +
-                                (length * 2) + 4));
+        TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::read_file, static_cast<size_t>(modbus_client.getRequriedLength() + (length * 2) + 4));
         createServerRequest(attr);
     }
 }
 
-void Client::writeRegister(const std::uint16_t address,
-                           const std::uint16_t value)
+void Client::writeRegister(const std::uint16_t address, const std::uint16_t value)
 {
     if (server_id != not_connected)
     {
-        request_data = modbus_client.msgWriteRegister(
-            servers[server_id].info.addr, address, value);
+        request_data = modbus_client.msgWriteRegister(servers[server_id].info.addr, address, value);
         // in case of success we expect message with the same length
-        TaskAttributes attr = TaskAttributes(
-            modbus::FunctionCodes::write_register, request_data.size());
+        TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::write_register, request_data.size());
         createServerRequest(attr);
     }
 }
 
-void Client::readRegisters(const std::uint16_t address,
-                           const std::uint16_t quantity)
+void Client::readRegisters(const std::uint16_t address, const std::uint16_t quantity)
 {
     if (server_id != not_connected)
     {
-        request_data = modbus_client.msgReadRegisters(
-            servers[server_id].info.addr, address, quantity);
+        request_data = modbus_client.msgReadRegisters(servers[server_id].info.addr, address, quantity);
         // amount of 16 bit registers + 1 byte for length + 1 byte for func +
         // modbus required part
-        TaskAttributes attr = TaskAttributes(
-            modbus::FunctionCodes::read_registers,
-            static_cast<size_t>(modbus_client.getRequriedLength() +
-                                (quantity * 2) + 2));
+        TaskAttributes attr =
+            TaskAttributes(modbus::FunctionCodes::read_registers, static_cast<size_t>(modbus_client.getRequriedLength() + (quantity * 2) + 2));
         createServerRequest(attr);
     }
 }
@@ -382,20 +306,16 @@ void Client::writeFile(const ServerFiles file_id)
     {
         return;
     }
-    std::uint8_t block_size =
-        servers[server_id].regs[static_cast<int>(ServerRegisters::record_size)];
+    std::uint8_t block_size = servers[server_id].regs[static_cast<int>(ServerRegisters::record_size)];
     std::uint16_t id = static_cast<std::uint16_t>(file_id);
     auto num_of_records = file.getNumOfRecords();
     task_info = TaskInfo(ClientTasks::app_upload, num_of_records);
     for (auto i = 0; i < num_of_records; ++i)
     {
         std::vector<uint8_t> data;
-        data.assign(&(file.getData()[i * block_size]),
-                    &(file.getData()[i * block_size]) + block_size);
-        
-        q_exchange.push(
-            [this, data, id, i]
-            { writeRecord(id, static_cast<std::uint16_t>(i), data); });
+        data.assign(&(file.getData()[i * block_size]), &(file.getData()[i * block_size]) + block_size);
+
+        q_exchange.push([this, data, id, i] { writeRecord(id, static_cast<std::uint16_t>(i), data); });
     }
 }
 
@@ -411,8 +331,7 @@ void Client::readFile(const ServerFiles file_id)
     switch (file_id)
     {
         case ServerFiles::app:
-            file_size = servers[server_id]
-                            .regs[static_cast<int>(ServerRegisters::app_size)];
+            file_size = servers[server_id].regs[static_cast<int>(ServerRegisters::app_size)];
             file_task = ClientTasks::app_download;
             break;
 
@@ -421,20 +340,15 @@ void Client::readFile(const ServerFiles file_id)
             file_task = ClientTasks::info_download;
             break;
     }
-    if (file.fileReadSetup(file_size, servers[server_id].regs[static_cast<int>(
-                                          ServerRegisters::record_size)]))
+    if (file.fileReadSetup(file_size, servers[server_id].regs[static_cast<int>(ServerRegisters::record_size)]))
     {
         auto num_of_records = file.getNumOfRecords();
         task_info = TaskInfo(file_task, num_of_records);
         for (auto i = 0; i < num_of_records; ++i)
         {
             auto words_in_record = file.getActualRecordLength(i) / 2;
-            q_exchange.push(
-                [this, words_in_record, file_id, i]
-                {
-                    readRecord(static_cast<std::uint16_t>(file_id),
-                               static_cast<std::uint16_t>(i), words_in_record);
-                });
+            q_exchange.push([this, words_in_record, file_id, i]
+                            { readRecord(static_cast<std::uint16_t>(file_id), static_cast<std::uint16_t>(i), words_in_record); });
         }
     }
 }
@@ -444,14 +358,11 @@ void Client::ping()
     if (server_id != not_connected)
     {
         std::uint8_t address = servers[server_id].info.addr;
-        std::uint8_t function =
-            static_cast<uint8_t>(modbus::FunctionCodes::undefined);
+        std::uint8_t function = static_cast<uint8_t>(modbus::FunctionCodes::undefined);
         std::vector<uint8_t> message{0x00, 0x00, 0x00, 0x00};
         request_data = modbus_client.msgCustom(address, function, message);
         // 1 byte for exception + 1 byte for func + modbus required part
-        TaskAttributes attr = TaskAttributes(
-            modbus::FunctionCodes::undefined,
-            static_cast<size_t>(modbus_client.getRequriedLength() + 2));
+        TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::undefined, static_cast<size_t>(modbus_client.getRequriedLength() + 2));
         createServerRequest(attr);
     }
 }
@@ -463,9 +374,7 @@ void Client::exchangeCallback()
         const int id_length = 2;
         const int id_start = 3;
         int counter = 0;
-        if (message[id_start] >
-            (message.size() - (modbus::crc_size + modbus::address_size +
-                               modbus::function_size + 1)))
+        if (message[id_start] > (message.size() - (modbus::crc_size + modbus::address_size + modbus::function_size + 1)))
         {
             return;
         }
@@ -489,8 +398,7 @@ void Client::exchangeCallback()
         modbus_client.extractData(responce_data, message);
         if (responce_data.size() != task_info.attributes.length)
         {
-            task_info.error_code =
-                make_error_code(ClientErrors::server_exception);
+            task_info.error_code = make_error_code(ClientErrors::server_exception);
         }
         else
         {
@@ -507,24 +415,19 @@ void Client::exchangeCallback()
                 case ClientTasks::info_download:
                     if (!file.getRecordFromMessage(message))
                     {
-                        task_info.error_code =
-                            make_error_code(ClientErrors::internal);
+                        task_info.error_code = make_error_code(ClientErrors::internal);
                     }
                     else
                     {
                         if (file.isFileReady())
                         {
-                            std::memcpy(&servers[server_id].data,
-                                        &file.getData()[0],
-                                        sizeof(BootloaderInfo));
+                            std::memcpy(&servers[server_id].data, &file.getData()[0], sizeof(BootloaderInfo));
                         }
                     }
                     break;
                 case ClientTasks::app_upload:
-                    std::printf("record written : %d \n",task_info.counter);
-                    break;
-
                 default:
+                    //nothing to to for now
                     break;
             }
         }
