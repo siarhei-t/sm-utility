@@ -10,7 +10,7 @@
 #include <iostream>
 #include "../inc/sm_client.hpp"
 
-const std::string interactive_text = "program started in interactive mode, type help for available commands \n";
+const std::string interactive_text = "program started in interactive mode, type help for available commands. \n";
 const std::string error_text = "unsupported command passed. \n";
 const std::string input_start = ">";
 const std::string help_text = "help";
@@ -164,9 +164,9 @@ int main(int argc, char* argv[])
                 
                 case Commands::disconnect:
                     client.disconnect();
-                    client.getServerData(server_data);
                     std::printf("disconnected from server with id : %d \n",server_address);
                     server_address = 0;
+                    server_data = sm::ServerData();
                     break;
                 
                 case Commands::erase:
@@ -221,7 +221,8 @@ Commands process_cmd(std::string& str)
                 argv.push_back(arg);
                 arg = "";
             }
-            else {
+            else
+            {
                 arg = arg + x;
             }
         }
