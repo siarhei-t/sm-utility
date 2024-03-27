@@ -43,6 +43,13 @@ std::error_code SerialPort::open(const std::string name)
     return error;
 }
 
+void SerialPort::close()
+{
+    port.closePort();
+    state = sp::PortState::Open;
+    path = "dev/null";
+}
+
 std::error_code SerialPort::setup(sp::PortConfig config)
 {
     std::error_code error(0, sp::sp_category());

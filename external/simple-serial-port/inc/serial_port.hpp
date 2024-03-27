@@ -42,6 +42,8 @@ public:
     /// @param name port name
     /// @return error code
     std::error_code open(const std::string name);
+    /// @brief close port
+    void close();
     /// @brief setup port with passed configuration (if port is open)
     /// @param config port configuration
     /// @return error enum

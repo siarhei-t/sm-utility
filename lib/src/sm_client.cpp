@@ -51,7 +51,7 @@ std::error_code Client::start(std::string device)
     {
         if (device != serial_port.getPath())
         {
-            serial_port.port.closePort();
+            serial_port.close();
             task_info.error_code = serial_port.open(device);
         }
     }
@@ -64,7 +64,7 @@ void Client::stop()
     disconnect();
     if (serial_port.getState() == sp::PortState::Open)
     {
-        serial_port.port.closePort();
+        serial_port.close();
     }
 }
 
