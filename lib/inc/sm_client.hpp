@@ -132,6 +132,8 @@ public:
     /// @param device device name to use
     /// @return error code
     std::error_code start(std::string device);
+    /// @brief stop client, close port
+    void stop();
     /// @brief client device configure
     /// @param config used config
     /// @return error code
@@ -147,6 +149,9 @@ public:
     /// @param path_to_file path to file
     /// @return error code
     std::error_code uploadApp(const std::string path_to_file);
+    /// @brief start application
+    /// @return error code
+    std::error_code startApp();
     /// @brief diconnect from server
     void disconnect();
     /// @brief

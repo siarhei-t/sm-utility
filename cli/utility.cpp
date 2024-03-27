@@ -22,6 +22,7 @@ const std::string connect_text = "connect";
 const std::string disconnect_text = "disconnect";
 const std::string upload_text = "upload";
 const std::string erase_text = "erase";
+const std::string stop_text = "stop";
 
 enum class Commands
 {
@@ -30,6 +31,7 @@ enum class Commands
     exit,
     scanport,
     start,
+    stop,
     status,
     connect,
     disconnect,
@@ -88,15 +90,16 @@ static void print_devices()
 static void print_help()
 {
     std::cout<<"Available commands : \n\n"
-            <<help_text<<" - used for help text output; \n\n"
-            <<exit_text<<" - used to exit from program; \n\n"
-            <<status_text<<" - print actual client status; \n\n"
-            <<scanport_text<<" - used for scan for available serial ports in system; \n\n"
-            <<start_text<<" - start client on selected port, usage example : start COM1; \n\n"
-            <<connect_text<<" - connect to server with passed id, usage example : connect 77; \n\n"
-            <<disconnect_text<<" - disconnect from server; \n\n"
-            <<upload_text<<" - upload new firmware to the server, usage example : upload firmware.bin; \n\n"
-            <<erase_text<<" - erase firmware from server; \n\n"
+            <<"help       - used for help text output; \n\n"
+            <<"exit       - used to exit from program; \n\n"
+            <<"status     - print actual client status; \n\n"
+            <<"scanport   - used for scan for available serial ports in system; \n\n"
+            <<"start      - start client on selected port, usage example : start COM1; \n\n"
+            <<"stop       - stop client, close port; \n\n"
+            <<"connect    - connect to server with passed id, usage example : connect 77; \n\n"
+            <<"disconnect - disconnect from server; \n\n"
+            <<"upload     - upload new firmware to the server, usage example : upload firmware.bin; \n\n"
+            <<"erase      - erase firmware from server; \n\n"
             ;
 }
 
@@ -164,6 +167,10 @@ static Commands parse_str(const std::string& str)
     if(argv[0] == exit_text)
     {
         cmd = Commands::exit;
+    }
+    if(argv[0] == stop_text)
+    {
+        cmd = Commands::stop;
     }
     if(argv[0] == scanport_text)
     {
@@ -239,6 +246,19 @@ static bool execute_cmd(const Commands cmd)
             std::cout<<"program stopped, exit.\n";
             return false;
         
+        case Commands::stop:
+            client.getServerData(server_data);
+            if(server_data.info.status == sm::ServerStatus::Available)
+            {
+                client.disconnect();
+                std::printf("disconnected from server with id : %d \n",server_address);
+                server_address = 0;    
+            }
+            client.stop();
+            port = "NULL";
+            std::cout<<"client stopped.\n";
+            break;
+
         case Commands::start:
             error = client.start(port);
             if(error)
@@ -272,10 +292,17 @@ static bool execute_cmd(const Commands cmd)
             break;
         
         case Commands::disconnect:
-            client.disconnect();
-            std::printf("disconnected from server with id : %d \n",server_address);
-            server_address = 0;
-            server_data = sm::ServerData();
+            client.getServerData(server_data);
+            if(server_data.info.status == sm::ServerStatus::Available)
+            {
+                client.disconnect();
+                std::printf("disconnected from server with id : %d \n",server_address);
+                server_address = 0;    
+            }
+            else
+            {
+                 std::cout<<"client is not connected.\n";
+            }
             break;
         
         case Commands::erase:

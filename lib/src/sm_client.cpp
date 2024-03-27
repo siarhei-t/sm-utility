@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <cstring>
 #include <iostream>
+#include "sm_client.hpp"
 
 namespace sm
 {
@@ -26,6 +27,10 @@ void Client::getServerData(ServerData& data)
     if (server_id != not_connected)
     {
         data = servers[server_id];
+    }
+    else
+    {
+        data = ServerData();
     }
 }
 
@@ -52,6 +57,15 @@ std::error_code Client::start(std::string device)
     }
 
     return task_info.error_code;
+}
+
+void Client::stop() 
+{
+    disconnect();
+    if (serial_port.getState() != sp::PortState::Open)
+    {
+        serial_port.port.closePort();
+    }
 }
 
 std::error_code Client::configure(sp::PortConfig config)

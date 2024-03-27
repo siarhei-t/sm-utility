@@ -8,9 +8,7 @@
  */
 
 #include "../inc/sm_file.hpp"
-#include "sm_file.hpp"
 #include <cstring>
-#include <iostream>
 
 namespace sm
 {
