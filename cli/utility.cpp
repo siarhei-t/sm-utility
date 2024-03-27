@@ -38,17 +38,45 @@ enum class Commands
 };
 
 sm::ServerData server_data;
-std::string port = "NULL";
 std::string firmware_file = "NULL";
+std::string port          = "NULL";
 std::uint8_t server_address = 0;
+std::vector<std::string> devices;
+sp::SerialDevice serial_device;
+sm::Client client; 
+sp::PortConfig config;
 
-static void print_devices(std::vector<std::string>& devices);
-static void print_help();
-static void print_status();
+static void    print_devices();
+static void     print_help();
+static void     print_status();
+static bool     execute_cmd(const Commands cmd);
+static Commands parse_str(const std::string& str);
 
-static Commands process_cmd(std::string& str);
+int main(int argc, char* argv[])
+{
+    //hardcoded port parameters, 19200 bd, 2s timeout
+    config.baudrate = sp::PortBaudRate::BD_19200;
+    config.timeout_ms = 2000;  
 
-static void print_devices(std::vector<std::string>& devices)
+    if(argc == 1)
+    {
+        std::cout<<interactive_text;
+        for (;;)
+        {
+            std::string str;
+            std::cout<<input_start;
+            std::getline(std::cin, str);
+            Commands cmd = parse_str(str);
+            if (!execute_cmd(cmd))
+            {
+                break;
+            }
+        }
+    }
+    return 0;
+}
+
+static void print_devices()
 {
     std::cout<<"Available serial ports: \n";
     for(std::string& device : devices)
@@ -57,7 +85,7 @@ static void print_devices(std::vector<std::string>& devices)
     }
 }
 
-void print_help()
+static void print_help()
 {
     std::cout<<"Available commands : \n\n"
             <<help_text<<" - used for help text output; \n\n"
@@ -72,7 +100,7 @@ void print_help()
             ;
 }
 
-void print_status()
+static void print_status()
 {
     std::cout<<"used port : "<<port<<"\n";
     if(server_data.info.status == sm::ServerStatus::Available)
@@ -105,131 +133,9 @@ void print_status()
     }
 }
 
-int main(int argc, char* argv[])
-{
-    std::error_code error;
-    sp::PortConfig config;
-
-    //instance used to search for available serial ports
-    sp::SerialDevice serial_device;
-    //main client instance
-    sm::Client client;
-    //vector with available serial ports
-    std::vector<std::string> devices;
-    
-    //hardcoded port parameters
-    config.baudrate = sp::PortBaudRate::BD_19200;
-    config.timeout_ms = 2000;
-
-    if(argc == 1)
-    {
-        std::cout<<interactive_text;
-        while(true)
-        {
-            std::string str;
-            std::cout<<input_start;
-            std::getline(std::cin, str);
-            Commands cmd = process_cmd(str);
-            switch(cmd)
-            {
-                case Commands::help:
-                    print_help();
-                    break;
-                
-                case Commands::status:
-                    client.getServerData(server_data);
-                    print_status();
-                    break;
-
-                case Commands::scanport:
-                    serial_device.updateAvailableDevices();
-                    devices = serial_device.getListOfAvailableDevices();
-                    print_devices(devices);
-                    break;
-
-                case Commands::exit:
-                    std::cout<<"program stopped, exit.\n";
-                    return 0;
-                
-                case Commands::start:
-                    error = client.start(port);
-                    if(error)
-                    {
-                        std::cout<<"failed to start client. \n"; 
-                        std::cout<<"error: "<<error.message()<<"\n";
-                    }
-                    error = client.configure(config);
-                    if(error)
-                    {
-                        std::cout<<"failed to configure client. \n";
-                        std::cout<<"error: "<<error.message()<<"\n";
-                    }
-                    else
-                    {
-                        std::cout<<"client started at "<<port<<" ...\n";
-                    }
-                    break;
-                
-                case Commands::upload:
-                    error = client.uploadApp(firmware_file);
-                    if(error)
-                    {
-                        std::printf("failed to upload firmware. \n");
-                        std::cout<<"error: "<<error.message()<<"\n";
-                    }
-                    else
-                    {
-                        std::cout<<"new firmware uploaded.\n";
-                    }
-                    break;
-                
-                case Commands::disconnect:
-                    client.disconnect();
-                    std::printf("disconnected from server with id : %d \n",server_address);
-                    server_address = 0;
-                    server_data = sm::ServerData();
-                    break;
-                
-                case Commands::erase:
-                    error = client.eraseApp(); 
-                    if(error)
-                    {
-                        std::printf("failed to erase app on server. \n");
-                        std::cout<<"error: "<<error.message()<<"\n";
-                        return 0;
-                    }
-                    else
-                    {
-                         std::cout<<"firmware erased.\n";
-                    }
-                    break;
-
-                case Commands::connect:
-                    error = client.connect(server_address);
-                    if(error)
-                    {
-                        std::printf("failed to conect to server. \n");
-                        std::cout<<"error: "<<error.message()<<"\n";
-                    }
-                    else
-                    {
-                        client.getServerData(server_data);
-                        print_status();
-                    }
-                    break;
-
-                case Commands::unknown:
-                default:    
-                    std::cout<<error_text;
-            }
-        }
-    }
-    return 0;
-}
-
-Commands process_cmd(std::string& str) 
+static Commands parse_str(const std::string& str) 
 {    
-    auto get_argv = [](std::vector<std::string>& argv, std::string& str)
+    auto get_argv = [](std::vector<std::string>& argv, const std::string& str)
     {
         std::string arg = "";
         for (auto x : str) 
@@ -307,4 +213,101 @@ Commands process_cmd(std::string& str)
         }
     }
     return cmd; 
+}
+
+static bool execute_cmd(const Commands cmd)
+{
+    std::error_code error;
+    switch(cmd)
+    {
+        case Commands::help:
+            print_help();
+            break;
+        
+        case Commands::status:
+            client.getServerData(server_data);
+            print_status();
+            break;
+
+        case Commands::scanport:
+            serial_device.updateAvailableDevices();
+            devices = serial_device.getListOfAvailableDevices();
+            print_devices();
+            break;
+
+        case Commands::exit:
+            std::cout<<"program stopped, exit.\n";
+            return false;
+        
+        case Commands::start:
+            error = client.start(port);
+            if(error)
+            {
+                std::cout<<"failed to start client. \n"; 
+                std::cout<<"error: "<<error.message()<<"\n";
+            }
+            error = client.configure(config);
+            if(error)
+            {
+                std::cout<<"failed to configure client. \n";
+                std::cout<<"error: "<<error.message()<<"\n";
+            }
+            else
+            {
+                std::cout<<"client started at "<<port<<" ...\n";
+            }
+            break;
+        
+        case Commands::upload:
+            error = client.uploadApp(firmware_file);
+            if(error)
+            {
+                std::printf("failed to upload firmware. \n");
+                std::cout<<"error: "<<error.message()<<"\n";
+            }
+            else
+            {
+                std::cout<<"new firmware uploaded.\n";
+            }
+            break;
+        
+        case Commands::disconnect:
+            client.disconnect();
+            std::printf("disconnected from server with id : %d \n",server_address);
+            server_address = 0;
+            server_data = sm::ServerData();
+            break;
+        
+        case Commands::erase:
+            error = client.eraseApp(); 
+            if(error)
+            {
+                std::printf("failed to erase app on server. \n");
+                std::cout<<"error: "<<error.message()<<"\n";
+            }
+            else
+            {
+                std::cout<<"firmware erased.\n";
+            }
+            break;
+
+        case Commands::connect:
+            error = client.connect(server_address);
+            if(error)
+            {
+                std::printf("failed to conect to server. \n");
+                std::cout<<"error: "<<error.message()<<"\n";
+            }
+            else
+            {
+                client.getServerData(server_data);
+                print_status();
+            }
+            break;
+
+        case Commands::unknown:
+        default:    
+            std::cout<<error_text;
+    }
+    return true;
 }
