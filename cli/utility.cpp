@@ -11,7 +11,7 @@
 #include "../inc/sm_client.hpp"
 
 const std::string interactive_text = "program started in interactive mode, type help for available commands. \n";
-const std::string error_text = "unsupported command passed. \n";
+const std::string error_text = "unsupported command passed, type help to see available commands. \n";
 const std::string input_start = ">";
 const std::string help_text = "help";
 const std::string exit_text = "exit";
@@ -45,6 +45,7 @@ std::uint8_t server_address = 0;
 static void print_devices(std::vector<std::string>& devices);
 static void print_help();
 static void print_status();
+
 static Commands process_cmd(std::string& str);
 
 static void print_devices(std::vector<std::string>& devices)
@@ -77,6 +78,26 @@ void print_status()
     if(server_data.info.status == sm::ServerStatus::Available)
     {
         std::printf("connected to server with id : %d \n",server_address);
+        std::printf("device name   : %s \n",server_data.data.boot_name);
+        std::printf("boot version  : %s \n",server_data.data.boot_version);
+        std::printf("available ROM : %d KB \n",server_data.data.available_rom/1024);
+        std::cout<<"app status: ";
+        switch(server_data.regs[static_cast<int>(sm::ServerRegisters::boot_status)])
+        {
+            case 1:
+                std::cout<<" not presented \n";
+                break;
+            case 2:
+                std::cout<<" ok \n";
+                break;
+            case 3:
+                std::cout<<" error \n";
+                break;            
+            case 0:
+            default:
+                std::cout<<" unknown \n";
+                break;
+        }
     }
     else
     {
@@ -193,10 +214,7 @@ int main(int argc, char* argv[])
                     else
                     {
                         client.getServerData(server_data);
-                        std::printf("connected to server with id : %d \n",server_address);
-                        std::printf("device name   : %s \n",server_data.data.boot_name);
-                        std::printf("boot version  : %s \n",server_data.data.boot_version);
-                        std::printf("available ROM : %d KB \n",server_data.data.available_rom/1024);
+                        print_status();
                     }
                     break;
 
