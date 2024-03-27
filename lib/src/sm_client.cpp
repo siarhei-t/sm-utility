@@ -62,7 +62,7 @@ std::error_code Client::start(std::string device)
 void Client::stop() 
 {
     disconnect();
-    if (serial_port.getState() != sp::PortState::Open)
+    if (serial_port.getState() == sp::PortState::Open)
     {
         serial_port.port.closePort();
     }
