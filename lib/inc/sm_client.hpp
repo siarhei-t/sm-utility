@@ -91,7 +91,16 @@ struct TaskInfo
     std::error_code error_code;
     int num_of_exchanges = 0;
     int counter = 0;
-    bool done = false;
+    std::atomic<bool> done = false;
+    void reset(ClientTasks task = ClientTasks::undefined, int num_of_exchanges = 0)
+    {
+        this->task = task;
+        this->num_of_exchanges = num_of_exchanges;
+        counter = 0;
+        done = false;
+        attributes = TaskAttributes();
+        error_code = std::error_code();
+    }
 };
 
 #pragma pack(push)

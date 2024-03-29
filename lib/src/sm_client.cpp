@@ -90,7 +90,7 @@ std::error_code Client::connect(const std::uint8_t address)
     if (servers[server_id].info.status != ServerStatus::Available)
     {
         // ping server if it is not connected
-        task_info = TaskInfo(ClientTasks::ping, 1);
+        task_info.reset(ClientTasks::ping, 1);
         q_task.push([this]() { q_exchange.push([this] { ping(); }); });
         while (!task_info.done);
     }
@@ -101,7 +101,7 @@ std::error_code Client::connect(const std::uint8_t address)
     if (servers[server_id].info.status == ServerStatus::Available)
     {
         // download registers
-        task_info = TaskInfo(ClientTasks::regs_download, 1);
+        task_info.reset(ClientTasks::regs_download, 1);
         q_task.push([this]() { q_exchange.push([this] { readRegisters(0, amount_of_regs); }); });
         while (!task_info.done);
     }
@@ -111,11 +111,11 @@ std::error_code Client::connect(const std::uint8_t address)
     }
     // download file with general information
     // prepare to read
-    task_info = TaskInfo(ClientTasks::reg_write, 1);
+    task_info.reset(ClientTasks::reg_write, 1);
     q_task.push([this]() { q_exchange.push([this] { writeRegister(static_cast<std::uint16_t>(ServerRegisters::file_control), file_read_prepare); }); });
     while (!task_info.done);
     // reading
-    task_info = TaskInfo();
+    task_info.reset();
     q_task.push([this]() { readFile(ServerFiles::info); });
     while (!task_info.done);
 
@@ -130,10 +130,10 @@ std::error_code Client::eraseApp()
         if (servers[server_id].info.status == ServerStatus::Available)
         {
             // erase request
-            task_info = TaskInfo(ClientTasks::reg_write, 1);
+            task_info.reset(ClientTasks::reg_write, 1);
             q_task.push([this]() { q_exchange.push([this] { writeRegister(static_cast<std::uint16_t>(ServerRegisters::app_erase), app_erase_request); }); });
             while (!task_info.done);
-            task_info = TaskInfo(ClientTasks::regs_download, 1);
+            task_info.reset(ClientTasks::regs_download, 1);
             q_task.push([this]() { q_exchange.push([this] { readRegisters(0, amount_of_regs); }); });
             while (!task_info.done);
             if (servers[server_id].regs[static_cast<int>(ServerRegisters::boot_status)] != static_cast<std::uint16_t>(BootloaderStatus::empty))
@@ -167,22 +167,22 @@ std::error_code Client::uploadApp(const std::string path_to_file)
             if (file.fileWriteSetup(path_to_file, block_size))
             {
                 // send file size
-                task_info = TaskInfo(ClientTasks::reg_write, 1);
+                task_info.reset(ClientTasks::reg_write, 1);
                 q_task.push([this]()
                             { q_exchange.push([this] { writeRegister(static_cast<std::uint16_t>(ServerRegisters::app_size), file.getNumOfRecords()); }); });
                 while (!task_info.done);
                 // prepare to write
-                task_info = TaskInfo(ClientTasks::reg_write, 1);
+                task_info.reset(ClientTasks::reg_write, 1);
                 q_task.push([this]()
                             { q_exchange.push([this] { writeRegister(static_cast<std::uint16_t>(ServerRegisters::file_control), file_write_prepare); }); });
                 while (!task_info.done);
 
                 // writing
-                task_info = TaskInfo();
+                task_info.reset();
                 q_task.push([this, path_to_file]() { writeFile(ServerFiles::app); });
                 while (!task_info.done);
                 // read status back
-                task_info = TaskInfo(ClientTasks::regs_download, 1);
+                task_info.reset(ClientTasks::regs_download, 1);
                 q_task.push([this]() { q_exchange.push([this] { readRegisters(0, amount_of_regs); }); });
                 while (!task_info.done);
                 // check status again
@@ -328,7 +328,7 @@ void Client::writeFile(const ServerFiles file_id)
     std::uint8_t block_size = servers[server_id].regs[static_cast<int>(ServerRegisters::record_size)];
     std::uint16_t id = static_cast<std::uint16_t>(file_id);
     auto num_of_records = file.getNumOfRecords();
-    task_info = TaskInfo(ClientTasks::app_upload, num_of_records);
+    task_info.reset(ClientTasks::app_upload, num_of_records);
     for (auto i = 0; i < num_of_records; ++i)
     {
         std::vector<uint8_t> data;
@@ -362,7 +362,7 @@ void Client::readFile(const ServerFiles file_id)
     if (file.fileReadSetup(file_size, servers[server_id].regs[static_cast<int>(ServerRegisters::record_size)]))
     {
         auto num_of_records = file.getNumOfRecords();
-        task_info = TaskInfo(file_task, num_of_records);
+        task_info.reset(file_task, num_of_records);
         for (auto i = 0; i < num_of_records; ++i)
         {
             auto words_in_record = file.getActualRecordLength(i) / 2;
@@ -446,7 +446,7 @@ void Client::exchangeCallback()
                     break;
 
                 case ClientTasks::app_upload:
-                    std::printf("progress: %d% \r",getActualTaskProgress());
+                    std::printf("progress: %d%% \r",getActualTaskProgress());
                     break;
 
                 default:

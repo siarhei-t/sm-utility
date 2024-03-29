@@ -26,7 +26,7 @@
         {
             "type": "shell",
             "label": "Configure-Windows",
-            "command": "cmake -DTARGET_WINDOWS=ON -Bbuild",
+            "command": "cmake -DTARGET_WINDOWS=ON -DCMAKE_BUILD_TYPE=MinSizeRel -Bbuild",
             "options": {"cwd": "${workspaceFolder}/cli"},
             "problemMatcher": []
         },
