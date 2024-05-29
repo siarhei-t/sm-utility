@@ -27,6 +27,11 @@ void SerialPortLinux::closePort(void)
     port_desc = -1;
 }
 
+void SerialPortLinux::flushPort()
+{
+    tcflush(port_desc, TCIOFLUSH);
+}
+
 void SerialPortLinux::setupPort(const sp::PortConfig& config)
 {
     loadPortConfiguration();

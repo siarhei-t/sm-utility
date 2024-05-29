@@ -39,6 +39,8 @@ public:
     /// @param length how many bytes we expect to read during timeout
     /// @returns how many bytes we read actually
     size_t readBinary(std::vector<std::uint8_t>& data, size_t length);
+    /// @brief reset internal OS buffers
+    void flushPort();
 
 private:
     /// @brief opened port file descriptor

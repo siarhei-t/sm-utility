@@ -1,0 +1,41 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "Build",
+            "command": "cmake --build build",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "options": {"cwd": "${workspaceFolder}/examples"},
+            "problemMatcher": []
+        },
+        {
+            "type": "shell",
+            "label": "Rebuild",
+            "command": "cmake --build build --clean-first",
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "options": {"cwd": "${workspaceFolder}/examples"},
+            "problemMatcher": []
+        },
+        {
+            "type": "shell",
+            "label": "Configure-Windows",
+            "command": "cmake -DTARGET_WINDOWS=ON -Bbuild",
+            "options": {"cwd": "${workspaceFolder}/examples"},
+            "problemMatcher": []
+        },
+        {
+            "type": "shell",
+            "label": "Configure-Linux",
+            "command": "cmake -DTARGET_LINUX=ON -Bbuild",
+            "options": {"cwd": "${workspaceFolder}/examples"},
+            "problemMatcher": []
+        },
+    ]
+}

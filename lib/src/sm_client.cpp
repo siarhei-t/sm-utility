@@ -202,6 +202,11 @@ std::error_code Client::uploadApp(const std::string path_to_file)
     return task_info.error_code;
 }
 
+std::error_code Client::startApp() 
+{
+    return std::error_code();
+}
+
 void Client::disconnect()
 {
     if (server_id != not_connected)

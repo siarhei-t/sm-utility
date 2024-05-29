@@ -32,6 +32,11 @@ void SerialPortWindows::closePort(void)
     port_desc = INVALID_HANDLE_VALUE;
 }
 
+void SerialPortWindows::flushPort()
+{
+    FlushFileBuffers(port_desc);
+}
+
 void SerialPortWindows::setupPort(const sp::PortConfig& config)
 {
     loadPortConfiguration();

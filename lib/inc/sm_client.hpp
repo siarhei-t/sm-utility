@@ -16,7 +16,7 @@
 #include <queue>
 #include <thread>
 
-#include "../../external/simple-serial-port/inc/serial_port.hpp"
+#include "../../external/simple-serial-port-1.03/lib/inc/serial_port.hpp"
 #include "../inc/sm_error.hpp"
 #include "../inc/sm_file.hpp"
 #include "../inc/sm_modbus.hpp"
@@ -163,9 +163,11 @@ public:
     std::error_code startApp();
     /// @brief diconnect from server
     void disconnect();
-    /// @brief
-    /// @param data
+    /// @brief load last received server data
+    /// @param data reference to struct to save
     void getServerData(ServerData& data);
+    /// @brief get actual running task progress in %
+    /// @return value from 0 to 100
     int getActualTaskProgress() const;
 
 private:

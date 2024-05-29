@@ -33,6 +33,7 @@ std::error_code SerialPort::open(const std::string name)
     try
     {
         port.openPort(name);
+        port.flushPort();
         state = sp::PortState::Open;
         path = name;
     }
