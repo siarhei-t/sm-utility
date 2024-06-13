@@ -23,6 +23,7 @@ const std::string disconnect_text = "disconnect";
 const std::string upload_text = "upload";
 const std::string erase_text = "erase";
 const std::string stop_text = "stop";
+const std::string goapp_text = "goapp";
 
 enum class Commands
 {
@@ -36,7 +37,8 @@ enum class Commands
     connect,
     disconnect,
     upload,
-    erase
+    erase,
+    goapp
 };
 
 sm::ServerData server_data;
@@ -100,6 +102,7 @@ static void print_help()
             <<"disconnect - disconnect from server; \n\n"
             <<"upload     - upload new firmware to the server, usage example : upload firmware.bin; \n\n"
             <<"erase      - erase firmware from server; \n\n"
+            <<"goapp      - start application on server; \n\n"
             ;
 }
 
@@ -187,6 +190,10 @@ static Commands parse_str(const std::string& str)
     if(argv[0] == disconnect_text)
     {
         cmd = Commands::disconnect;
+    }
+    if(argv[0] == goapp_text)
+    {
+        cmd = Commands::goapp;
     }
     if(argv[0] == connect_text)
     {
@@ -331,7 +338,10 @@ static bool execute_cmd(const Commands cmd)
                 print_status();
             }
             break;
-
+        case Commands::goapp:
+            client.startApp();
+            break;
+            
         case Commands::unknown:
         default:    
             std::cout<<error_text;

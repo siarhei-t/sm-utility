@@ -11,7 +11,6 @@
 #include <algorithm>
 #include <cstring>
 #include <iostream>
-#include "sm_client.hpp"
 
 namespace sm
 {
@@ -204,7 +203,18 @@ std::error_code Client::uploadApp(const std::string path_to_file)
 
 std::error_code Client::startApp() 
 {
-    return std::error_code();
+    task_info.error_code = make_error_code(ClientErrors::server_not_connected);
+    if (server_id != not_connected)
+    {
+        if (servers[server_id].info.status == ServerStatus::Available)
+        {
+            // write start to start app register
+            task_info.reset(ClientTasks::app_start, 1);
+            q_task.push([this]() { q_exchange.push([this] { writeRegister(static_cast<std::uint16_t>(ServerRegisters::app_start), app_start_request); }); });
+            while (!task_info.done);
+        }
+    }
+    return task_info.error_code;
 }
 
 void Client::disconnect()
@@ -496,6 +506,13 @@ void Client::callServerExchange()
     {
         task_info.error_code = e.code();
     }
+    std::printf("\n");
+    std::printf("data sent : size %d \n",request_data.size());
+    for(int i = 0; i < request_data.size();++i)
+    {
+        std::printf("0x%x ",request_data[i]);
+    }
+    std::printf("\n");
     // read from server
     try
     {
@@ -505,5 +522,12 @@ void Client::callServerExchange()
     {
         task_info.error_code = e.code();
     }
+    std::printf("\n");
+    std::printf("data received, size : %d \n",responce_data.size());
+    for(int i = 0; i < responce_data.size();++i)
+    {
+        std::printf("0x%x ",responce_data[i]);
+    }
+    std::printf("\n");
 }
 } // namespace sm

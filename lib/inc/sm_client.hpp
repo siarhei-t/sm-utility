@@ -31,6 +31,7 @@ constexpr int not_connected = -1;
 constexpr std::uint16_t file_read_prepare = 1;
 constexpr std::uint16_t file_write_prepare = 2;
 constexpr std::uint16_t app_erase_request = 1;
+constexpr std::uint16_t app_start_request = 1;
 ////////////////////////////////////////////////////////////////////////////////
 
 enum class ServerRegisters
