@@ -41,7 +41,6 @@ int Client::getActualTaskProgress() const
 std::error_code Client::start(std::string device)
 {
     task_info.error_code = std::error_code();
-
     if (serial_port.getState() != sp::PortState::Open)
     {
         task_info.error_code = serial_port.open(device);
@@ -54,7 +53,6 @@ std::error_code Client::start(std::string device)
             task_info.error_code = serial_port.open(device);
         }
     }
-
     return task_info.error_code;
 }
 
@@ -85,39 +83,51 @@ std::error_code Client::connect(const std::uint8_t address)
     {
         addServer(address);
     }
-
+    // (1) ping server, expected answer with exception type 1
     if (servers[server_id].info.status != ServerStatus::Available)
     {
-        // ping server if it is not connected
         task_info.reset(ClientTasks::ping, 1);
         q_task.push([this]() { q_exchange.push([this] { ping(); }); });
         while (!task_info.done);
+        if (task_info.error_code)
+        {
+            disconnect();
+            return task_info.error_code;
+        }
     }
-    if (task_info.error_code)
-    {
-        return task_info.error_code;
-    }
+    // (2) load all registers (they will fit into one message)
     if (servers[server_id].info.status == ServerStatus::Available)
     {
         // download registers
         task_info.reset(ClientTasks::regs_download, 1);
         q_task.push([this]() { q_exchange.push([this] { readRegisters(0, amount_of_regs); }); });
         while (!task_info.done);
+        if (task_info.error_code)
+        {
+            disconnect();
+            return task_info.error_code;
+        }
     }
-    if (task_info.error_code)
-    {
-        return task_info.error_code;
-    }
-    // download file with general information
-    // prepare to read
+    // (3) download file with bootloader information
+    // (3.1) prepare to read
     task_info.reset(ClientTasks::reg_write, 1);
     q_task.push([this]() { q_exchange.push([this] { writeRegister(static_cast<std::uint16_t>(ServerRegisters::file_control), file_read_prepare); }); });
     while (!task_info.done);
-    // reading
+    if (task_info.error_code)
+    {
+        disconnect();
+        return task_info.error_code;
+    }
+    // (3.2) file reading
     task_info.reset();
     q_task.push([this]() { readFile(ServerFiles::info); });
     while (!task_info.done);
-
+    
+    if (task_info.error_code)
+    {
+        disconnect();
+        return task_info.error_code;
+    }
     return task_info.error_code;
 }
 
@@ -128,13 +138,26 @@ std::error_code Client::eraseApp()
     {
         if (servers[server_id].info.status == ServerStatus::Available)
         {
-            // erase request
+            // (1) erase request
             task_info.reset(ClientTasks::reg_write, 1);
             q_task.push([this]() { q_exchange.push([this] { writeRegister(static_cast<std::uint16_t>(ServerRegisters::app_erase), app_erase_request); }); });
+            // we may have here timeout problem because flash erase take a lot of time in some cases, add additional logic for this case in future
             while (!task_info.done);
+            if (task_info.error_code)
+            {
+                disconnect();
+                return task_info.error_code;
+            }
+            // (2) read register with status information
             task_info.reset(ClientTasks::regs_download, 1);
             q_task.push([this]() { q_exchange.push([this] { readRegisters(0, amount_of_regs); }); });
             while (!task_info.done);
+            if (task_info.error_code)
+            {
+                disconnect();
+                return task_info.error_code;
+            }
+            // (3) cheking if erase was performed succesfully 
             if (servers[server_id].regs[static_cast<int>(ServerRegisters::boot_status)] != static_cast<std::uint16_t>(BootloaderStatus::empty))
             {
                 task_info.error_code = make_error_code(ClientErrors::internal);
@@ -152,41 +175,61 @@ std::error_code Client::uploadApp(const std::string path_to_file)
         if (servers[server_id].info.status == ServerStatus::Available)
         {
             BootloaderStatus bootloader_status = static_cast<BootloaderStatus>(servers[server_id].regs[static_cast<int>(ServerRegisters::boot_status)]);
-            // erase app file if we have some another state except
-            // BootloaderStatus::empty
+            // (1) erase app file if we have some another state except BootloaderStatus::empty
             if (bootloader_status != BootloaderStatus::empty)
             {
                 (void)eraseApp();
                 if (task_info.error_code)
                 {
+                    disconnect();
                     return task_info.error_code;
                 }
             }
+            
             std::uint8_t block_size = servers[server_id].regs[static_cast<int>(ServerRegisters::record_size)];
+            // (2) load full firmware file into vector
             if (file.fileWriteSetup(path_to_file, block_size))
             {
-                // send file size
+                // (3) send new file size
                 task_info.reset(ClientTasks::reg_write, 1);
                 q_task.push([this]()
                             { q_exchange.push([this] { writeRegister(static_cast<std::uint16_t>(ServerRegisters::app_size), file.getNumOfRecords()); }); });
                 while (!task_info.done);
-                // prepare to write
+                if (task_info.error_code)
+                {
+                    disconnect();
+                    return task_info.error_code;
+                }
+                // (4) prepare to write
                 task_info.reset(ClientTasks::reg_write, 1);
                 q_task.push([this]()
                             { q_exchange.push([this] { writeRegister(static_cast<std::uint16_t>(ServerRegisters::file_control), file_write_prepare); }); });
                 while (!task_info.done);
-
-                // writing
+                if (task_info.error_code)
+                {
+                    disconnect();
+                    return task_info.error_code;
+                }
+                // (5) file sending
                 task_info.reset();
                 q_task.push([this, path_to_file]() { writeFile(ServerFiles::app); });
                 while (!task_info.done);
-                // read status back
+                if (task_info.error_code)
+                {
+                    disconnect();
+                    return task_info.error_code;
+                }
+                // (6) read status back
                 task_info.reset(ClientTasks::regs_download, 1);
                 q_task.push([this]() { q_exchange.push([this] { readRegisters(0, amount_of_regs); }); });
                 while (!task_info.done);
-                // check status again
+                if (task_info.error_code)
+                {
+                    disconnect();
+                    return task_info.error_code;
+                }
+                // (7) check status again
                 BootloaderStatus bootloader_status = static_cast<BootloaderStatus>(servers[server_id].regs[static_cast<int>(ServerRegisters::boot_status)]);
-                // BootloaderStatus::empty
                 if (bootloader_status != BootloaderStatus::ready)
                 {
                     task_info.error_code = make_error_code(ClientErrors::internal);
@@ -506,13 +549,7 @@ void Client::callServerExchange()
     {
         task_info.error_code = e.code();
     }
-    std::printf("\n");
     std::printf("data sent : size %d \n",request_data.size());
-    for(int i = 0; i < request_data.size();++i)
-    {
-        std::printf("0x%x ",request_data[i]);
-    }
-    std::printf("\n");
     // read from server
     try
     {
@@ -522,12 +559,7 @@ void Client::callServerExchange()
     {
         task_info.error_code = e.code();
     }
-    std::printf("\n");
+
     std::printf("data received, size : %d \n",responce_data.size());
-    for(int i = 0; i < responce_data.size();++i)
-    {
-        std::printf("0x%x ",responce_data[i]);
-    }
-    std::printf("\n");
 }
 } // namespace sm
