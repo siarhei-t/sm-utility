@@ -67,10 +67,7 @@ enum class ClientTasks
     file_read,
     file_write,
     ping,//extra command, FunctionCodes::undefined used
-    app_start,//extra command, the same as reg_write, but no responce expected
-    info_download,
-    app_upload,
-    app_download,
+    app_start//extra command, the same as reg_write, but no responce expected
 };
 
 struct TaskAttributes
@@ -241,6 +238,9 @@ private:
     void callServerExchange();
     /// @brief callback called for every function in q_exchange
     void exchangeCallback();
+    /// @brief callback called for every ClientTasks::file_read
+    /// @param message reference to a vector with the message read
+    void fileReadCallback(std::vector<std::uint8_t>& message);
 };
 } // namespace sm
 

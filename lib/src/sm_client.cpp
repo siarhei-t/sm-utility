@@ -386,7 +386,7 @@ void Client::writeFile(const ServerFiles file_id)
     std::uint8_t block_size = servers[server_id].regs[static_cast<int>(ServerRegisters::record_size)];
     std::uint16_t id = static_cast<std::uint16_t>(file_id);
     auto num_of_records = file.getNumOfRecords();
-    task_info.reset(ClientTasks::app_upload, num_of_records);
+    task_info.reset(ClientTasks::file_write, num_of_records);
     for (auto i = 0; i < num_of_records; ++i)
     {
         std::vector<uint8_t> data;
@@ -403,24 +403,20 @@ void Client::readFile(const ServerFiles file_id)
         return;
     }
     size_t file_size = 0;
-    ClientTasks file_task = ClientTasks::undefined;
-
     switch (file_id)
     {
         case ServerFiles::application:
             file_size = servers[server_id].regs[static_cast<int>(ServerRegisters::app_size)];
-            file_task = ClientTasks::app_download;
             break;
 
         case ServerFiles::server_metadata:
             file_size = sizeof(BootloaderInfo);
-            file_task = ClientTasks::info_download;
             break;
     }
     if (file.fileReadSetup(static_cast<std::uint16_t>(file_id),file_size, servers[server_id].regs[static_cast<int>(ServerRegisters::record_size)]))
     {
         auto num_of_records = file.getNumOfRecords();
-        task_info.reset(file_task, num_of_records);
+        task_info.reset(ClientTasks::file_read, num_of_records);
         for (auto i = 0; i < num_of_records; ++i)
         {
             auto words_in_record = file.getActualRecordLength(i) / 2;
@@ -481,34 +477,25 @@ void Client::exchangeCallback()
         {
             switch (task_info.task)
             {
-                case ClientTasks::ping:
+                case ClientTasks::ping: //mark server as available if we have responce on this command
                     servers[server_id].info.status = ServerStatus::Available;
                     break;
-
+                    
                 case ClientTasks::regs_read:
                     readRegs(servers[server_id], message);
                     break;
-
-                case ClientTasks::info_download:
-                    if (!file.getRecordFromMessage(message))
-                    {
-                        task_info.error_code = make_error_code(ClientErrors::internal);
-                    }
-                    else
-                    {
-                        if (file.isFileReady())
-                        {
-                            std::memcpy(&servers[server_id].data, &file.getData()[0], sizeof(BootloaderInfo));
-                        }
-                    }
+                    
+                case ClientTasks::file_read:
+                    
+                    fileReadCallback(message);
                     break;
-
-                case ClientTasks::app_upload:
+                    
+                case ClientTasks::file_write:
                     std::printf("progress: %d%% \n",getActualTaskProgress());
                     break;
-
+                    
                 default:
-                    //nothing to to for now
+                    //nothing to do for now
                     break;
             }
         }
@@ -529,6 +516,29 @@ void Client::exchangeCallback()
             task_info.error_code = make_error_code(ClientErrors::bad_crc);
         }
         task_info.done = true;
+    }
+}
+
+void Client::fileReadCallback(std::vector<std::uint8_t>& message)
+{
+    if (!file.getRecordFromMessage(message))
+    {
+        task_info.error_code = make_error_code(ClientErrors::internal);
+    }
+    else
+    {
+        if (file.isFileReady())
+        {
+            switch(file.getId())
+            {
+                case static_cast<std::uint16_t>(ServerFiles::server_metadata):
+                    std::memcpy(&servers[server_id].data, &file.getData()[0], sizeof(BootloaderInfo));
+                    break;
+                
+                default:
+                    break;
+            }
+        }
     }
 }
 
