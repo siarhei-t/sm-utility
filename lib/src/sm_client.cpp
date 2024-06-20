@@ -99,7 +99,7 @@ std::error_code Client::connect(const std::uint8_t address)
     if (servers[server_id].info.status == ServerStatus::Available)
     {
         // download registers
-        task_info.reset(ClientTasks::regs_download, 1);
+        task_info.reset(ClientTasks::regs_read, 1);
         q_task.push([this]() { q_exchange.push([this] { readRegisters(0, amount_of_regs); }); });
         while (!task_info.done);
         if (task_info.error_code)
@@ -120,7 +120,7 @@ std::error_code Client::connect(const std::uint8_t address)
     }
     // (3.2) file reading
     task_info.reset();
-    q_task.push([this]() { readFile(ServerFiles::info); });
+    q_task.push([this]() { readFile(ServerFiles::server_metadata); });
     while (!task_info.done);
     
     if (task_info.error_code)
@@ -149,7 +149,7 @@ std::error_code Client::eraseApp()
                 return task_info.error_code;
             }
             // (2) read register with status information
-            task_info.reset(ClientTasks::regs_download, 1);
+            task_info.reset(ClientTasks::regs_read, 1);
             q_task.push([this]() { q_exchange.push([this] { readRegisters(0, amount_of_regs); }); });
             while (!task_info.done);
             if (task_info.error_code)
@@ -188,7 +188,7 @@ std::error_code Client::uploadApp(const std::string path_to_file)
             
             std::uint8_t block_size = servers[server_id].regs[static_cast<int>(ServerRegisters::record_size)];
             // (2) load full firmware file into vector
-            if (file.fileWriteSetup(path_to_file, block_size))
+            if (file.fileExternalWriteSetup(static_cast<std::uint16_t>(ServerFiles::application),path_to_file, block_size))
             {
                 // (3) send new file size
                 task_info.reset(ClientTasks::reg_write, 1);
@@ -212,7 +212,7 @@ std::error_code Client::uploadApp(const std::string path_to_file)
                 }
                 // (5) file sending
                 task_info.reset();
-                q_task.push([this, path_to_file]() { writeFile(ServerFiles::app); });
+                q_task.push([this, path_to_file]() { writeFile(ServerFiles::application); });
                 while (!task_info.done);
                 if (task_info.error_code)
                 {
@@ -220,7 +220,7 @@ std::error_code Client::uploadApp(const std::string path_to_file)
                     return task_info.error_code;
                 }
                 // (6) read status back
-                task_info.reset(ClientTasks::regs_download, 1);
+                task_info.reset(ClientTasks::regs_read, 1);
                 q_task.push([this]() { q_exchange.push([this] { readRegisters(0, amount_of_regs); }); });
                 while (!task_info.done);
                 if (task_info.error_code)
@@ -407,17 +407,17 @@ void Client::readFile(const ServerFiles file_id)
 
     switch (file_id)
     {
-        case ServerFiles::app:
+        case ServerFiles::application:
             file_size = servers[server_id].regs[static_cast<int>(ServerRegisters::app_size)];
             file_task = ClientTasks::app_download;
             break;
 
-        case ServerFiles::info:
+        case ServerFiles::server_metadata:
             file_size = sizeof(BootloaderInfo);
             file_task = ClientTasks::info_download;
             break;
     }
-    if (file.fileReadSetup(file_size, servers[server_id].regs[static_cast<int>(ServerRegisters::record_size)]))
+    if (file.fileReadSetup(static_cast<std::uint16_t>(file_id),file_size, servers[server_id].regs[static_cast<int>(ServerRegisters::record_size)]))
     {
         auto num_of_records = file.getNumOfRecords();
         task_info.reset(file_task, num_of_records);
@@ -485,7 +485,7 @@ void Client::exchangeCallback()
                     servers[server_id].info.status = ServerStatus::Available;
                     break;
 
-                case ClientTasks::regs_download:
+                case ClientTasks::regs_read:
                     readRegs(servers[server_id], message);
                     break;
 
@@ -504,7 +504,7 @@ void Client::exchangeCallback()
                     break;
 
                 case ClientTasks::app_upload:
-                    std::printf("progress: %d%% \r",getActualTaskProgress());
+                    std::printf("progress: %d%% \n",getActualTaskProgress());
                     break;
 
                 default:
@@ -549,7 +549,7 @@ void Client::callServerExchange()
     {
         task_info.error_code = e.code();
     }
-    std::printf("data sent : size %d \n",request_data.size());
+    //std::printf("data sent : size %d \n",request_data.size());
     // read from server
     try
     {
@@ -559,7 +559,6 @@ void Client::callServerExchange()
     {
         task_info.error_code = e.code();
     }
-
-    std::printf("data received, size : %d \n",responce_data.size());
+    //std::printf("data received, size : %d \n",responce_data.size());
 }
 } // namespace sm

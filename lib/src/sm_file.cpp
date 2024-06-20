@@ -37,20 +37,21 @@ void File::fileDelete()
     ready = false;
 }
 
-bool File::fileReadSetup(const size_t file_size, const std::uint8_t record_size)
+bool File::fileReadSetup(const std::uint16_t id, const size_t file_size, const std::uint8_t record_size)
 {
     if (data)
     {
         fileDelete();
     }
     data = std::make_unique<std::uint8_t[]>(file_size);
+    this->id = id;
     this->file_size = file_size;
     this->record_size = record_size;
     num_of_records = calcNumOfRecords(file_size);
     return data != nullptr;
 }
 
-bool File::fileWriteSetup(const std::string path_to_file, const std::uint8_t record_size)
+bool File::fileExternalWriteSetup(const std::uint16_t id, const std::string path_to_file, const std::uint8_t record_size)
 {
     if (data)
     {
@@ -77,6 +78,7 @@ bool File::fileWriteSetup(const std::string path_to_file, const std::uint8_t rec
         }
         if (file_size == length)
         {
+            this->id = id;
             this->record_size = record_size;
             num_of_records = calcNumOfRecords(file_size);
             return true;

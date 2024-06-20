@@ -55,20 +55,22 @@ enum class BootloaderStatus
 
 enum class ServerFiles
 {
-    app = 1,
-    info = 2
+    application = 1,
+    server_metadata = 2
 };
 
 enum class ClientTasks
 {
     undefined,
-    ping,
-    regs_download,
+    regs_read,
     reg_write,
+    file_read,
+    file_write,
+    ping,//extra command, FunctionCodes::undefined used
+    app_start,//extra command, the same as reg_write, but no responce expected
     info_download,
     app_upload,
     app_download,
-    app_start
 };
 
 struct TaskAttributes
