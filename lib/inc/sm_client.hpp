@@ -42,7 +42,8 @@ enum class ServerRegisters
     app_start = 3,
     boot_control = 4,
     boot_status = 5,
-    record_size = 6
+    record_size = 6,
+    gateway_buffer_size = 7
 };
 
 enum class BootloaderStatus
@@ -122,6 +123,7 @@ enum class ServerStatus
 struct ServerInfo
 {
     std::uint8_t addr = 0;
+    bool gatewayed = false;
     ServerStatus status = ServerStatus::Unavailable;
 };
 
