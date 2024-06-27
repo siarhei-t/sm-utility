@@ -28,6 +28,7 @@ constexpr int ascii_msg_edge = (ascii_start_size + ascii_stop_size);
 constexpr int rtu_adu_size = (rtu_msg_edge + crc_size + address_size);
 constexpr int ascii_adu_size = (ascii_msg_edge + crc_size + address_size);
 constexpr int max_num_of_records = 10000;
+constexpr std::uint16_t holding_regs_offset = 0x9C40;
 ////////////////////////////////////////////////////////////////////////////////
 
 enum class FunctionCodes

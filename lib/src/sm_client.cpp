@@ -73,6 +73,8 @@ std::error_code Client::configure(sp::PortConfig config)
 
 std::error_code Client::connect(const std::uint8_t address)
 {
+    //flush port buffer first
+    serial_port.port.flushPort();
     // server is not selected yet
     if (server_id == not_connected)
     {
@@ -100,7 +102,7 @@ std::error_code Client::connect(const std::uint8_t address)
     {
         // download registers
         task_info.reset(ClientTasks::regs_read, 1);
-        q_task.push([this]() { q_exchange.push([this] { readRegisters(0, amount_of_regs); }); });
+        q_task.push([this]() { q_exchange.push([this] { readRegisters(modbus::holding_regs_offset, amount_of_regs); }); });
         while (!task_info.done);
         if (task_info.error_code)
         {
@@ -133,6 +135,8 @@ std::error_code Client::connect(const std::uint8_t address)
 
 std::error_code Client::eraseApp()
 {
+    //flush port buffer first
+    serial_port.port.flushPort();
     task_info.error_code = make_error_code(ClientErrors::server_not_connected);
     if (server_id != not_connected)
     {
@@ -150,7 +154,7 @@ std::error_code Client::eraseApp()
             }
             // (2) read register with status information
             task_info.reset(ClientTasks::regs_read, 1);
-            q_task.push([this]() { q_exchange.push([this] { readRegisters(0, amount_of_regs); }); });
+            q_task.push([this]() { q_exchange.push([this] { readRegisters(modbus::holding_regs_offset, amount_of_regs); }); });
             while (!task_info.done);
             if (task_info.error_code)
             {
@@ -169,6 +173,8 @@ std::error_code Client::eraseApp()
 
 std::error_code Client::uploadApp(const std::string path_to_file)
 {
+    //flush port buffer first
+    serial_port.port.flushPort();
     task_info.error_code = make_error_code(ClientErrors::server_not_connected);
     if (server_id != not_connected)
     {
@@ -221,7 +227,7 @@ std::error_code Client::uploadApp(const std::string path_to_file)
                 }
                 // (6) read status back
                 task_info.reset(ClientTasks::regs_read, 1);
-                q_task.push([this]() { q_exchange.push([this] { readRegisters(0, amount_of_regs); }); });
+                q_task.push([this]() { q_exchange.push([this] { readRegisters(modbus::holding_regs_offset, amount_of_regs); }); });
                 while (!task_info.done);
                 if (task_info.error_code)
                 {
@@ -246,6 +252,8 @@ std::error_code Client::uploadApp(const std::string path_to_file)
 
 std::error_code Client::startApp() 
 {
+    //flush port buffer first
+    serial_port.port.flushPort();
     task_info.error_code = make_error_code(ClientErrors::server_not_connected);
     if (server_id != not_connected)
     {

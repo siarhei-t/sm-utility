@@ -59,8 +59,8 @@ static Commands parse_str(const std::string& str);
 int main(int argc, char* argv[])
 {
     (void)(argv);
-    //hardcoded port parameters, 19200 bd, 2s timeout
-    config.baudrate = sp::PortBaudRate::BD_19200;
+    //hardcoded port parameters, 57600 bd, 2s timeout
+    config.baudrate = sp::PortBaudRate::BD_115200;
     config.timeout_ms = 2000;  
     if(argc == 1)
     {
