@@ -71,23 +71,21 @@ std::error_code Client::configure(sp::PortConfig config)
     return task_info.error_code;
 }
 
-std::error_code Client::connect(const std::uint8_t address)
+std::error_code Client::connect(const std::uint8_t address, const std::uint8_t gateway_address)
 {
     //flush port buffer first
     serial_port.port.flushPort();
-    // server is not selected yet
-    if (server_id == not_connected)
+    
+    // server is not selected yet or current server has different address
+    if((server_id == not_connected) || (servers[server_id].info.addr != address))
     {
-        addServer(address);
+        addServer(address,gateway_address);
     }
-    // current server has different address
-    if (servers[server_id].info.addr != address)
-    {
-        addServer(address);
-    }
+    
     // (1) ping server, expected answer with exception type 1
     if (servers[server_id].info.status != ServerStatus::Available)
     {
+        
         task_info.reset(ClientTasks::ping, 1);
         q_task.push([this]() { q_exchange.push([this] { ping(); }); });
         while (!task_info.done);
@@ -272,12 +270,15 @@ void Client::disconnect()
 {
     if (server_id != not_connected)
     {
+        //flush port buffer first
+        serial_port.port.flushPort();
+        responce_data.clear();
         servers[server_id].info.status = ServerStatus::Unavailable;
         server_id = not_connected;
     }
 }
 
-void Client::addServer(const std::uint8_t address)
+void Client::addServer(const std::uint8_t address, const std::uint8_t gateway_address)
 {
     auto it = std::find_if(servers.begin(), servers.end(), [](ServerData& server) { return server.info.status == ServerStatus::Unavailable; });
     if (it != servers.end())
@@ -285,6 +286,7 @@ void Client::addServer(const std::uint8_t address)
         // use existed slot
         int index = std::distance(servers.begin(), it);
         servers[index] = ServerData();
+        servers[index].info.gateway_addr = gateway_address;
         servers[index].info.addr = address;
         server_id = index;
     }
@@ -293,6 +295,7 @@ void Client::addServer(const std::uint8_t address)
         // create new one
         servers.push_back(ServerData());
         servers.back().info.addr = address;
+        servers[index].info.gateway_addr = gateway_address;
         server_id = servers.size() - 1;
     }
 }
@@ -473,6 +476,12 @@ void Client::exchangeCallback()
         return;
     }
     ++task_info.counter;
+    //std::printf("\n\r");
+    //for(int i = 0; i < responce_data.size(); ++i)
+    //{
+    //    std::printf("0x%x ",responce_data[i]);
+    //}
+    //std::printf("\n\r");
     if (modbus_client.isChecksumValid(responce_data))
     {
         std::vector<std::uint8_t> message;

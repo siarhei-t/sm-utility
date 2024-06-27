@@ -27,7 +27,7 @@ namespace sm
 constexpr int boot_version_size = 17;
 constexpr int boot_name_size = 33;
 constexpr int amount_of_regs = 7;
-constexpr int not_connected = -1;
+constexpr int not_connected = 255;
 constexpr std::uint16_t file_read_prepare = 1;
 constexpr std::uint16_t file_write_prepare = 2;
 constexpr std::uint16_t app_erase_request = 1;
@@ -123,7 +123,7 @@ enum class ServerStatus
 struct ServerInfo
 {
     std::uint8_t addr = 0;
-    bool gatewayed = false;
+    std::uint8_t gateway_addr = 0;
     ServerStatus status = ServerStatus::Unavailable;
 };
 
@@ -152,7 +152,7 @@ public:
     /// @brief connect to server with selected id
     /// @param address server address
     /// @return error code
-    std::error_code connect(const std::uint8_t address);
+    std::error_code connect(const std::uint8_t address,const std::uint8_t gateway_address = 0);
     /// @brief erase firmware on the server
     /// @return error code
     std::error_code eraseApp();
@@ -230,7 +230,8 @@ private:
                        const std::uint16_t quantity);
     /// @brief create new server instance
     /// @param address server address
-    void addServer(const std::uint8_t address);
+    /// @param gateway_address address of gateway server
+    void addServer(const std::uint8_t address, const std::uint8_t gateway_address = 0);
     /// @brief handler for client_thread
     void clientThread();
     /// @brief async call for callServerExchange method
