@@ -20,7 +20,9 @@ enum class ClientErrors
     bad_crc,
     timeout,
     server_exception,
+    server_not_exist,
     server_not_connected,
+    gateway_not_responding,
     internal
 };
 

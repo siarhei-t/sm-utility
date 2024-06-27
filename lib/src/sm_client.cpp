@@ -85,16 +85,14 @@ std::error_code Client::connect(const std::uint8_t address, const std::uint8_t g
     // (1) ping server, expected answer with exception type 1
     if (servers[server_id].info.status != ServerStatus::Available)
     {
-        
-        task_info.reset(ClientTasks::ping, 1);
-        q_task.push([this]() { q_exchange.push([this] { ping(); }); });
-        while (!task_info.done);
+        task_info.error_code = task_ping(address);
         if (task_info.error_code)
         {
             disconnect();
             return task_info.error_code;
         }
     }
+    
     // (2) load all registers (they will fit into one message)
     if (servers[server_id].info.status == ServerStatus::Available)
     {
@@ -129,6 +127,18 @@ std::error_code Client::connect(const std::uint8_t address, const std::uint8_t g
         return task_info.error_code;
     }
     return task_info.error_code;
+}
+
+void Client::disconnect()
+{
+    if (server_id != not_connected)
+    {
+        //flush port buffer first
+        serial_port.port.flushPort();
+        responce_data.clear();
+        servers[server_id].info.status = ServerStatus::Unavailable;
+        server_id = not_connected;
+    }
 }
 
 std::error_code Client::eraseApp()
@@ -266,16 +276,43 @@ std::error_code Client::startApp()
     return task_info.error_code;
 }
 
-void Client::disconnect()
+std::error_code Client::task_ping(const std::uint8_t addr)
 {
-    if (server_id != not_connected)
+    auto lambda_ping = [this](const std::uint8_t address)
     {
-        //flush port buffer first
-        serial_port.port.flushPort();
-        responce_data.clear();
-        servers[server_id].info.status = ServerStatus::Unavailable;
-        server_id = not_connected;
+        std::uint8_t function = static_cast<uint8_t>(modbus::FunctionCodes::undefined);
+        std::vector<uint8_t> message{0x00, 0x00, 0x00, 0x00};
+        request_data = modbus_client.msgCustom(address, function, message);
+        // 1 byte for exception + 1 byte for func + modbus required part
+        TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::undefined, static_cast<size_t>(modbus_client.getRequriedLength() + 2));
+        createServerRequest(attr);
+    };
+    
+    task_info.error_code = make_error_code(ClientErrors::server_not_connected);
+    //flush serial port buffer first
+    serial_port.port.flushPort();
+    auto it = std::find_if(servers.begin(), servers.end(), [addr](ServerData& server) { return server.info.addr == addr; });
+    if (it != servers.end())
+    {
+        int index = std::distance(servers.begin(), it);
+        //std::uint16_t expected_length = modbus_client.getRequriedLength() + 2;
+        //we are trying to reach this server through the gateway, perform gateway setup first
+        if(servers[index].info.gateway_addr != 0)
+        {
+            //q_task.push([this,expected_length]() { q_exchange.push([this, expected_length] { writeRegister(static_cast<std::uint16_t>(ServerRegisters::gateway_buffer_size), expected_length); }); });
+            while (!task_info.done);
+            if (task_info.error_code)
+            {
+                task_info.error_code = make_error_code(ClientErrors::gateway_not_responding);
+                return task_info.error_code;
+            }
+        }
+        //direct address ping
+        task_info.reset(ClientTasks::ping, 1);
+        q_task.push([this,lambda_ping,addr]() { q_exchange.push([this,lambda_ping,addr] { lambda_ping(addr); }); });
+        while (!task_info.done);
     }
+    return task_info.error_code;
 }
 
 void Client::addServer(const std::uint8_t address, const std::uint8_t gateway_address)
@@ -295,7 +332,7 @@ void Client::addServer(const std::uint8_t address, const std::uint8_t gateway_ad
         // create new one
         servers.push_back(ServerData());
         servers.back().info.addr = address;
-        servers[index].info.gateway_addr = gateway_address;
+        servers.back().info.gateway_addr = gateway_address;
         server_id = servers.size() - 1;
     }
 }
@@ -576,7 +613,7 @@ void Client::callServerExchange()
     {
         task_info.error_code = e.code();
     }
-    //std::printf("data sent : size %d \n",request_data.size());
+    std::printf("data sent : size %d \n",request_data.size());
     // read from server
     try
     {
@@ -586,6 +623,6 @@ void Client::callServerExchange()
     {
         task_info.error_code = e.code();
     }
-    //std::printf("data received, size : %d \n",responce_data.size());
+    std::printf("data received, size : %d \n",responce_data.size());
 }
 } // namespace sm

@@ -199,6 +199,8 @@ private:
     std::queue<std::function<void()>> q_exchange;
     /// @brief queue with client tasks
     std::queue<std::function<void()>> q_task;
+    /// @brief ping server selected by server_id 
+    std::error_code task_ping(const std::uint8_t addr);
     /// @brief read file from the server with passed id
     /// @param file_id file id
     void readFile(const ServerFiles file_id);
