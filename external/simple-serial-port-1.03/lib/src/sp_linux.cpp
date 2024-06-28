@@ -65,12 +65,12 @@ void SerialPortLinux::writeBinary(const std::vector<std::uint8_t>& data)
 size_t SerialPortLinux::readBinary(std::vector<std::uint8_t>& data,
                                    size_t length)
 {
-    size_t bytes_to_read = length;
+    ssize_t bytes_to_read = length;
     size_t bytes_read = 0;
     data.resize(length);
     while (bytes_to_read != 0)
     {
-        size_t n = read(port_desc, data.data() + bytes_read, bytes_to_read);
+        ssize_t n = read(port_desc, data.data() + bytes_read, bytes_to_read);
         if (n < 0)
         {
             throw std::system_error(sp::make_error_code(errno));

@@ -156,7 +156,7 @@ public:
     /// @brief connect to server with selected id
     /// @param address server address
     /// @return error code
-    std::error_code connect(const std::uint8_t address,const std::uint8_t gateway_address = 0);
+    std::error_code connect(const std::uint8_t address);
     /// @brief erase firmware on the server
     /// @return error code
     std::error_code eraseApp();
@@ -204,10 +204,18 @@ private:
     /// @brief queue with client tasks
     std::queue<std::function<void()>> q_task;
     /// @brief ping server selected by address
-    /// @param addr server address
-    std::error_code taskPing(const std::uint8_t addr);
-    
+    /// @param dev_addr server address
+    /// @return error code
+    std::error_code taskPing(const std::uint8_t dev_addr);
+    /// @brief write new value to the register on the server selected by address
+    /// @param dev_addr server address
+    /// @param reg_addr register address
+    /// @param value new value
+    /// @return error code
     std::error_code taskWriteRegister(const std::uint8_t dev_addr, const std::uint16_t reg_addr, const std::uint16_t value);
+    
+    std::error_code taskReadRegisters(const std::uint8_t dev_addr, const std::uint16_t reg_addr, const std::uint16_t quantity);
+    
     /// @brief read file from the server with passed id
     /// @param file_id file id
     void readFile(const ServerFiles file_id);
