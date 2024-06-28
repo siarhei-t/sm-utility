@@ -149,6 +149,10 @@ public:
     /// @param config used config
     /// @return error code
     std::error_code configure(sp::PortConfig config);
+    /// @brief add server to the internal servers list
+    /// @param addr server address
+    /// @param gateway_addr address of gateway server
+    void addServer(const std::uint8_t addr, const std::uint8_t gateway_addr = 0);
     /// @brief connect to server with selected id
     /// @param address server address
     /// @return error code
@@ -199,8 +203,11 @@ private:
     std::queue<std::function<void()>> q_exchange;
     /// @brief queue with client tasks
     std::queue<std::function<void()>> q_task;
-    /// @brief ping server selected by server_id 
-    std::error_code task_ping(const std::uint8_t addr);
+    /// @brief ping server selected by address
+    /// @param addr server address
+    std::error_code taskPing(const std::uint8_t addr);
+    
+    std::error_code taskWriteRegister(const std::uint8_t dev_addr, const std::uint16_t reg_addr, const std::uint16_t value);
     /// @brief read file from the server with passed id
     /// @param file_id file id
     void readFile(const ServerFiles file_id);
@@ -230,10 +237,6 @@ private:
     /// @param quantity amount of registers to read
     void readRegisters(const std::uint16_t address,
                        const std::uint16_t quantity);
-    /// @brief create new server instance
-    /// @param address server address
-    /// @param gateway_address address of gateway server
-    void addServer(const std::uint8_t address, const std::uint8_t gateway_address = 0);
     /// @brief handler for client_thread
     void clientThread();
     /// @brief async call for callServerExchange method
