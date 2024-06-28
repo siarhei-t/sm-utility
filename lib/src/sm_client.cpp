@@ -73,37 +73,16 @@ std::error_code Client::connect(const std::uint8_t address)
     // flush port buffer first
     serial_port.port.flushPort();
     addServer(address);
-    auto it = std::find_if(servers.begin(), servers.end(), [address](ServerData& server) { return server.info.addr == address; });
-    int index = std::distance(servers.begin(), it);
     // (1) ping server, expected answer with exception type 1
     task_info.error_code = taskPing(address);
     if (task_info.error_code){return task_info.error_code;}
-
     // (2) load all registers
-    if (servers[server_id].info.status == ServerStatus::Available)
-    {
-        // download registers
-        task_info.reset(ClientTasks::regs_read, 1);
-        q_task.push([this]() { q_exchange.push([this] { readRegisters(modbus::holding_regs_offset, amount_of_regs); }); });
-        while (!task_info.done)
-            ;
-        if (task_info.error_code)
-        {
-            disconnect();
-            return task_info.error_code;
-        }
-    }
-    // (3) download file with bootloader information
+    task_info.error_code = taskReadRegisters(address,modbus::holding_regs_offset,amount_of_regs);
+    if (task_info.error_code){return task_info.error_code;}
+    // (3) download file with server metadata
     // (3.1) prepare to read
-    task_info.reset(ClientTasks::reg_write, 1);
-    q_task.push([this]() { q_exchange.push([this] { writeRegister(static_cast<std::uint16_t>(ServerRegisters::file_control), file_read_prepare); }); });
-    while (!task_info.done)
-        ;
-    if (task_info.error_code)
-    {
-        disconnect();
-        return task_info.error_code;
-    }
+    task_info.error_code = taskWriteRegister(address,static_cast<std::uint16_t>(ServerRegisters::file_control), file_read_prepare);
+    if (task_info.error_code){return task_info.error_code;}
     // (3.2) file reading
     task_info.reset();
     q_task.push([this]() { readFile(ServerFiles::server_metadata); });
