@@ -35,6 +35,18 @@ void Client::getServerData(ServerData& data)
 
 int Client::getActualTaskProgress() const { return (task_info.counter * 100) / task_info.num_of_exchanges; }
 
+void Client::addServer(const std::uint8_t addr, const std::uint8_t gateway_addr)
+{
+    auto it = std::find_if(servers.begin(), servers.end(), [addr](ServerData& server) { return server.info.addr == addr; });
+    if (it == servers.end())
+    {
+        servers.push_back(ServerData());
+        servers.back().info.addr = addr;
+        servers.back().info.gateway_addr = gateway_addr;
+        server_id = servers.size() - 1;
+    }
+}
+
 std::error_code Client::start(std::string device)
 {
     task_info.error_code = std::error_code();
@@ -136,115 +148,42 @@ std::error_code Client::uploadApp(const std::uint8_t address, const std::string 
 {
     // flush port buffer first
     serial_port.port.flushPort();
-    
-    task_info.error_code = make_error_code(ClientErrors::server_not_connected);
-    if (server_id != not_connected)
+    task_info.error_code = make_error_code(ClientErrors::internal);
+    std::uint8_t record_size = servers[server_id].regs[static_cast<std::uint8_t>(ServerRegisters::record_size)];
+    // (1) load full firmware file into vector
+    if (file.fileExternalWriteSetup(static_cast<std::uint16_t>(ServerFiles::application), path_to_file, record_size))
     {
-        if (servers[server_id].info.status == ServerStatus::Available)
+        // (2) send new file size
+        std::uint16_t num_of_records = file.getNumOfRecords();
+        task_info.error_code = taskWriteRegister(address, static_cast<std::uint16_t>(ServerRegisters::app_size), num_of_records);
+        if (task_info.error_code)
         {
-            BootloaderStatus bootloader_status = static_cast<BootloaderStatus>(servers[server_id].regs[static_cast<int>(ServerRegisters::boot_status)]);
-            // (1) erase app file if we have some another state except BootloaderStatus::empty
-            if (bootloader_status != BootloaderStatus::empty)
-            {
-                (void)eraseApp(1);
-                if (task_info.error_code)
-                {
-                    disconnect();
-                    return task_info.error_code;
-                }
-            }
-
-            std::uint8_t block_size = servers[server_id].regs[static_cast<int>(ServerRegisters::record_size)];
-            // (2) load full firmware file into vector
-            if (file.fileExternalWriteSetup(static_cast<std::uint16_t>(ServerFiles::application), path_to_file, block_size))
-            {
-                // (3) send new file size
-                task_info.reset(ClientTasks::reg_write, 1);
-                q_task.push([this]()
-                            { q_exchange.push([this] { writeRegister(static_cast<std::uint16_t>(ServerRegisters::app_size), file.getNumOfRecords()); }); });
-                while (!task_info.done)
-                    ;
-                if (task_info.error_code)
-                {
-                    disconnect();
-                    return task_info.error_code;
-                }
-                // (4) prepare to write
-                task_info.reset(ClientTasks::reg_write, 1);
-                q_task.push([this]()
-                            { q_exchange.push([this] { writeRegister(static_cast<std::uint16_t>(ServerRegisters::file_control), file_write_prepare); }); });
-                while (!task_info.done)
-                    ;
-                if (task_info.error_code)
-                {
-                    disconnect();
-                    return task_info.error_code;
-                }
-                // (5) file sending
-                task_info.reset();
-                q_task.push([this, path_to_file]() { writeFile(ServerFiles::application); });
-                while (!task_info.done)
-                    ;
-                if (task_info.error_code)
-                {
-                    disconnect();
-                    return task_info.error_code;
-                }
-                // (6) read status back
-                task_info.reset(ClientTasks::regs_read, 1);
-                q_task.push([this]() { q_exchange.push([this] { readRegisters(modbus::holding_regs_offset, amount_of_regs); }); });
-                while (!task_info.done)
-                    ;
-                if (task_info.error_code)
-                {
-                    disconnect();
-                    return task_info.error_code;
-                }
-                // (7) check status again
-                BootloaderStatus bootloader_status = static_cast<BootloaderStatus>(servers[server_id].regs[static_cast<int>(ServerRegisters::boot_status)]);
-                if (bootloader_status != BootloaderStatus::ready)
-                {
-                    task_info.error_code = make_error_code(ClientErrors::internal);
-                }
-            }
-            else
-            {
-                task_info.error_code = make_error_code(ClientErrors::internal);
-            }
+            return task_info.error_code;
         }
+        // (3) prepare to write
+        task_info.error_code = taskWriteRegister(address, static_cast<std::uint16_t>(ServerRegisters::file_control), file_write_prepare);
+        if (task_info.error_code)
+        {
+            return task_info.error_code;
+        }
+        // (4) file sending
+        task_info.error_code = taskWriteFile(address);
+        if (task_info.error_code)
+        {
+            return task_info.error_code;
+        }
+        // (5) read status back
+        task_info.error_code = taskReadRegisters(address, modbus::holding_regs_offset, amount_of_regs);
     }
     return task_info.error_code;
 }
 
-std::error_code Client::startApp()
+std::error_code Client::startApp(const std::uint8_t address)
 {
     // flush port buffer first
     serial_port.port.flushPort();
-    task_info.error_code = make_error_code(ClientErrors::server_not_connected);
-    if (server_id != not_connected)
-    {
-        if (servers[server_id].info.status == ServerStatus::Available)
-        {
-            // write start to start app register
-            task_info.reset(ClientTasks::app_start, 1);
-            q_task.push([this]() { q_exchange.push([this] { writeRegister(static_cast<std::uint16_t>(ServerRegisters::app_start), app_start_request); }); });
-            while (!task_info.done)
-                ;
-        }
-    }
+    task_info.error_code = taskWriteRegister(address, static_cast<std::uint16_t>(ServerRegisters::app_start), app_start_request);
     return task_info.error_code;
-}
-
-void Client::addServer(const std::uint8_t addr, const std::uint8_t gateway_addr)
-{
-    auto it = std::find_if(servers.begin(), servers.end(), [addr](ServerData& server) { return server.info.addr == addr; });
-    if (it == servers.end())
-    {
-        servers.push_back(ServerData());
-        servers.back().info.addr = addr;
-        servers.back().info.gateway_addr = gateway_addr;
-        server_id = servers.size() - 1;
-    }
 }
 
 std::error_code Client::taskPing(const std::uint8_t addr)
@@ -443,6 +382,7 @@ std::error_code Client::taskWriteFile(const std::uint8_t dev_addr)
                             { lambda_write_record(dev_addr, file_id, static_cast<std::uint16_t>(i), data); });
         }
     };
+
     task_info.error_code = make_error_code(ClientErrors::server_not_connected);
     auto it = std::find_if(servers.begin(), servers.end(), [dev_addr](ServerData& server) { return server.info.addr == dev_addr; });
     if (it != servers.end())

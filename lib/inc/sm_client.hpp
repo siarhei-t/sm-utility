@@ -166,7 +166,7 @@ public:
     std::error_code uploadApp(const std::uint8_t address, const std::string path_to_file);
     /// @brief start application
     /// @return error code
-    std::error_code startApp();
+    std::error_code startApp(const std::uint8_t address);
     /// @brief diconnect from server
     void disconnect();
     /// @brief load last received server data

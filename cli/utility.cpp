@@ -339,7 +339,7 @@ static bool execute_cmd(const Commands cmd)
             }
             break;
         case Commands::goapp:
-            client.startApp();
+            client.startApp(1);
             break;
             
         case Commands::unknown:
