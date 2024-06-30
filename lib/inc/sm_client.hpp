@@ -139,20 +139,20 @@ class Client
 public:
     Client() : client_thread(&Client::clientThread, this) {}
     ~Client();
+    /// @brief stop client, close port
+    void stop();
+    /// @param addr server address
+    /// @param gateway_addr address of gateway server
+    void addServer(const std::uint8_t addr, const std::uint8_t gateway_addr = 0);
     /// @brief start client
     /// @param device device name to use
     /// @return error code
     std::error_code start(std::string device);
-    /// @brief stop client, close port
-    void stop();
     /// @brief client device configure
     /// @param config used config
     /// @return error code
     std::error_code configure(sp::PortConfig config);
     /// @brief add server to the internal servers list
-    /// @param addr server address
-    /// @param gateway_addr address of gateway server
-    void addServer(const std::uint8_t addr, const std::uint8_t gateway_addr = 0);
     /// @brief connect to server with selected id
     /// @param address server address
     /// @return error code
@@ -228,36 +228,9 @@ private:
     /// @param dev_addr server address
     /// @return error code
     std::error_code taskWriteFile(const std::uint8_t dev_addr);
-    /// @brief read file from the server with passed id
-    /// @param file_id file id
-    void readFile(const ServerFiles file_id);
-    /// @brief write file with to server
-    /// @param file_id file id
-    void writeFile(const ServerFiles file_id);
-    /// @brief ping command
-    void ping();
-    /// @brief write record in file with new data
-    /// @param file_id  file index
-    /// @param record_id record index in file
-    /// @param data new record data
-    void writeRecord(const std::uint16_t file_id, const std::uint16_t record_id,
-                     const std::vector<std::uint8_t>& data);
-    /// @brief read record from file
-    /// @param file_id  file index
-    /// @param record_id record index in file
-    /// @param length length to read
-    void readRecord(const std::uint16_t file_id, const std::uint16_t record_id,
-                    const std::uint16_t length);
-    /// @brief write register command
-    /// @param address address of register
-    /// @param value register value
-    void writeRegister(const std::uint16_t address, const std::uint16_t value);
-    /// @brief read registers command
-    /// @param address start address to read
-    /// @param quantity amount of registers to read
-    void readRegisters(const std::uint16_t address,
-                       const std::uint16_t quantity);
-    
+    /// @brief get expected file size based on server predefined logic
+    /// @param file_id file id in Modbus application layer
+    /// @return file size in bytes
     static size_t getFileSize(const ServerFiles file_id);
     /// @brief handler for client_thread
     void clientThread();

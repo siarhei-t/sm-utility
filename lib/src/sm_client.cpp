@@ -402,8 +402,7 @@ std::error_code Client::taskWriteFile(const std::uint8_t dev_addr)
             }
         }
         task_info.reset();
-        q_task.push([this, dev_addr, lambda_write_file, record_size]()
-                    { lambda_write_file(dev_addr, record_size); });
+        q_task.push([this, dev_addr, lambda_write_file, record_size]() { lambda_write_file(dev_addr, record_size); });
         while (!task_info.done)
             ;
     }
@@ -448,107 +447,6 @@ void Client::clientThread()
             q_task.pop();
         }
         std::this_thread::sleep_for(50ms);
-    }
-}
-
-void Client::writeRecord(const std::uint16_t file_id, const std::uint16_t record_id, const std::vector<std::uint8_t>& data)
-{
-    if (server_id != not_connected)
-    {
-        request_data = modbus_client.msgWriteFileRecord(servers[server_id].info.addr, file_id, record_id, data);
-        // in case of success we expect message with the same length
-        TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::write_file, request_data.size());
-        createServerRequest(attr);
-    }
-}
-
-void Client::readRecord(const std::uint16_t file_id, const std::uint16_t record_id, const std::uint16_t length)
-{
-    if (server_id != not_connected)
-    {
-        request_data = modbus_client.msgReadFileRecord(servers[server_id].info.addr, file_id, record_id, length);
-        // amount of half words + 1 byte for ref type + 1 byte for data length
-        // + 1 byte for resp length + 1 byte for func + modbus required part
-        TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::read_file, static_cast<size_t>(modbus_client.getRequriedLength() + (length * 2) + 4));
-        createServerRequest(attr);
-    }
-}
-
-void Client::writeRegister(const std::uint16_t address, const std::uint16_t value)
-{
-    if (server_id != not_connected)
-    {
-        request_data = modbus_client.msgWriteRegister(servers[server_id].info.addr, address, value);
-        // in case of success we expect message with the same length
-        TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::write_register, request_data.size());
-        createServerRequest(attr);
-    }
-}
-
-void Client::readRegisters(const std::uint16_t address, const std::uint16_t quantity)
-{
-    if (server_id != not_connected)
-    {
-        request_data = modbus_client.msgReadRegisters(servers[server_id].info.addr, address, quantity);
-        // amount of 16 bit registers + 1 byte for length + 1 byte for func +
-        // modbus required part
-        TaskAttributes attr =
-            TaskAttributes(modbus::FunctionCodes::read_registers, static_cast<size_t>(modbus_client.getRequriedLength() + (quantity * 2) + 2));
-        createServerRequest(attr);
-    }
-}
-
-void Client::writeFile(const ServerFiles file_id)
-{
-    if (server_id == not_connected)
-    {
-        return;
-    }
-    std::uint8_t block_size = servers[server_id].regs[static_cast<int>(ServerRegisters::record_size)];
-    std::uint16_t id = static_cast<std::uint16_t>(file_id);
-    auto num_of_records = file.getNumOfRecords();
-    task_info.reset(ClientTasks::file_write, num_of_records);
-    for (auto i = 0; i < num_of_records; ++i)
-    {
-        std::vector<uint8_t> data;
-        data.assign(&(file.getData()[i * block_size]), &(file.getData()[i * block_size]) + block_size);
-
-        q_exchange.push([this, data, id, i] { writeRecord(id, static_cast<std::uint16_t>(i), data); });
-    }
-}
-
-void Client::readFile(const ServerFiles file_id)
-{
-    if (server_id == not_connected)
-    {
-        return;
-    }
-    size_t file_size = getFileSize(file_id);
-
-    if (file.fileReadSetup(static_cast<std::uint16_t>(file_id), file_size, servers[server_id].regs[static_cast<int>(ServerRegisters::record_size)]))
-    {
-        auto num_of_records = file.getNumOfRecords();
-        task_info.reset(ClientTasks::file_read, num_of_records);
-        for (auto i = 0; i < num_of_records; ++i)
-        {
-            auto words_in_record = file.getActualRecordLength(i) / 2;
-            q_exchange.push([this, words_in_record, file_id, i]
-                            { readRecord(static_cast<std::uint16_t>(file_id), static_cast<std::uint16_t>(i), words_in_record); });
-        }
-    }
-}
-
-void Client::ping()
-{
-    if (server_id != not_connected)
-    {
-        std::uint8_t address = servers[server_id].info.addr;
-        std::uint8_t function = static_cast<uint8_t>(modbus::FunctionCodes::undefined);
-        std::vector<uint8_t> message{0x00, 0x00, 0x00, 0x00};
-        request_data = modbus_client.msgCustom(address, function, message);
-        // 1 byte for exception + 1 byte for func + modbus required part
-        TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::undefined, static_cast<size_t>(modbus_client.getRequriedLength() + 2));
-        createServerRequest(attr);
     }
 }
 
