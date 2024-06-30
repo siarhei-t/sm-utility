@@ -24,7 +24,7 @@ Client::~Client()
 void Client::getServerData(const std::uint8_t address, ServerData& data)
 {
     int index = getServerIndex(address);
-    if(index != -1)
+    if (index != -1)
     {
         data = servers[index];
     }
@@ -38,7 +38,7 @@ int Client::getActualTaskProgress() const { return (task_info.counter * 100) / t
 
 void Client::addServer(const std::uint8_t addr, const std::uint8_t gateway_addr)
 {
-    if(getServerIndex(addr) == -1)
+    if (getServerIndex(addr) == -1)
     {
         servers.push_back(ServerData());
         servers.back().info.addr = addr;
@@ -143,8 +143,13 @@ std::error_code Client::uploadApp(const std::uint8_t address, const std::string 
 {
     // flush port buffer first
     serial_port.port.flushPort();
-    task_info.error_code = make_error_code(ClientErrors::internal);
-    std::uint8_t record_size = servers[server_id].regs[static_cast<std::uint8_t>(ServerRegisters::record_size)];
+    task_info.error_code = make_error_code(ClientErrors::server_not_connected);
+    int index = getServerIndex(dev_addr);
+    if (index == -1)
+    {
+        return task_info.error_code;
+    }
+    std::uint8_t record_size = servers[index].regs[static_cast<std::uint8_t>(ServerRegisters::record_size)];
     // (1) load full firmware file into vector
     if (file.fileExternalWriteSetup(static_cast<std::uint16_t>(ServerFiles::application), path_to_file, record_size))
     {
@@ -195,7 +200,7 @@ std::error_code Client::taskPing(const std::uint8_t dev_addr)
 
     task_info.error_code = make_error_code(ClientErrors::server_not_connected);
     int index = getServerIndex(dev_addr);
-    if(index == -1)
+    if (index == -1)
     {
         return task_info.error_code;
     }
@@ -231,7 +236,7 @@ std::error_code Client::taskWriteRegister(const std::uint8_t dev_addr, const std
     };
     task_info.error_code = make_error_code(ClientErrors::server_not_connected);
     int index = getServerIndex(dev_addr);
-    if(index == -1)
+    if (index == -1)
     {
         return task_info.error_code;
     }
@@ -271,7 +276,7 @@ std::error_code Client::taskReadRegisters(const std::uint8_t dev_addr, const std
     };
     task_info.error_code = make_error_code(ClientErrors::server_not_connected);
     int index = getServerIndex(dev_addr);
-    if(index == -1)
+    if (index == -1)
     {
         return task_info.error_code;
     }
@@ -326,7 +331,7 @@ std::error_code Client::taskReadFile(const std::uint8_t dev_addr, const ServerFi
 
     task_info.error_code = make_error_code(ClientErrors::server_not_connected);
     int index = getServerIndex(dev_addr);
-    if(index == -1)
+    if (index == -1)
     {
         return task_info.error_code;
     }
@@ -380,7 +385,7 @@ std::error_code Client::taskWriteFile(const std::uint8_t dev_addr)
 
     task_info.error_code = make_error_code(ClientErrors::server_not_connected);
     int index = getServerIndex(dev_addr);
-    if(index == -1)
+    if (index == -1)
     {
         return task_info.error_code;
     }
