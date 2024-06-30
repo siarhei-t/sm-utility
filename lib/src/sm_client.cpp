@@ -144,7 +144,7 @@ std::error_code Client::uploadApp(const std::uint8_t address, const std::string 
     // flush port buffer first
     serial_port.port.flushPort();
     task_info.error_code = make_error_code(ClientErrors::server_not_connected);
-    int index = getServerIndex(dev_addr);
+    int index = getServerIndex(address);
     if (index == -1)
     {
         return task_info.error_code;
