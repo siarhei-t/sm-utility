@@ -224,7 +224,10 @@ private:
     /// @param file_id file id
     /// @return error code
     std::error_code taskReadFile(const std::uint8_t dev_addr, const ServerFiles file_id);
-
+    /// @brief write file stored in file control instance to the server selected by address
+    /// @param dev_addr server address
+    /// @return error code
+    std::error_code taskWriteFile(const std::uint8_t dev_addr);
     /// @brief read file from the server with passed id
     /// @param file_id file id
     void readFile(const ServerFiles file_id);

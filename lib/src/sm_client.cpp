@@ -93,7 +93,7 @@ std::error_code Client::connect(const std::uint8_t address)
         return task_info.error_code;
     }
     // (3.2) file reading
-    task_info.error_code = taskReadFile(address,ServerFiles::server_metadata);
+    task_info.error_code = taskReadFile(address, ServerFiles::server_metadata);
     return task_info.error_code;
 }
 
@@ -415,10 +415,9 @@ std::error_code Client::taskReadFile(const std::uint8_t dev_addr, const ServerFi
         auto converted_file_id = static_cast<std::uint16_t>(file_id);
         auto file_size = getFileSize(file_id);
         // we are trying to reach this server through the gateway, perform gateway setup first
-        /*
         if (servers[index].info.gateway_addr != 0)
         {
-            std::uint16_t expected_length = static_cast<size_t>(modbus_client.getRequriedLength() + (quantity * 2) + 2);
+            std::uint16_t expected_length = static_cast<size_t>(modbus_client.getRequriedLength() + record_size + 4);
             std::uint16_t control_reg = static_cast<std::uint16_t>(ServerRegisters::gateway_buffer_size);
             auto error = taskWriteRegister(servers[index].info.gateway_addr, control_reg, expected_length);
             if (error)
@@ -427,10 +426,60 @@ std::error_code Client::taskReadFile(const std::uint8_t dev_addr, const ServerFi
                 return task_info.error_code;
             }
         }
-        */
         task_info.reset();
         q_task.push([this, dev_addr, lambda_read_file, converted_file_id, file_size, record_size]()
                     { lambda_read_file(dev_addr, converted_file_id, file_size, record_size); });
+        while (!task_info.done)
+            ;
+    }
+    return task_info.error_code;
+}
+
+std::error_code Client::taskWriteFile(const std::uint8_t dev_addr)
+{
+    auto lambda_write_record =
+        [this](const std::uint8_t dev_addr, const std::uint16_t file_id, const std::uint16_t record_id, const std::vector<std::uint8_t>& data)
+    {
+        request_data = modbus_client.msgWriteFileRecord(dev_addr, file_id, record_id, data);
+        // in case of success we expect message with the same length
+        TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::write_file, request_data.size());
+        createServerRequest(attr);
+    };
+
+    auto lambda_write_file = [this, lambda_write_record](const std::uint8_t dev_addr, const std::uint16_t record_size)
+    {
+        const std::uint16_t num_of_records = file.getNumOfRecords();
+        const std::uint16_t file_id = file.getId();
+        task_info.reset(ClientTasks::file_write, num_of_records);
+        for (auto i = 0; i < num_of_records; ++i)
+        {
+            std::vector<uint8_t> data;
+            data.assign(&(file.getData()[i * record_size]), &(file.getData()[i * record_size]) + record_size);
+            q_exchange.push([this, lambda_write_record, dev_addr, file_id, i, data]
+                            { lambda_write_record(dev_addr, file_id, static_cast<std::uint16_t>(i), data); });
+        }
+    };
+    task_info.error_code = make_error_code(ClientErrors::server_not_connected);
+    auto it = std::find_if(servers.begin(), servers.end(), [dev_addr](ServerData& server) { return server.info.addr == dev_addr; });
+    if (it != servers.end())
+    {
+        int index = std::distance(servers.begin(), it);
+        auto record_size = servers[index].regs[static_cast<int>(ServerRegisters::record_size)];
+        // we are trying to reach this server through the gateway, perform gateway setup first
+        if (servers[index].info.gateway_addr != 0)
+        {
+            std::uint16_t expected_length = static_cast<size_t>(modbus_client.getRequriedLength() + record_size + 4);
+            std::uint16_t control_reg = static_cast<std::uint16_t>(ServerRegisters::gateway_buffer_size);
+            auto error = taskWriteRegister(servers[index].info.gateway_addr, control_reg, expected_length);
+            if (error)
+            {
+                task_info.error_code = make_error_code(ClientErrors::gateway_not_responding);
+                return task_info.error_code;
+            }
+        }
+        task_info.reset();
+        q_task.push([this, dev_addr, lambda_write_file, record_size]()
+                    { lambda_write_file(dev_addr, record_size); });
         while (!task_info.done)
             ;
     }
@@ -686,6 +735,7 @@ void Client::fileReadCallback(std::vector<std::uint8_t>& message)
         }
     }
 }
+
 size_t Client::getFileSize(const ServerFiles file_id)
 {
     size_t file_size = 0;
