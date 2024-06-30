@@ -239,7 +239,7 @@ static bool execute_cmd(const Commands cmd)
             break;
         
         case Commands::status:
-            client.getServerData(server_data);
+            client.getServerData(1,server_data);
             print_status();
             break;
 
@@ -254,7 +254,7 @@ static bool execute_cmd(const Commands cmd)
             return false;
         
         case Commands::stop:
-            client.getServerData(server_data);
+            client.getServerData(1,server_data);
             if(server_data.info.status == sm::ServerStatus::Available)
             {
                 client.disconnect();
@@ -299,7 +299,7 @@ static bool execute_cmd(const Commands cmd)
             break;
         
         case Commands::disconnect:
-            client.getServerData(server_data);
+            client.getServerData(1,server_data);
             if(server_data.info.status == sm::ServerStatus::Available)
             {
                 client.disconnect();
@@ -334,7 +334,7 @@ static bool execute_cmd(const Commands cmd)
             }
             else
             {
-                client.getServerData(server_data);
+                client.getServerData(1,server_data);
                 print_status();
             }
             break;

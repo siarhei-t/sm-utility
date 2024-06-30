@@ -21,11 +21,12 @@ Client::~Client()
     client_thread.join();
 }
 
-void Client::getServerData(ServerData& data)
+void Client::getServerData(const std::uint8_t address, ServerData& data)
 {
-    if (server_id != not_connected)
+    int index = getServerIndex(address);
+    if(index != -1)
     {
-        data = servers[server_id];
+        data = servers[index];
     }
     else
     {
@@ -37,8 +38,7 @@ int Client::getActualTaskProgress() const { return (task_info.counter * 100) / t
 
 void Client::addServer(const std::uint8_t addr, const std::uint8_t gateway_addr)
 {
-    auto it = std::find_if(servers.begin(), servers.end(), [addr](ServerData& server) { return server.info.addr == addr; });
-    if (it == servers.end())
+    if(getServerIndex(addr) == -1)
     {
         servers.push_back(ServerData());
         servers.back().info.addr = addr;

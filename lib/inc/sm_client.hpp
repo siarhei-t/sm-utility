@@ -170,8 +170,9 @@ public:
     /// @brief diconnect from server
     void disconnect();
     /// @brief load last received server data
+    /// @param @param server address in Modbus allpication area
     /// @param data reference to struct to save
-    void getServerData(ServerData& data);
+    void getServerData(const std::uint8_t address, ServerData& data);
     /// @brief get actual running task progress in %
     /// @return value from 0 to 100
     int getActualTaskProgress() const;
