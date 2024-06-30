@@ -232,6 +232,10 @@ private:
     /// @param file_id file id in Modbus application layer
     /// @return file size in bytes
     static size_t getFileSize(const ServerFiles file_id);
+    /// @brief get server index in servers vector
+    /// @param address server address
+    /// @return actual index or -1 if server not exist
+    int getServerIndex(const std::uint8_t address);
     /// @brief handler for client_thread
     void clientThread();
     /// @brief async call for callServerExchange method

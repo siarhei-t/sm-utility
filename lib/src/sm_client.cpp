@@ -136,11 +136,6 @@ std::error_code Client::eraseApp(const std::uint8_t address)
     {
         return task_info.error_code;
     }
-    // (3) cheking if erase was performed succesfully
-    if (servers[server_id].regs[static_cast<int>(ServerRegisters::boot_status)] != static_cast<std::uint16_t>(BootloaderStatus::empty))
-    {
-        task_info.error_code = make_error_code(ClientErrors::internal);
-    }
     return task_info.error_code;
 }
 
@@ -186,7 +181,7 @@ std::error_code Client::startApp(const std::uint8_t address)
     return task_info.error_code;
 }
 
-std::error_code Client::taskPing(const std::uint8_t addr)
+std::error_code Client::taskPing(const std::uint8_t dev_addr)
 {
     auto lambda_ping = [this](const std::uint8_t address)
     {
@@ -199,28 +194,28 @@ std::error_code Client::taskPing(const std::uint8_t addr)
     };
 
     task_info.error_code = make_error_code(ClientErrors::server_not_connected);
-    auto it = std::find_if(servers.begin(), servers.end(), [addr](ServerData& server) { return server.info.addr == addr; });
-    if (it != servers.end())
+    int index = getServerIndex(dev_addr);
+    if(index == -1)
     {
-        int index = std::distance(servers.begin(), it);
-        // we are trying to reach this server through the gateway, perform gateway setup first
-        if (servers[index].info.gateway_addr != 0)
-        {
-            std::uint16_t expected_length = modbus_client.getRequriedLength() + 2;
-            std::uint16_t control_reg = static_cast<std::uint16_t>(ServerRegisters::gateway_buffer_size);
-            auto error = taskWriteRegister(servers[index].info.gateway_addr, control_reg, expected_length);
-            if (error)
-            {
-                task_info.error_code = make_error_code(ClientErrors::gateway_not_responding);
-                return task_info.error_code;
-            }
-        }
-        // direct address ping
-        task_info.reset(ClientTasks::ping, 1);
-        q_task.push([this, lambda_ping, addr]() { q_exchange.push([lambda_ping, addr] { lambda_ping(addr); }); });
-        while (!task_info.done)
-            ;
+        return task_info.error_code;
     }
+    // we are trying to reach this server through the gateway, perform gateway setup first
+    if (servers[index].info.gateway_addr != 0)
+    {
+        std::uint16_t expected_length = modbus_client.getRequriedLength() + 2;
+        std::uint16_t control_reg = static_cast<std::uint16_t>(ServerRegisters::gateway_buffer_size);
+        auto error = taskWriteRegister(servers[index].info.gateway_addr, control_reg, expected_length);
+        if (error)
+        {
+            task_info.error_code = make_error_code(ClientErrors::gateway_not_responding);
+            return task_info.error_code;
+        }
+    }
+    // direct address ping
+    task_info.reset(ClientTasks::ping, 1);
+    q_task.push([this, lambda_ping, dev_addr]() { q_exchange.push([lambda_ping, dev_addr] { lambda_ping(dev_addr); }); });
+    while (!task_info.done)
+        ;
     return task_info.error_code;
 }
 
@@ -235,31 +230,31 @@ std::error_code Client::taskWriteRegister(const std::uint8_t dev_addr, const std
         createServerRequest(attr);
     };
     task_info.error_code = make_error_code(ClientErrors::server_not_connected);
-    auto it = std::find_if(servers.begin(), servers.end(), [dev_addr](ServerData& server) { return server.info.addr == dev_addr; });
-    if (it != servers.end())
+    int index = getServerIndex(dev_addr);
+    if(index == -1)
     {
-        int index = std::distance(servers.begin(), it);
-        // we are trying to reach this server through the gateway, perform gateway setup first
-        if ((servers[index].info.gateway_addr != 0) && !recurced)
-        {
-            recurced = true;
-            std::uint16_t expected_length = modbus_client.getRequriedLength() + 4;
-            std::uint16_t control_reg = static_cast<std::uint16_t>(ServerRegisters::gateway_buffer_size);
-            auto error = taskWriteRegister(servers[index].info.gateway_addr, control_reg, expected_length);
-            if (error)
-            {
-                task_info.error_code = make_error_code(ClientErrors::gateway_not_responding);
-                recurced = false;
-                return task_info.error_code;
-            }
-        }
-        // direct register write
-        task_info.reset(ClientTasks::reg_write, 1);
-        q_task.push([this, lambda_write_reg, dev_addr, reg_addr, value]()
-                    { q_exchange.push([lambda_write_reg, dev_addr, reg_addr, value] { lambda_write_reg(dev_addr, reg_addr, value); }); });
-        while (!task_info.done)
-            ;
+        return task_info.error_code;
     }
+    // we are trying to reach this server through the gateway, perform gateway setup first
+    if ((servers[index].info.gateway_addr != 0) && !recurced)
+    {
+        recurced = true;
+        std::uint16_t expected_length = modbus_client.getRequriedLength() + 4;
+        std::uint16_t control_reg = static_cast<std::uint16_t>(ServerRegisters::gateway_buffer_size);
+        auto error = taskWriteRegister(servers[index].info.gateway_addr, control_reg, expected_length);
+        if (error)
+        {
+            task_info.error_code = make_error_code(ClientErrors::gateway_not_responding);
+            recurced = false;
+            return task_info.error_code;
+        }
+    }
+    // direct register write
+    task_info.reset(ClientTasks::reg_write, 1);
+    q_task.push([this, lambda_write_reg, dev_addr, reg_addr, value]()
+                { q_exchange.push([lambda_write_reg, dev_addr, reg_addr, value] { lambda_write_reg(dev_addr, reg_addr, value); }); });
+    while (!task_info.done)
+        ;
     recurced = false;
     return task_info.error_code;
 }
@@ -275,29 +270,29 @@ std::error_code Client::taskReadRegisters(const std::uint8_t dev_addr, const std
         createServerRequest(attr);
     };
     task_info.error_code = make_error_code(ClientErrors::server_not_connected);
-    auto it = std::find_if(servers.begin(), servers.end(), [dev_addr](ServerData& server) { return server.info.addr == dev_addr; });
-    if (it != servers.end())
+    int index = getServerIndex(dev_addr);
+    if(index == -1)
     {
-        int index = std::distance(servers.begin(), it);
-        // we are trying to reach this server through the gateway, perform gateway setup first
-        if (servers[index].info.gateway_addr != 0)
-        {
-            std::uint16_t expected_length = static_cast<size_t>(modbus_client.getRequriedLength() + (quantity * 2) + 2);
-            std::uint16_t control_reg = static_cast<std::uint16_t>(ServerRegisters::gateway_buffer_size);
-            auto error = taskWriteRegister(servers[index].info.gateway_addr, control_reg, expected_length);
-            if (error)
-            {
-                task_info.error_code = make_error_code(ClientErrors::gateway_not_responding);
-                return task_info.error_code;
-            }
-        }
-        // direct registers reading
-        task_info.reset(ClientTasks::regs_read, 1);
-        q_task.push([this, lambda_read_regs, dev_addr, reg_addr, quantity]()
-                    { q_exchange.push([lambda_read_regs, dev_addr, reg_addr, quantity] { lambda_read_regs(dev_addr, reg_addr, quantity); }); });
-        while (!task_info.done)
-            ;
+        return task_info.error_code;
     }
+    // we are trying to reach this server through the gateway, perform gateway setup first
+    if (servers[index].info.gateway_addr != 0)
+    {
+        std::uint16_t expected_length = static_cast<size_t>(modbus_client.getRequriedLength() + (quantity * 2) + 2);
+        std::uint16_t control_reg = static_cast<std::uint16_t>(ServerRegisters::gateway_buffer_size);
+        auto error = taskWriteRegister(servers[index].info.gateway_addr, control_reg, expected_length);
+        if (error)
+        {
+            task_info.error_code = make_error_code(ClientErrors::gateway_not_responding);
+            return task_info.error_code;
+        }
+    }
+    // direct registers reading
+    task_info.reset(ClientTasks::regs_read, 1);
+    q_task.push([this, lambda_read_regs, dev_addr, reg_addr, quantity]()
+                { q_exchange.push([lambda_read_regs, dev_addr, reg_addr, quantity] { lambda_read_regs(dev_addr, reg_addr, quantity); }); });
+    while (!task_info.done)
+        ;
     return task_info.error_code;
 }
 
@@ -330,31 +325,31 @@ std::error_code Client::taskReadFile(const std::uint8_t dev_addr, const ServerFi
     };
 
     task_info.error_code = make_error_code(ClientErrors::server_not_connected);
-    auto it = std::find_if(servers.begin(), servers.end(), [dev_addr](ServerData& server) { return server.info.addr == dev_addr; });
-    if (it != servers.end())
+    int index = getServerIndex(dev_addr);
+    if(index == -1)
     {
-        int index = std::distance(servers.begin(), it);
-        auto record_size = servers[index].regs[static_cast<int>(ServerRegisters::record_size)];
-        auto converted_file_id = static_cast<std::uint16_t>(file_id);
-        auto file_size = getFileSize(file_id);
-        // we are trying to reach this server through the gateway, perform gateway setup first
-        if (servers[index].info.gateway_addr != 0)
-        {
-            std::uint16_t expected_length = static_cast<size_t>(modbus_client.getRequriedLength() + record_size + 4);
-            std::uint16_t control_reg = static_cast<std::uint16_t>(ServerRegisters::gateway_buffer_size);
-            auto error = taskWriteRegister(servers[index].info.gateway_addr, control_reg, expected_length);
-            if (error)
-            {
-                task_info.error_code = make_error_code(ClientErrors::gateway_not_responding);
-                return task_info.error_code;
-            }
-        }
-        task_info.reset();
-        q_task.push([this, dev_addr, lambda_read_file, converted_file_id, file_size, record_size]()
-                    { lambda_read_file(dev_addr, converted_file_id, file_size, record_size); });
-        while (!task_info.done)
-            ;
+        return task_info.error_code;
     }
+    auto record_size = servers[index].regs[static_cast<int>(ServerRegisters::record_size)];
+    auto converted_file_id = static_cast<std::uint16_t>(file_id);
+    auto file_size = getFileSize(file_id);
+    // we are trying to reach this server through the gateway, perform gateway setup first
+    if (servers[index].info.gateway_addr != 0)
+    {
+        std::uint16_t expected_length = static_cast<size_t>(modbus_client.getRequriedLength() + record_size + 4);
+        std::uint16_t control_reg = static_cast<std::uint16_t>(ServerRegisters::gateway_buffer_size);
+        auto error = taskWriteRegister(servers[index].info.gateway_addr, control_reg, expected_length);
+        if (error)
+        {
+            task_info.error_code = make_error_code(ClientErrors::gateway_not_responding);
+            return task_info.error_code;
+        }
+    }
+    task_info.reset();
+    q_task.push([this, dev_addr, lambda_read_file, converted_file_id, file_size, record_size]()
+                { lambda_read_file(dev_addr, converted_file_id, file_size, record_size); });
+    while (!task_info.done)
+        ;
     return task_info.error_code;
 }
 
@@ -384,28 +379,28 @@ std::error_code Client::taskWriteFile(const std::uint8_t dev_addr)
     };
 
     task_info.error_code = make_error_code(ClientErrors::server_not_connected);
-    auto it = std::find_if(servers.begin(), servers.end(), [dev_addr](ServerData& server) { return server.info.addr == dev_addr; });
-    if (it != servers.end())
+    int index = getServerIndex(dev_addr);
+    if(index == -1)
     {
-        int index = std::distance(servers.begin(), it);
-        auto record_size = servers[index].regs[static_cast<int>(ServerRegisters::record_size)];
-        // we are trying to reach this server through the gateway, perform gateway setup first
-        if (servers[index].info.gateway_addr != 0)
-        {
-            std::uint16_t expected_length = static_cast<size_t>(modbus_client.getRequriedLength() + record_size + 4);
-            std::uint16_t control_reg = static_cast<std::uint16_t>(ServerRegisters::gateway_buffer_size);
-            auto error = taskWriteRegister(servers[index].info.gateway_addr, control_reg, expected_length);
-            if (error)
-            {
-                task_info.error_code = make_error_code(ClientErrors::gateway_not_responding);
-                return task_info.error_code;
-            }
-        }
-        task_info.reset();
-        q_task.push([this, dev_addr, lambda_write_file, record_size]() { lambda_write_file(dev_addr, record_size); });
-        while (!task_info.done)
-            ;
+        return task_info.error_code;
     }
+    auto record_size = servers[index].regs[static_cast<int>(ServerRegisters::record_size)];
+    // we are trying to reach this server through the gateway, perform gateway setup first
+    if (servers[index].info.gateway_addr != 0)
+    {
+        std::uint16_t expected_length = static_cast<size_t>(modbus_client.getRequriedLength() + record_size + 4);
+        std::uint16_t control_reg = static_cast<std::uint16_t>(ServerRegisters::gateway_buffer_size);
+        auto error = taskWriteRegister(servers[index].info.gateway_addr, control_reg, expected_length);
+        if (error)
+        {
+            task_info.error_code = make_error_code(ClientErrors::gateway_not_responding);
+            return task_info.error_code;
+        }
+    }
+    task_info.reset();
+    q_task.push([this, dev_addr, lambda_write_file, record_size]() { lambda_write_file(dev_addr, record_size); });
+    while (!task_info.done)
+        ;
     return task_info.error_code;
 }
 
@@ -469,11 +464,6 @@ void Client::exchangeCallback()
             ++counter;
         }
     };
-
-    if (server_id == not_connected)
-    {
-        return;
-    }
     ++task_info.counter;
     // std::printf("\n\r");
     // for(int i = 0; i < responce_data.size(); ++i)
@@ -573,6 +563,19 @@ size_t Client::getFileSize(const ServerFiles file_id)
     return file_size;
 }
 
+int Client::getServerIndex(const std::uint8_t address)
+{
+    auto it = std::find_if(servers.begin(), servers.end(), [address](ServerData& server) { return server.info.addr == address; });
+    if (it != servers.end())
+    {
+        return std::distance(servers.begin(), it);
+    }
+    else
+    {
+        return -1;
+    }
+}
+
 void Client::createServerRequest(const TaskAttributes& attr)
 {
     task_info.attributes = attr;
@@ -591,7 +594,6 @@ void Client::callServerExchange()
         task_info.error_code = e.code();
     }
     // std::printf("data sent : size %d \n",request_data.size());
-    //  read from server
     try
     {
         serial_port.port.readBinary(responce_data, task_info.attributes.length);
