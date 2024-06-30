@@ -213,9 +213,18 @@ private:
     /// @param value new value
     /// @return error code
     std::error_code taskWriteRegister(const std::uint8_t dev_addr, const std::uint16_t reg_addr, const std::uint16_t value);
-    
+    /// @brief read registers from the server selected by address
+    /// @param dev_addr server address
+    /// @param reg_addr register start address
+    /// @param quantity amount of registers to read
+    /// @return error code
     std::error_code taskReadRegisters(const std::uint8_t dev_addr, const std::uint16_t reg_addr, const std::uint16_t quantity);
-    
+    /// @brief read file from the server selected by address
+    /// @param dev_addr server address
+    /// @param file_id file id
+    /// @return error code
+    std::error_code taskReadFile(const std::uint8_t dev_addr, const ServerFiles file_id);
+
     /// @brief read file from the server with passed id
     /// @param file_id file id
     void readFile(const ServerFiles file_id);
@@ -245,6 +254,8 @@ private:
     /// @param quantity amount of registers to read
     void readRegisters(const std::uint16_t address,
                        const std::uint16_t quantity);
+    
+    static size_t getFileSize(const ServerFiles file_id);
     /// @brief handler for client_thread
     void clientThread();
     /// @brief async call for callServerExchange method
