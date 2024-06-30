@@ -101,58 +101,42 @@ void Client::disconnect()
 {
     if (server_id != not_connected)
     {
-        // flush port buffer first
-        serial_port.port.flushPort();
         responce_data.clear();
         servers[server_id].info.status = ServerStatus::Unavailable;
         server_id = not_connected;
     }
 }
 
-std::error_code Client::eraseApp()
+std::error_code Client::eraseApp(const std::uint8_t address)
 {
     // flush port buffer first
     serial_port.port.flushPort();
-    task_info.error_code = make_error_code(ClientErrors::server_not_connected);
-    if (server_id != not_connected)
+    // (1) erase request
+    // we may have here timeout problem because flash erase take a lot of time in some cases, add additional logic for this case in future
+    task_info.error_code = taskWriteRegister(address, static_cast<std::uint16_t>(ServerRegisters::app_erase), app_erase_request);
+    if (task_info.error_code)
     {
-        if (servers[server_id].info.status == ServerStatus::Available)
-        {
-            // (1) erase request
-            task_info.reset(ClientTasks::reg_write, 1);
-            q_task.push([this]() { q_exchange.push([this] { writeRegister(static_cast<std::uint16_t>(ServerRegisters::app_erase), app_erase_request); }); });
-            // we may have here timeout problem because flash erase take a lot of time in some cases, add additional logic for this case in future
-            while (!task_info.done)
-                ;
-            if (task_info.error_code)
-            {
-                disconnect();
-                return task_info.error_code;
-            }
-            // (2) read register with status information
-            task_info.reset(ClientTasks::regs_read, 1);
-            q_task.push([this]() { q_exchange.push([this] { readRegisters(modbus::holding_regs_offset, amount_of_regs); }); });
-            while (!task_info.done)
-                ;
-            if (task_info.error_code)
-            {
-                disconnect();
-                return task_info.error_code;
-            }
-            // (3) cheking if erase was performed succesfully
-            if (servers[server_id].regs[static_cast<int>(ServerRegisters::boot_status)] != static_cast<std::uint16_t>(BootloaderStatus::empty))
-            {
-                task_info.error_code = make_error_code(ClientErrors::internal);
-            }
-        }
+        return task_info.error_code;
+    }
+    // (2) read register with status information
+    task_info.error_code = taskReadRegisters(address, modbus::holding_regs_offset, amount_of_regs);
+    if (task_info.error_code)
+    {
+        return task_info.error_code;
+    }
+    // (3) cheking if erase was performed succesfully
+    if (servers[server_id].regs[static_cast<int>(ServerRegisters::boot_status)] != static_cast<std::uint16_t>(BootloaderStatus::empty))
+    {
+        task_info.error_code = make_error_code(ClientErrors::internal);
     }
     return task_info.error_code;
 }
 
-std::error_code Client::uploadApp(const std::string path_to_file)
+std::error_code Client::uploadApp(const std::uint8_t address, const std::string path_to_file)
 {
     // flush port buffer first
     serial_port.port.flushPort();
+    
     task_info.error_code = make_error_code(ClientErrors::server_not_connected);
     if (server_id != not_connected)
     {
@@ -162,7 +146,7 @@ std::error_code Client::uploadApp(const std::string path_to_file)
             // (1) erase app file if we have some another state except BootloaderStatus::empty
             if (bootloader_status != BootloaderStatus::empty)
             {
-                (void)eraseApp();
+                (void)eraseApp(1);
                 if (task_info.error_code)
                 {
                     disconnect();

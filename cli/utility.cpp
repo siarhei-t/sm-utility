@@ -226,7 +226,7 @@ static Commands parse_str(const std::string& str)
             cmd = Commands::start;
         }
     }
-    return cmd; 
+    return cmd;
 }
 
 static bool execute_cmd(const Commands cmd)
@@ -286,7 +286,7 @@ static bool execute_cmd(const Commands cmd)
             break;
         
         case Commands::upload:
-            error = client.uploadApp(firmware_file);
+            error = client.uploadApp(1,firmware_file);
             if(error)
             {
                 std::printf("failed to upload firmware. \n");
@@ -313,7 +313,7 @@ static bool execute_cmd(const Commands cmd)
             break;
         
         case Commands::erase:
-            error = client.eraseApp(); 
+            error = client.eraseApp(1);
             if(error)
             {
                 std::printf("failed to erase app on server. \n");

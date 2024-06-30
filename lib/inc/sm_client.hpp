@@ -159,11 +159,11 @@ public:
     std::error_code connect(const std::uint8_t address);
     /// @brief erase firmware on the server
     /// @return error code
-    std::error_code eraseApp();
+    std::error_code eraseApp(const std::uint8_t address);
     /// @brief upload new firmware
     /// @param path_to_file path to file
     /// @return error code
-    std::error_code uploadApp(const std::string path_to_file);
+    std::error_code uploadApp(const std::uint8_t address, const std::string path_to_file);
     /// @brief start application
     /// @return error code
     std::error_code startApp();
