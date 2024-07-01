@@ -60,8 +60,14 @@ int main(int argc, char* argv[])
 {
     (void)(argv);
     //hardcoded port parameters, 57600 bd, 2s timeout
-    config.baudrate = sp::PortBaudRate::BD_19200;
+    config.baudrate = sp::PortBaudRate::BD_115200;
     config.timeout_ms = 2000;
+    
+    //master chip
+    client.addServer(1);
+    //slave chip gatewayed through master
+    client.addServer(2,1);
+
     if(argc == 1)
     {
         std::cout<<interactive_text;

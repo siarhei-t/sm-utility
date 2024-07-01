@@ -85,18 +85,20 @@ struct TaskAttributes
 struct TaskInfo
 {
     TaskInfo() = default;
-    TaskInfo(ClientTasks task, int num_of_exchanges)
-        : task(task), num_of_exchanges(num_of_exchanges){};
+    TaskInfo(ClientTasks task, int num_of_exchanges, int index)
+        : task(task), num_of_exchanges(num_of_exchanges), index(index){};
     ClientTasks task = ClientTasks::undefined;
     TaskAttributes attributes;
     std::error_code error_code;
     int num_of_exchanges = 0;
     int counter = 0;
+    int index = -1;
     std::atomic<bool> done = false;
-    void reset(ClientTasks task = ClientTasks::undefined, int num_of_exchanges = 0)
+    void reset(ClientTasks task = ClientTasks::undefined, int num_of_exchanges = 0, int index = -1)
     {
         this->task = task;
         this->num_of_exchanges = num_of_exchanges;
+        this->index = index;
         counter = 0;
         done = false;
         attributes = TaskAttributes();
@@ -190,8 +192,6 @@ private:
     sp::SerialPort serial_port;
     /// @brief vector with actual available modbus devices
     std::vector<ServerData> servers;
-    /// @brief connected server index in servers
-    int server_id = not_connected;
     /// @brief client-server data thread
     std::thread client_thread;
     /// @brief logic semaphore to stop client_thread
@@ -199,7 +199,7 @@ private:
     /// @brief async client task variable
     std::future<void> task;
     /// @brief info about actual pending task and function
-    TaskInfo task_info = TaskInfo(ClientTasks::undefined, 0);
+    TaskInfo task_info = TaskInfo(ClientTasks::undefined, 0,-1);
     /// @brief queue with client-server exchanges
     std::queue<std::function<void()>> q_exchange;
     /// @brief queue with client tasks
@@ -248,7 +248,8 @@ private:
     void exchangeCallback();
     /// @brief callback called for every ClientTasks::file_read
     /// @param message reference to a vector with the message read
-    void fileReadCallback(std::vector<std::uint8_t>& message);
+    /// @param index server index in servers vector
+    void fileReadCallback(std::vector<std::uint8_t>& message,const int index);
 };
 } // namespace sm
 

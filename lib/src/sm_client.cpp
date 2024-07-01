@@ -43,7 +43,7 @@ void Client::addServer(const std::uint8_t addr, const std::uint8_t gateway_addr)
         servers.push_back(ServerData());
         servers.back().info.addr = addr;
         servers.back().info.gateway_addr = gateway_addr;
-        server_id = servers.size() - 1;
+        std::printf("add server with id %d, gateway addr : %d \n",addr,gateway_addr);
     }
 }
 
@@ -84,9 +84,9 @@ std::error_code Client::connect(const std::uint8_t address)
 {
     // flush port buffer first
     serial_port.port.flushPort();
-    addServer(address);
     // (1) ping server, expected answer with exception type 1
     task_info.error_code = taskPing(address);
+    
     if (task_info.error_code)
     {
         return task_info.error_code;
@@ -107,16 +107,12 @@ std::error_code Client::connect(const std::uint8_t address)
     // (3.2) file reading
     task_info.error_code = taskReadFile(address, ServerFiles::server_metadata);
     return task_info.error_code;
+    
 }
 
 void Client::disconnect()
 {
-    if (server_id != not_connected)
-    {
-        responce_data.clear();
-        servers[server_id].info.status = ServerStatus::Unavailable;
-        server_id = not_connected;
-    }
+
 }
 
 std::error_code Client::eraseApp(const std::uint8_t address)
@@ -217,7 +213,7 @@ std::error_code Client::taskPing(const std::uint8_t dev_addr)
         }
     }
     // direct address ping
-    task_info.reset(ClientTasks::ping, 1);
+    task_info.reset(ClientTasks::ping, 1, index);
     q_task.push([this, lambda_ping, dev_addr]() { q_exchange.push([lambda_ping, dev_addr] { lambda_ping(dev_addr); }); });
     while (!task_info.done)
         ;
@@ -255,7 +251,7 @@ std::error_code Client::taskWriteRegister(const std::uint8_t dev_addr, const std
         }
     }
     // direct register write
-    task_info.reset(ClientTasks::reg_write, 1);
+    task_info.reset(ClientTasks::reg_write, 1,index);
     q_task.push([this, lambda_write_reg, dev_addr, reg_addr, value]()
                 { q_exchange.push([lambda_write_reg, dev_addr, reg_addr, value] { lambda_write_reg(dev_addr, reg_addr, value); }); });
     while (!task_info.done)
@@ -293,7 +289,7 @@ std::error_code Client::taskReadRegisters(const std::uint8_t dev_addr, const std
         }
     }
     // direct registers reading
-    task_info.reset(ClientTasks::regs_read, 1);
+    task_info.reset(ClientTasks::regs_read, 1, index);
     q_task.push([this, lambda_read_regs, dev_addr, reg_addr, quantity]()
                 { q_exchange.push([lambda_read_regs, dev_addr, reg_addr, quantity] { lambda_read_regs(dev_addr, reg_addr, quantity); }); });
     while (!task_info.done)
@@ -314,12 +310,12 @@ std::error_code Client::taskReadFile(const std::uint8_t dev_addr, const ServerFi
     };
 
     auto lambda_read_file =
-        [this, lambda_read_record](const std::uint8_t dev_addr, const std::uint16_t file_id, const size_t file_size, const std::uint16_t record_size)
+        [this, lambda_read_record](const std::uint8_t dev_addr,const int index, const std::uint16_t file_id, const size_t file_size, const std::uint16_t record_size)
     {
         if (file.fileReadSetup(file_id, file_size, record_size))
         {
             auto num_of_records = file.getNumOfRecords();
-            task_info.reset(ClientTasks::file_read, num_of_records);
+            task_info.reset(ClientTasks::file_read, num_of_records, index);
             for (auto i = 0; i < num_of_records; ++i)
             {
                 auto words_in_record = file.getActualRecordLength(i) / 2;
@@ -351,8 +347,8 @@ std::error_code Client::taskReadFile(const std::uint8_t dev_addr, const ServerFi
         }
     }
     task_info.reset();
-    q_task.push([this, dev_addr, lambda_read_file, converted_file_id, file_size, record_size]()
-                { lambda_read_file(dev_addr, converted_file_id, file_size, record_size); });
+    q_task.push([this, dev_addr,index, lambda_read_file, converted_file_id, file_size, record_size]()
+                { lambda_read_file(dev_addr,index, converted_file_id, file_size, record_size); });
     while (!task_info.done)
         ;
     return task_info.error_code;
@@ -369,11 +365,11 @@ std::error_code Client::taskWriteFile(const std::uint8_t dev_addr)
         createServerRequest(attr);
     };
 
-    auto lambda_write_file = [this, lambda_write_record](const std::uint8_t dev_addr, const std::uint16_t record_size)
+    auto lambda_write_file = [this, lambda_write_record](const std::uint8_t dev_addr,const int index, const std::uint16_t record_size)
     {
         const std::uint16_t num_of_records = file.getNumOfRecords();
         const std::uint16_t file_id = file.getId();
-        task_info.reset(ClientTasks::file_write, num_of_records);
+        task_info.reset(ClientTasks::file_write, num_of_records, index);
         for (auto i = 0; i < num_of_records; ++i)
         {
             std::vector<uint8_t> data;
@@ -403,7 +399,7 @@ std::error_code Client::taskWriteFile(const std::uint8_t dev_addr)
         }
     }
     task_info.reset();
-    q_task.push([this, dev_addr, lambda_write_file, record_size]() { lambda_write_file(dev_addr, record_size); });
+    q_task.push([this, dev_addr, lambda_write_file, index, record_size]() { lambda_write_file(dev_addr, index, record_size); });
     while (!task_info.done)
         ;
     return task_info.error_code;
@@ -489,16 +485,16 @@ void Client::exchangeCallback()
             switch (task_info.task)
             {
                 case ClientTasks::ping: // mark server as available if we have responce on this command
-                    servers[server_id].info.status = ServerStatus::Available;
+                    servers[task_info.index].info.status = ServerStatus::Available;
                     break;
 
                 case ClientTasks::regs_read:
-                    readRegs(servers[server_id], message);
+                    readRegs(servers[task_info.index], message);
                     break;
 
                 case ClientTasks::file_read:
 
-                    fileReadCallback(message);
+                    fileReadCallback(message,task_info.index);
                     break;
 
                 case ClientTasks::file_write:
@@ -530,7 +526,7 @@ void Client::exchangeCallback()
     }
 }
 
-void Client::fileReadCallback(std::vector<std::uint8_t>& message)
+void Client::fileReadCallback(std::vector<std::uint8_t>& message, const int index)
 {
     if (!file.getRecordFromMessage(message))
     {
@@ -543,7 +539,7 @@ void Client::fileReadCallback(std::vector<std::uint8_t>& message)
             switch (file.getId())
             {
                 case static_cast<std::uint16_t>(ServerFiles::server_metadata):
-                    std::memcpy(&servers[server_id].data, &file.getData()[0], sizeof(BootloaderInfo));
+                    std::memcpy(&servers[index].data, &file.getData()[0], sizeof(BootloaderInfo));
                     break;
 
                 default:
