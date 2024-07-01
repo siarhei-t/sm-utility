@@ -43,9 +43,17 @@ bool File::fileReadSetup(const std::uint16_t id, const size_t file_size, const s
     {
         fileDelete();
     }
-    data = std::make_unique<std::uint8_t[]>(file_size);
+    if(file_size < record_size)
+    {
+        data = std::make_unique<std::uint8_t[]>(record_size);
+        this->file_size = record_size;
+    }
+    else
+    {
+        data = std::make_unique<std::uint8_t[]>(file_size);
+        this->file_size = file_size;
+    }
     this->id = id;
-    this->file_size = file_size;
     this->record_size = record_size;
     num_of_records = calcNumOfRecords(file_size);
     return data != nullptr;
@@ -135,6 +143,8 @@ std::uint16_t File::getActualRecordLength(const int index) const
     std::uint16_t length = 0;
     if ((index < num_of_records) && (index >= 0))
     {
+        length = record_size;
+        /*
         if ((index + 1) == num_of_records)
         {
             length = (file_size == record_size) ? (file_size) : (file_size % record_size);
@@ -143,6 +153,7 @@ std::uint16_t File::getActualRecordLength(const int index) const
         {
             length = record_size;
         }
+        */
     }
     else
     {

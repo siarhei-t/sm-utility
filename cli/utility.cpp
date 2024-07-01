@@ -115,33 +115,26 @@ static void print_help()
 static void print_status()
 {
     std::cout<<"used port : "<<port<<"\n";
-    if(server_data.info.status == sm::ServerStatus::Available)
+    std::printf("connected to server with id : %d \n",server_address);
+    std::printf("device name   : %s \n",server_data.data.boot_name);
+    std::printf("boot version  : %s \n",server_data.data.boot_version);
+    std::printf("available ROM : %d KB \n",server_data.data.available_rom/1024);
+    std::cout<<"app status: ";
+    switch(server_data.regs[static_cast<int>(sm::ServerRegisters::boot_status)])
     {
-        std::printf("connected to server with id : %d \n",server_address);
-        std::printf("device name   : %s \n",server_data.data.boot_name);
-        std::printf("boot version  : %s \n",server_data.data.boot_version);
-        std::printf("available ROM : %d KB \n",server_data.data.available_rom/1024);
-        std::cout<<"app status: ";
-        switch(server_data.regs[static_cast<int>(sm::ServerRegisters::boot_status)])
-        {
-            case 1:
-                std::cout<<" not presented \n";
-                break;
-            case 2:
-                std::cout<<" ok \n";
-                break;
-            case 3:
-                std::cout<<" error \n";
-                break;            
-            case 0:
-            default:
-                std::cout<<" unknown \n";
-                break;
-        }
-    }
-    else
-    {
-        std::cout<<"server not connected.\n";
+        case 1:
+            std::cout<<" not presented \n";
+            break;
+        case 2:
+            std::cout<<" ok \n";
+            break;
+        case 3:
+            std::cout<<" error \n";
+            break;            
+        case 0:
+        default:
+            std::cout<<" unknown \n";
+            break;
     }
 }
 

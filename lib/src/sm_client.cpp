@@ -84,28 +84,34 @@ std::error_code Client::connect(const std::uint8_t address)
 {
     // flush port buffer first
     serial_port.port.flushPort();
+    task_info.error_code = make_error_code(ClientErrors::server_not_connected);
+    
     // (1) ping server, expected answer with exception type 1
     task_info.error_code = taskPing(address);
+    if (task_info.error_code)
+    {
+        return task_info.error_code;
+    }
+    
+    // (2) load all registers
+    task_info.error_code = taskReadRegisters(address, modbus::holding_regs_offset, amount_of_regs);
     
     if (task_info.error_code)
     {
         return task_info.error_code;
     }
-    // (2) load all registers
-    task_info.error_code = taskReadRegisters(address, modbus::holding_regs_offset, amount_of_regs);
-    if (task_info.error_code)
-    {
-        return task_info.error_code;
-    }
-    // (3) download file with server metadata
+    
+     
     // (3.1) prepare to read
     task_info.error_code = taskWriteRegister(address, static_cast<std::uint16_t>(ServerRegisters::file_control), file_read_prepare);
     if (task_info.error_code)
     {
         return task_info.error_code;
     }
+    
     // (3.2) file reading
     task_info.error_code = taskReadFile(address, ServerFiles::server_metadata);
+    
     return task_info.error_code;
     
 }
@@ -240,8 +246,9 @@ std::error_code Client::taskWriteRegister(const std::uint8_t dev_addr, const std
     if ((servers[index].info.gateway_addr != 0) && !recurced)
     {
         recurced = true;
-        std::uint16_t expected_length = modbus_client.getRequriedLength() + 4;
+        std::uint16_t expected_length = modbus_client.getRequriedLength() + 5;
         std::uint16_t control_reg = static_cast<std::uint16_t>(ServerRegisters::gateway_buffer_size);
+        std::printf("recursive call \n");
         auto error = taskWriteRegister(servers[index].info.gateway_addr, control_reg, expected_length);
         if (error)
         {
@@ -250,6 +257,7 @@ std::error_code Client::taskWriteRegister(const std::uint8_t dev_addr, const std
             return task_info.error_code;
         }
     }
+
     // direct register write
     task_info.reset(ClientTasks::reg_write, 1,index);
     q_task.push([this, lambda_write_reg, dev_addr, reg_addr, value]()
@@ -331,15 +339,32 @@ std::error_code Client::taskReadFile(const std::uint8_t dev_addr, const ServerFi
     {
         return task_info.error_code;
     }
+
     auto record_size = servers[index].regs[static_cast<int>(ServerRegisters::record_size)];
     auto converted_file_id = static_cast<std::uint16_t>(file_id);
     auto file_size = getFileSize(file_id);
+
     // we are trying to reach this server through the gateway, perform gateway setup first
     if (servers[index].info.gateway_addr != 0)
     {
         std::uint16_t expected_length = static_cast<size_t>(modbus_client.getRequriedLength() + record_size + 4);
         std::uint16_t control_reg = static_cast<std::uint16_t>(ServerRegisters::gateway_buffer_size);
         auto error = taskWriteRegister(servers[index].info.gateway_addr, control_reg, expected_length);
+        if (error)
+        {
+            task_info.error_code = make_error_code(ClientErrors::gateway_not_responding);
+            return task_info.error_code;
+        }
+        control_reg = static_cast<std::uint16_t>(ServerRegisters::record_counter);
+        error = taskWriteRegister(servers[index].info.gateway_addr, control_reg, file.getNumOfRecords());
+        if (error)
+        {
+            task_info.error_code = make_error_code(ClientErrors::gateway_not_responding);
+            return task_info.error_code;
+        }
+
+        control_reg = static_cast<std::uint16_t>(ServerRegisters::gateway_file_control);
+        error = taskWriteRegister(servers[index].info.gateway_addr, control_reg, file_read_prepare);
         if (error)
         {
             task_info.error_code = make_error_code(ClientErrors::gateway_not_responding);
@@ -466,12 +491,6 @@ void Client::exchangeCallback()
         }
     };
     ++task_info.counter;
-    // std::printf("\n\r");
-    // for(int i = 0; i < responce_data.size(); ++i)
-    //{
-    //     std::printf("0x%x ",responce_data[i]);
-    // }
-    // std::printf("\n\r");
     if (modbus_client.isChecksumValid(responce_data))
     {
         std::vector<std::uint8_t> message;
@@ -594,7 +613,13 @@ void Client::callServerExchange()
     {
         task_info.error_code = e.code();
     }
-    // std::printf("data sent : size %d \n",request_data.size());
+    std::printf("******************************************\n");
+    std::printf("data sent : size %d \n",request_data.size());
+    for(int i = 0; i < request_data.size(); ++i)
+    {
+        std::printf("0x%x ",request_data[i]);
+    }
+    std::printf("\n\r");
     try
     {
         serial_port.port.readBinary(responce_data, task_info.attributes.length);
@@ -603,6 +628,13 @@ void Client::callServerExchange()
     {
         task_info.error_code = e.code();
     }
-    // std::printf("data received, size : %d \n",responce_data.size());
+     std::printf("data received, size : %d \n",responce_data.size());
+    for(int i = 0; i < responce_data.size(); ++i)
+    {
+        std::printf("0x%x ",responce_data[i]);
+    }
+    std::printf("\n\r");
+    std::printf("******************************************\n");
+    std::printf("\n\r");
 }
 } // namespace sm

@@ -26,7 +26,7 @@ namespace sm
 //////////////////////////////SERVER CONSTANTS//////////////////////////////////
 constexpr int boot_version_size = 17;
 constexpr int boot_name_size = 33;
-constexpr int amount_of_regs = 7;
+constexpr int amount_of_regs = 10;
 constexpr int not_connected = 255;
 constexpr std::uint16_t file_read_prepare = 1;
 constexpr std::uint16_t file_write_prepare = 2;
@@ -43,7 +43,9 @@ enum class ServerRegisters
     boot_control = 4,
     boot_status = 5,
     record_size = 6,
-    gateway_buffer_size = 7
+    gateway_buffer_size = 7,
+    record_counter = 8,
+    gateway_file_control = 9
 };
 
 enum class BootloaderStatus
