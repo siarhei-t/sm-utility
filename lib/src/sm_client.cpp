@@ -318,18 +318,15 @@ std::error_code Client::taskReadFile(const std::uint8_t dev_addr, const ServerFi
     };
 
     auto lambda_read_file =
-        [this, lambda_read_record](const std::uint8_t dev_addr,const int index, const std::uint16_t file_id, const size_t file_size, const std::uint16_t record_size)
+        [this, lambda_read_record](const std::uint8_t dev_addr,const int index, const std::uint16_t file_id)
     {
-        if (file.fileReadSetup(file_id, file_size, record_size))
+        auto num_of_records = file.getNumOfRecords();
+        task_info.reset(ClientTasks::file_read, num_of_records, index);
+        for (auto i = 0; i < num_of_records; ++i)
         {
-            auto num_of_records = file.getNumOfRecords();
-            task_info.reset(ClientTasks::file_read, num_of_records, index);
-            for (auto i = 0; i < num_of_records; ++i)
-            {
-                auto words_in_record = file.getActualRecordLength(i) / 2;
-                q_exchange.push([words_in_record, file_id, i, lambda_read_record, dev_addr]
-                                { lambda_read_record(dev_addr, file_id, static_cast<std::uint16_t>(i), words_in_record); });
-            }
+            auto words_in_record = file.getActualRecordLength(i) / 2;
+            q_exchange.push([words_in_record, file_id, i, lambda_read_record, dev_addr]
+                            { lambda_read_record(dev_addr, file_id, static_cast<std::uint16_t>(i), words_in_record); });
         }
     };
 
@@ -343,6 +340,11 @@ std::error_code Client::taskReadFile(const std::uint8_t dev_addr, const ServerFi
     auto record_size = servers[index].regs[static_cast<int>(ServerRegisters::record_size)];
     auto converted_file_id = static_cast<std::uint16_t>(file_id);
     auto file_size = getFileSize(file_id);
+    if(file.fileReadSetup(converted_file_id, file_size, record_size) != true)
+    {
+        task_info.error_code = make_error_code(ClientErrors::server_not_connected);
+        return task_info.error_code;
+    }
 
     // we are trying to reach this server through the gateway, perform gateway setup first
     if (servers[index].info.gateway_addr != 0)
@@ -372,8 +374,8 @@ std::error_code Client::taskReadFile(const std::uint8_t dev_addr, const ServerFi
         }
     }
     task_info.reset();
-    q_task.push([this, dev_addr,index, lambda_read_file, converted_file_id, file_size, record_size]()
-                { lambda_read_file(dev_addr,index, converted_file_id, file_size, record_size); });
+    q_task.push([this, dev_addr,index, lambda_read_file, converted_file_id]()
+                { lambda_read_file(dev_addr,index, converted_file_id); });
     while (!task_info.done)
         ;
     return task_info.error_code;
@@ -414,9 +416,24 @@ std::error_code Client::taskWriteFile(const std::uint8_t dev_addr)
     // we are trying to reach this server through the gateway, perform gateway setup first
     if (servers[index].info.gateway_addr != 0)
     {
-        std::uint16_t expected_length = static_cast<size_t>(modbus_client.getRequriedLength() + record_size + 4);
+        std::uint16_t expected_length = static_cast<size_t>(modbus_client.getRequriedLength() + record_size + 9);
         std::uint16_t control_reg = static_cast<std::uint16_t>(ServerRegisters::gateway_buffer_size);
         auto error = taskWriteRegister(servers[index].info.gateway_addr, control_reg, expected_length);
+        if (error)
+        {
+            task_info.error_code = make_error_code(ClientErrors::gateway_not_responding);
+            return task_info.error_code;
+        }
+        control_reg = static_cast<std::uint16_t>(ServerRegisters::record_counter);
+        error = taskWriteRegister(servers[index].info.gateway_addr, control_reg, file.getNumOfRecords());
+        if (error)
+        {
+            task_info.error_code = make_error_code(ClientErrors::gateway_not_responding);
+            return task_info.error_code;
+        }
+
+        control_reg = static_cast<std::uint16_t>(ServerRegisters::gateway_file_control);
+        error = taskWriteRegister(servers[index].info.gateway_addr, control_reg, file_write_prepare);
         if (error)
         {
             task_info.error_code = make_error_code(ClientErrors::gateway_not_responding);

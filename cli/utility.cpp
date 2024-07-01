@@ -285,7 +285,7 @@ static bool execute_cmd(const Commands cmd)
             break;
         
         case Commands::upload:
-            error = client.uploadApp(1,firmware_file);
+            error = client.uploadApp(2,firmware_file);
             if(error)
             {
                 std::printf("failed to upload firmware. \n");
