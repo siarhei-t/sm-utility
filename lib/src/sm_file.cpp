@@ -93,11 +93,13 @@ bool File::fileExternalWriteSetup(const std::uint16_t id, const std::string path
         }
         else
         {
+            std::printf("fuckup at reading\n");
             return false;
         }
     }
     else
     {
+        std::printf("fuckup at length\n");
         return false;
     }
 }

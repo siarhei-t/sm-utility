@@ -43,7 +43,6 @@ void Client::addServer(const std::uint8_t addr, const std::uint8_t gateway_addr)
         servers.push_back(ServerData());
         servers.back().info.addr = addr;
         servers.back().info.gateway_addr = gateway_addr;
-        std::printf("add server with id %d, gateway addr : %d \n",addr,gateway_addr);
     }
 }
 
@@ -157,6 +156,7 @@ std::error_code Client::uploadApp(const std::uint8_t address, const std::string 
     {
         // (2) send new file size
         std::uint16_t num_of_records = file.getNumOfRecords();
+        
         task_info.error_code = taskWriteRegister(address, static_cast<std::uint16_t>(ServerRegisters::app_size), num_of_records);
         if (task_info.error_code)
         {
@@ -176,6 +176,10 @@ std::error_code Client::uploadApp(const std::uint8_t address, const std::string 
         }
         // (5) read status back
         task_info.error_code = taskReadRegisters(address, modbus::holding_regs_offset, amount_of_regs);
+    }
+    else
+    {
+        task_info.error_code = make_error_code(ClientErrors::internal);
     }
     return task_info.error_code;
 }
@@ -248,7 +252,6 @@ std::error_code Client::taskWriteRegister(const std::uint8_t dev_addr, const std
         recurced = true;
         std::uint16_t expected_length = modbus_client.getRequriedLength() + 5;
         std::uint16_t control_reg = static_cast<std::uint16_t>(ServerRegisters::gateway_buffer_size);
-        std::printf("recursive call \n");
         auto error = taskWriteRegister(servers[index].info.gateway_addr, control_reg, expected_length);
         if (error)
         {
@@ -630,13 +633,13 @@ void Client::callServerExchange()
     {
         task_info.error_code = e.code();
     }
-    std::printf("******************************************\n");
-    std::printf("data sent : size %d \n",request_data.size());
-    for(int i = 0; i < request_data.size(); ++i)
-    {
-        std::printf("0x%x ",request_data[i]);
-    }
-    std::printf("\n\r");
+    //std::printf("******************************************\n");
+    //std::printf("data sent : size %d \n",request_data.size());
+    //for(int i = 0; i < request_data.size(); ++i)
+    //{
+    //    std::printf("0x%x ",request_data[i]);
+    //}
+    //std::printf("\n\r");
     try
     {
         serial_port.port.readBinary(responce_data, task_info.attributes.length);
@@ -645,13 +648,13 @@ void Client::callServerExchange()
     {
         task_info.error_code = e.code();
     }
-     std::printf("data received, size : %d \n",responce_data.size());
-    for(int i = 0; i < responce_data.size(); ++i)
-    {
-        std::printf("0x%x ",responce_data[i]);
-    }
-    std::printf("\n\r");
-    std::printf("******************************************\n");
-    std::printf("\n\r");
+    //std::printf("data received, size : %d \n",responce_data.size());
+    //for(int i = 0; i < responce_data.size(); ++i)
+    //{
+    //    std::printf("0x%x ",responce_data[i]);
+    //}
+    //std::printf("\n\r");
+    //std::printf("******************************************\n");
+    //std::printf("\n\r");
 }
 } // namespace sm
