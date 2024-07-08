@@ -71,7 +71,11 @@ bool File::fileExternalWriteSetup(const std::uint16_t id, const std::string path
         std::ifstream tmp(path_to_file, std::ifstream::binary);
         if (tmp)
         {
-            data = std::make_unique<std::uint8_t[]>(length);
+            this->id = id;
+            this->record_size = record_size;
+            num_of_records = calcNumOfRecords(length);
+            data = std::make_unique<std::uint8_t[]>(num_of_records * record_size);
+            std::memset(&data.get()[(num_of_records - 1) * record_size],0,record_size);
             // load all file to RAM buffer at one time
             tmp.read(reinterpret_cast<char*>(data.get()), length);
             if (tmp)
@@ -86,20 +90,17 @@ bool File::fileExternalWriteSetup(const std::uint16_t id, const std::string path
         }
         if (file_size == length)
         {
-            this->id = id;
-            this->record_size = record_size;
-            num_of_records = calcNumOfRecords(file_size);
             return true;
         }
         else
         {
-            std::printf("fuckup at reading\n");
+            std::printf("error at file read operation.\n");
             return false;
         }
     }
     else
     {
-        std::printf("fuckup at length\n");
+        std::printf("unable to open file on path %s \n",path_to_file.c_str());
         return false;
     }
 }

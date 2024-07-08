@@ -633,13 +633,13 @@ void Client::callServerExchange()
     {
         task_info.error_code = e.code();
     }
-    //std::printf("******************************************\n");
-    //std::printf("data sent : size %d \n",request_data.size());
-    //for(int i = 0; i < request_data.size(); ++i)
-    //{
-    //    std::printf("0x%x ",request_data[i]);
-    //}
-    //std::printf("\n\r");
+    std::printf("******************************************\n");
+    std::printf("data sent : size %d \n",request_data.size());
+    for(int i = 0; i < request_data.size(); ++i)
+    {
+        std::printf("0x%x ",request_data[i]);
+    }
+    std::printf("\n\r");
     try
     {
         serial_port.port.readBinary(responce_data, task_info.attributes.length);
@@ -653,8 +653,8 @@ void Client::callServerExchange()
     //{
     //    std::printf("0x%x ",responce_data[i]);
     //}
-    //std::printf("\n\r");
-    //std::printf("******************************************\n");
-    //std::printf("\n\r");
+    std::printf("\n\r");
+    std::printf("******************************************\n");
+    std::printf("\n\r");
 }
 } // namespace sm
