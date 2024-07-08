@@ -66,7 +66,6 @@ std::error_code Client::start(std::string device)
 
 void Client::stop()
 {
-    disconnect();
     if (serial_port.getState() == sp::PortState::Open)
     {
         serial_port.close();
@@ -115,11 +114,6 @@ std::error_code Client::connect(const std::uint8_t address)
     
 }
 
-void Client::disconnect()
-{
-
-}
-
 std::error_code Client::eraseApp(const std::uint8_t address)
 {
     // flush port buffer first
@@ -151,9 +145,15 @@ std::error_code Client::uploadApp(const std::uint8_t address, const std::string 
         return task_info.error_code;
     }
     std::uint8_t record_size = servers[index].regs[static_cast<std::uint8_t>(ServerRegisters::record_size)];
-    // (1) load full firmware file into vector
     if (file.fileExternalWriteSetup(static_cast<std::uint16_t>(ServerFiles::application), path_to_file, record_size))
     {
+
+        // (1) erase application
+        task_info.error_code = taskWriteRegister(address, static_cast<std::uint16_t>(ServerRegisters::app_erase), app_erase_request);
+        if (task_info.error_code)
+        {
+            return task_info.error_code;
+        }   
         // (2) send new file size
         std::uint16_t num_of_records = file.getNumOfRecords();
         

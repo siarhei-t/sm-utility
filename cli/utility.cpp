@@ -176,12 +176,13 @@ int main(int argc, char* argv[])
     
     std::printf("*---------------------------------------------*\n");
     std::printf("success, program exit...\n");
-    
+
     return 0;
 }
 
 static void print_metadata(sm::ServerData& server_data)
 {
+    std::printf("*---------------------------------------------*\n");
     std::printf("device name   : %s \n",server_data.data.boot_name);
     std::printf("boot version  : %s \n",server_data.data.boot_version);
     std::printf("available ROM : %d KB \n",server_data.data.available_rom/1024);
@@ -202,4 +203,5 @@ static void print_metadata(sm::ServerData& server_data)
             std::cout<<" unknown \n";
             break;
     }
+    std::printf("*---------------------------------------------*\n");
 }

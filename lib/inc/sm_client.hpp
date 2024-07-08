@@ -171,8 +171,6 @@ public:
     /// @brief start application
     /// @return error code
     std::error_code startApp(const std::uint8_t address);
-    /// @brief diconnect from server
-    void disconnect();
     /// @brief load last received server data
     /// @param @param server address in Modbus allpication area
     /// @param data reference to struct to save
