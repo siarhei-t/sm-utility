@@ -233,6 +233,9 @@ private:
     /// @param file_id file id in Modbus application layer
     /// @return file size in bytes
     static size_t getFileSize(const ServerFiles file_id);
+    /// @brief get expected file size based on server predefined logic
+    /// @param task_progress actual task progress in %
+    static void printProgressBar(const int task_progress);
     /// @brief get server index in servers vector
     /// @param address server address
     /// @return actual index or -1 if server not exist

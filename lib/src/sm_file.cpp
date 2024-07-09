@@ -75,7 +75,7 @@ bool File::fileExternalWriteSetup(const std::uint16_t id, const std::string path
             this->record_size = record_size;
             num_of_records = calcNumOfRecords(length);
             data = std::make_unique<std::uint8_t[]>(num_of_records * record_size);
-            std::memset(&data.get()[(num_of_records - 1) * record_size],0,record_size);
+            std::memset(&data.get()[(num_of_records - 1) * record_size],0xFF,record_size);
             // load all file to RAM buffer at one time
             tmp.read(reinterpret_cast<char*>(data.get()), length);
             if (tmp)
@@ -146,8 +146,7 @@ std::uint16_t File::getActualRecordLength(const int index) const
     std::uint16_t length = 0;
     if ((index < num_of_records) && (index >= 0))
     {
-        length = record_size;
-        /*
+        //length = record_size;
         if ((index + 1) == num_of_records)
         {
             length = (file_size == record_size) ? (file_size) : (file_size % record_size);
@@ -156,7 +155,6 @@ std::uint16_t File::getActualRecordLength(const int index) const
         {
             length = record_size;
         }
-        */
     }
     else
     {

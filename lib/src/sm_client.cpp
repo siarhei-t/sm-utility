@@ -537,7 +537,8 @@ void Client::exchangeCallback()
                     break;
 
                 case ClientTasks::file_write:
-                    std::printf("progress: %d%% \n", getActualTaskProgress());
+                    printProgressBar(getActualTaskProgress());
+                    //std::printf("progress: %d%% \n", getActualTaskProgress());
                     break;
 
                 default:
@@ -603,6 +604,35 @@ size_t Client::getFileSize(const ServerFiles file_id)
     return file_size;
 }
 
+void Client::printProgressBar(const int task_progress)
+{
+    float progress = 0.01 * task_progress;
+    int barWidth = 80;
+    std::cout << "[";
+    int pos = barWidth * progress;
+    for (int i = 0; i < barWidth; ++i) 
+    {
+        if (i < pos)
+        {
+            std::cout << "*";
+        }
+        else if (i == pos) 
+        {
+            std::cout << ")";
+        }
+        else
+        {
+            std::cout << " ";
+        }
+    }
+    std::cout << "] " << int(progress * 100.0) << " %\r";
+    std::cout.flush();
+    if(task_progress == 100)
+    {
+        std::cout<<std::endl;
+    }
+}
+
 int Client::getServerIndex(const std::uint8_t address)
 {
     auto it = std::find_if(servers.begin(), servers.end(), [address](ServerData& server) { return server.info.addr == address; });
@@ -633,13 +663,13 @@ void Client::callServerExchange()
     {
         task_info.error_code = e.code();
     }
-    std::printf("******************************************\n");
-    std::printf("data sent : size %d \n",request_data.size());
-    for(int i = 0; i < request_data.size(); ++i)
-    {
-        std::printf("0x%x ",request_data[i]);
-    }
-    std::printf("\n\r");
+    //std::printf("******************************************\n");
+    //std::printf("data sent : size %d \n",request_data.size());
+    //for(int i = 0; i < request_data.size(); ++i)
+    //{
+    //    std::printf("0x%x ",request_data[i]);
+    //}
+    //std::printf("\n\r");
     try
     {
         serial_port.port.readBinary(responce_data, task_info.attributes.length);
@@ -653,8 +683,8 @@ void Client::callServerExchange()
     //{
     //    std::printf("0x%x ",responce_data[i]);
     //}
-    std::printf("\n\r");
-    std::printf("******************************************\n");
-    std::printf("\n\r");
+    //std::printf("\n\r");
+    //std::printf("******************************************\n");
+    //std::printf("\n\r");
 }
 } // namespace sm
