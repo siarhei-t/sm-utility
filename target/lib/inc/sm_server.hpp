@@ -31,6 +31,17 @@ enum class ServerFiles
     metadata = 2     // id for file with server metadata, access R
 };
 
+struct ServerConfig
+{
+    std::uint8_t msg_start_size = 0;
+    std::uint8_t msg_stop_size  = 0;
+    std::uint8_t package_edge_size = 0;
+    std::uint8_t adu_requried_size = 0;
+    std::uint8_t data_start_idx = 0;
+    std::uint8_t buffer_init_size = 0;
+
+};
+
 struct FileService
 {
     std::uint16_t file_id = 0;   // file id in modbus addressing model
@@ -59,6 +70,7 @@ struct FileInfo
 class ModbusServer
 {
     public:
+    ModbusServer(modbus::ModbusMode mode);
     /**
      * @brief 
      * 
@@ -89,6 +101,10 @@ class ModbusServer
     modbus::Exceptions readFile(std::uint8_t data[]) const;
 
     private:
+
+        ServerConfig server_config;
+        
+        modbus::ModbusMode mode;
         /**
          * @brief 
          * 
@@ -124,6 +140,21 @@ class ModbusServer
          * @return false 
          */
         bool readFile(const FileService& service) const;
+        /**
+         * @brief 
+         * 
+         * @param data 
+         * @return std::uint16_t 
+         */
+        static std::uint16_t extractHalfWord(const std::uint8_t data[]);
+        /**
+         * @brief 
+         * 
+         * @param data 
+         * @param length 
+         * @return std::uint16_t 
+         */
+        static std::uint16_t CRC16(const std::uint8_t data[], const std::uint16_t length);
 
 };
 
