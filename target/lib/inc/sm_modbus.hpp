@@ -29,6 +29,11 @@ constexpr int ascii_adu_size     = (ascii_msg_edge + crc_size + address_size);
 constexpr int max_num_of_records = 10000;
 constexpr std::uint16_t holding_regs_offset = 0x9C40;
 constexpr std::uint8_t  max_adu_size = 253;
+constexpr std::uint8_t  min_amount_of_regs = 1;
+constexpr std::uint8_t  max_amount_of_regs = 125;
+constexpr std::uint8_t  rw_file_reference = 6;
+constexpr std::uint8_t  min_rw_file_byte_counter = 7;
+constexpr std::uint8_t  max_rw_file_byte_counter = 245;
 ////////////////////////////////////////////////////////////////////////////////
 // The size of this block must be a multiple of the encryption block
 constexpr std::uint8_t  data_block_size     = 32;

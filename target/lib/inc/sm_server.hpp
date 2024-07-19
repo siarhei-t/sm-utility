@@ -10,6 +10,7 @@
 #ifndef SM_SERVER_HPP
 #define SM_SERVER_HPP
 
+#include <array>
 #include "sm_modbus.hpp"
 
 namespace sm 
@@ -23,6 +24,7 @@ enum class ServerRegisters
     app_start = 3,      // application start register, access W
     boot_status = 5,    // bootloader status register, access R
     record_size = 6,    // common record size in files on server, access R
+    count = 7           // enum element counter
 };
 
 enum class ServerFiles
@@ -44,6 +46,10 @@ struct ServerConfig
 
 struct FileService
 {
+    FileService() = default;
+    FileService(std::uint16_t file_id, std::uint16_t record_id, std::uint16_t length):
+    file_id(file_id), record_id(record_id), length(length){}
+    
     std::uint16_t file_id = 0;   // file id in modbus addressing model
     std::uint16_t record_id = 0; // record id in modbus addressing model
     std::uint16_t length = 0;    // received length from client in half words
@@ -72,16 +78,16 @@ class ModbusServer
     public:
     ModbusServer(modbus::ModbusMode mode);
     /**
-     * @brief 
+     * @brief server method for modbus::write_reg function 
      * 
-     * @param data 
+     * @param data pointer to array with received message
      * @return modbus::Exceptions 
      */
     modbus::Exceptions writeRegister(std::uint8_t data[]) const;
     /**
-     * @brief 
+     * @brief server method for modbus::read_regs function
      * 
-     * @param data 
+     * @param data pointer to array with received message
      * @return modbus::Exceptions 
      */
     modbus::Exceptions readRegister(std::uint8_t data[]) const;
