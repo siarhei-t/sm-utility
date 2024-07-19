@@ -16,6 +16,14 @@
 namespace sm 
 {
 
+enum class ServerExceptions
+{
+    no_error,
+    address_not_recognized,
+    bad_crc,
+    function_exception
+};
+
 enum class ServerRegisters
 {
     file_control = 0,   // file control register address, access W
@@ -31,17 +39,6 @@ enum class ServerFiles
 {
     application = 1, // id for file with server firmware, access W
     metadata = 2     // id for file with server metadata, access R
-};
-
-struct ServerConfig
-{
-    std::uint8_t msg_start_size = 0;
-    std::uint8_t msg_stop_size  = 0;
-    std::uint8_t package_edge_size = 0;
-    std::uint8_t adu_requried_size = 0;
-    std::uint8_t data_start_idx = 0;
-    std::uint8_t buffer_init_size = 0;
-
 };
 
 struct FileService
@@ -76,7 +73,10 @@ struct FileInfo
 class ModbusServer
 {
     public:
-    ModbusServer(modbus::ModbusMode mode);
+    
+    ModbusServer(std::uint8_t address) : address(address){}
+    
+    ServerExceptions serverTask(std::uint8_t data[]) const;
     /**
      * @brief server method for modbus::write_reg function 
      * 
@@ -107,10 +107,8 @@ class ModbusServer
     modbus::Exceptions readFile(std::uint8_t data[]) const;
 
     private:
-
-        ServerConfig server_config;
-        
-        modbus::ModbusMode mode;
+        // server address
+        std::uint8_t address;
         /**
          * @brief 
          * 
@@ -152,7 +150,7 @@ class ModbusServer
          * @param data 
          * @return std::uint16_t 
          */
-        static std::uint16_t extractHalfWord(const std::uint8_t data[]);
+        std::uint16_t extractHalfWord(const std::uint8_t data[]) const;
         /**
          * @brief 
          * 
@@ -160,7 +158,9 @@ class ModbusServer
          * @param length 
          * @return std::uint16_t 
          */
-        static std::uint16_t CRC16(const std::uint8_t data[], const std::uint16_t length);
+        std::uint16_t CRC16(const std::uint8_t data[], const std::uint16_t length) const;
+        
+        std::uint8_t getMessageLength(std::uint8_t function) const;
 
 };
 

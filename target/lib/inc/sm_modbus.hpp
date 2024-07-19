@@ -39,14 +39,14 @@ constexpr std::uint8_t  max_rw_file_byte_counter = 245;
 constexpr std::uint8_t  data_block_size     = 32;
 // The size of this block together with the technical data should not exceed max_adu_size
 constexpr std::uint8_t  file_record_size    = data_block_size * 6;
-constexpr std::uint8_t  rw_reg_pdu_suze     = 5;
-constexpr std::uint8_t  read_file_pdu_size  = 9;
+constexpr std::uint8_t  rw_reg_pdu_suze     = function_size + 4;
+constexpr std::uint8_t  read_file_pdu_size  = function_size + 8;
 constexpr std::uint8_t  service_min_size    = rw_reg_pdu_suze;
 constexpr std::uint8_t  service_max_size    = read_file_pdu_size;
 constexpr std::uint8_t  write_file_pdu_size = read_file_pdu_size + file_record_size;
 ////////////////////////////////////////////////////////////////////////////////
 
-enum class ModbusMode
+enum class Mode
 {
     rtu,
     ascii
