@@ -11,6 +11,7 @@
 #define SM_SERVER_HPP
 
 #include <array>
+#include <cstddef>
 #include "sm_modbus.hpp"
 
 namespace sm 
@@ -71,6 +72,57 @@ struct FileInfo
 
 };
 
+class ServerResources
+{
+    public:
+    /**
+     * @brief Construct a new Server Resources object
+     * 
+     */
+    ServerResources() = default;
+    /**
+     * @brief 
+     * 
+     * @param address 
+     * @param value 
+     * @return true 
+     * @return false 
+     */
+    bool writeRegister(const std::uint16_t address, const std::uint16_t value) const;
+    /**
+     * @brief 
+     * 
+     * @param address 
+     * @param quantity 
+     * @return true 
+     * @return false 
+     */
+    bool readRegister(const std::uint16_t address, const std::uint16_t quantity) const;
+    /**
+     * @brief 
+     * 
+     * @param service 
+     * @param data 
+     * @return true 
+     * @return false 
+     */
+    bool writeFile(const FileService& service, const std::uint8_t data[]) const;
+    /**
+     * @brief 
+     * 
+     * @param service 
+     * @return true 
+     * @return false 
+     */
+    bool readFile(const FileService& service) const;
+    
+    private:
+
+    std::array<std::uint16_t, static_cast<std::size_t>(ServerRegisters::count)> registers;
+    std::array<FileInfo, static_cast<std::size_t>(ServerFiles::count)>files;
+
+};
+
 class ModbusServer
 {
     public:
@@ -90,7 +142,7 @@ class ModbusServer
 
     private:
         // server address
-        std::uint8_t address;
+        std::uint8_t address = 0;
         /**
         * @brief server method for modbus::write_reg function 
         * 
