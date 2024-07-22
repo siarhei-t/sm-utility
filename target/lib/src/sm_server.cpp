@@ -55,7 +55,7 @@ ServerExceptions ModbusServer::serverTask(std::uint8_t data[]) const
         return length;
     };
 
-    modbus::Exceptions exception = modbus::Exceptions();
+    modbus::Exceptions exception;
     std::uint8_t received_address = data[0];
     std::uint8_t received_function =  data[1];
 
@@ -80,10 +80,11 @@ ServerExceptions ModbusServer::serverTask(std::uint8_t data[]) const
         return ServerExceptions::bad_crc;
     }
     // (3) function execution
+    ServerCallback server_callback;
     switch (received_function)
     {
         case static_cast<std::uint8_t>(modbus::FunctionCodes::read_regs):
-            exception = readRegister(&data[2]);
+            exception = readRegister(&data[2],server_callback);
             break;
 
         case static_cast<std::uint8_t>(modbus::FunctionCodes::write_reg):
@@ -91,7 +92,7 @@ ServerExceptions ModbusServer::serverTask(std::uint8_t data[]) const
             break;
 
         case static_cast<std::uint8_t>(modbus::FunctionCodes::read_file):
-            exception = readFile(&data[2]);
+            exception = readFile(&data[2],server_callback);
             break;
 
         case static_cast<std::uint8_t>(modbus::FunctionCodes::write_file):
@@ -116,7 +117,6 @@ ServerExceptions ModbusServer::serverTask(std::uint8_t data[]) const
 
 modbus::Exceptions ModbusServer::writeRegister(std::uint8_t data[]) const
 {
-
     std::uint16_t address = extractHalfWord(&data[0]);
     std::uint16_t value   = extractHalfWord(&data[2]);
     if(true)
@@ -128,12 +128,10 @@ modbus::Exceptions ModbusServer::writeRegister(std::uint8_t data[]) const
     {
         return modbus::Exceptions::exception_4;
     }
-
 }
 
-modbus::Exceptions ModbusServer::readRegister(std::uint8_t data[]) const
+modbus::Exceptions ModbusServer::readRegister(std::uint8_t data[], ServerCallback& server_callback) const
 {
-
     std::uint16_t address  = extractHalfWord(&data[0]);
     std::uint16_t quantity = extractHalfWord(&data[2]);
 
@@ -189,7 +187,7 @@ modbus::Exceptions ModbusServer::writeFile(std::uint8_t data[]) const
     }
 }
 
-modbus::Exceptions ModbusServer::readFile(std::uint8_t data[]) const
+modbus::Exceptions ModbusServer::readFile(std::uint8_t data[], ServerCallback& server_callback) const
 {
     std::uint8_t byte_counter = data[0];
     std::uint8_t reference_type = data[0];

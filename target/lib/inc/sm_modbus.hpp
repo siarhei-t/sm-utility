@@ -44,6 +44,7 @@ constexpr std::uint8_t  read_file_pdu_size  = function_size + 8;
 constexpr std::uint8_t  service_min_size    = rw_reg_pdu_suze;
 constexpr std::uint8_t  service_max_size    = read_file_pdu_size;
 constexpr std::uint8_t  write_file_pdu_size = read_file_pdu_size + file_record_size;
+constexpr std::uint8_t  max_pdu_size        = write_file_pdu_size;
 //table for CRC16 with 0xA001 poly
 constexpr std::uint16_t crc16_table[256] = 
 {

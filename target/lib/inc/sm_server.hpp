@@ -12,6 +12,7 @@
 
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include "sm_modbus.hpp"
 
 namespace sm 
@@ -27,13 +28,13 @@ enum class ServerExceptions
 
 enum class ServerRegisters
 {
-    file_control = 0, // file control register address, access W
-    update_request,   //firmware update request register, access W
-    app_erase,        // firmware erase request register, access W
-    app_start,        // application start register, access W
-    boot_status,      // bootloader status register, access R
-    record_size,      // common record size in files on server, access R
-    count            // enum element counter
+    file_control = 0,  // file control register address, access W
+    prepare_to_update, // firmware update request register, access W
+    app_erase,         // firmware erase request register, access W
+    record_size,       // common record size in files on server, access R
+    record_counter,    // number of records to procced by server
+    boot_status,       // bootloader status register, access R
+    count              // enum element counter
 };
 
 enum class ServerFiles
@@ -41,6 +42,12 @@ enum class ServerFiles
     application = 1, // id for file with server firmware, access W
     metadata,        // id for file with server metadata, access R
     count            // enum element counter
+};
+
+struct ServerCallback
+{
+    std::uint8_t* data = nullptr; // pointer to pdu data start expected
+    std::uint8_t length = 0;      // pdu data length
 };
 
 struct FileService
@@ -118,6 +125,7 @@ class ServerResources
     
     private:
 
+    std::array<std::uint8_t, modbus::max_pdu_size> buffer;
     std::array<std::uint16_t, static_cast<std::size_t>(ServerRegisters::count)> registers;
     std::array<FileInfo, static_cast<std::size_t>(ServerFiles::count)>files;
 
@@ -154,9 +162,10 @@ class ModbusServer
         * @brief server method for modbus::read_regs function
         * 
         * @param data pointer to array with received message
+        * @param server_callback reference to expected answer from server
         * @return modbus::Exceptions 
         */
-        modbus::Exceptions readRegister(std::uint8_t data[]) const;
+        modbus::Exceptions readRegister(std::uint8_t data[], ServerCallback& server_callback) const;
         /**
         * @brief 
         * 
@@ -167,10 +176,11 @@ class ModbusServer
         /**
         * @brief 
         * 
-        * @param data 
+        * @param data
+         * @param server_callback
         * @return modbus::Exceptions 
         */
-        modbus::Exceptions readFile(std::uint8_t data[]) const;
+        modbus::Exceptions readFile(std::uint8_t data[], ServerCallback& server_callback) const;
         /**
          * @brief 
          * 

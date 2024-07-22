@@ -11,6 +11,7 @@
 #define SM_CLIENT_H
 
 #include <atomic>
+#include <cstddef>
 #include <future>
 #include <memory>
 #include <queue>
@@ -26,7 +27,6 @@ namespace sm
 //////////////////////////////SERVER CONSTANTS//////////////////////////////////
 constexpr int boot_version_size = 17;
 constexpr int boot_name_size = 33;
-constexpr int amount_of_regs = 10;
 constexpr int not_connected = 255;
 constexpr std::uint16_t file_read_prepare = 1;
 constexpr std::uint16_t file_write_prepare = 2;
@@ -37,15 +37,15 @@ constexpr std::uint16_t app_start_request = 1;
 enum class ServerRegisters
 {
     file_control = 0,
-    app_size = 1,
-    app_erase = 2,
-    app_start = 3,
-    boot_control = 4,
-    boot_status = 5,
-    record_size = 6,
-    gateway_buffer_size = 7,
-    record_counter = 8,
-    gateway_file_control = 9
+    prepare_to_update,
+    app_erase,
+    record_size,
+    record_counter,
+    boot_status,
+    confirm_update,
+    gateway_buffer_size,
+    gateway_file_control,
+    count
 };
 
 enum class BootloaderStatus
@@ -134,7 +134,7 @@ struct ServerInfo
 struct ServerData
 {
     ServerInfo info;
-    std::uint16_t regs[amount_of_regs] = {};
+    std::uint16_t regs[static_cast<std::size_t>(ServerRegisters::count)] = {};
     BootloaderInfo data = {};
 };
 
@@ -168,9 +168,6 @@ public:
     /// @param path_to_file path to file
     /// @return error code
     std::error_code uploadApp(const std::uint8_t address, const std::string path_to_file);
-    /// @brief start application
-    /// @return error code
-    std::error_code startApp(const std::uint8_t address);
     /// @brief load last received server data
     /// @param @param server address in Modbus allpication area
     /// @param data reference to struct to save

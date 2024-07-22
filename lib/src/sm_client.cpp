@@ -9,6 +9,7 @@
 
 #include "../inc/sm_client.hpp"
 #include <algorithm>
+#include <cstdint>
 #include <cstring>
 #include <iostream>
 
@@ -92,7 +93,7 @@ std::error_code Client::connect(const std::uint8_t address)
     }
     
     // (2) load all registers
-    task_info.error_code = taskReadRegisters(address, modbus::holding_regs_offset, amount_of_regs);
+    task_info.error_code = taskReadRegisters(address, modbus::holding_regs_offset, static_cast<std::uint16_t>(ServerRegisters::count));
     
     if (task_info.error_code)
     {
@@ -126,7 +127,7 @@ std::error_code Client::eraseApp(const std::uint8_t address)
         return task_info.error_code;
     }
     // (2) read register with status information
-    task_info.error_code = taskReadRegisters(address, modbus::holding_regs_offset, amount_of_regs);
+    task_info.error_code = taskReadRegisters(address, modbus::holding_regs_offset, static_cast<std::uint16_t>(ServerRegisters::count));
     if (task_info.error_code)
     {
         return task_info.error_code;
@@ -157,7 +158,7 @@ std::error_code Client::uploadApp(const std::uint8_t address, const std::string 
         // (2) send new file size
         std::uint16_t num_of_records = file.getNumOfRecords();
         
-        task_info.error_code = taskWriteRegister(address, static_cast<std::uint16_t>(ServerRegisters::app_size), num_of_records);
+        task_info.error_code = taskWriteRegister(address, static_cast<std::uint16_t>(ServerRegisters::prepare_to_update), num_of_records);
         if (task_info.error_code)
         {
             return task_info.error_code;
@@ -175,20 +176,12 @@ std::error_code Client::uploadApp(const std::uint8_t address, const std::string 
             return task_info.error_code;
         }
         // (5) read status back
-        task_info.error_code = taskReadRegisters(address, modbus::holding_regs_offset, amount_of_regs);
+        task_info.error_code = taskReadRegisters(address, modbus::holding_regs_offset, static_cast<std::uint16_t>(ServerRegisters::count));
     }
     else
     {
         task_info.error_code = make_error_code(ClientErrors::internal);
     }
-    return task_info.error_code;
-}
-
-std::error_code Client::startApp(const std::uint8_t address)
-{
-    // flush port buffer first
-    serial_port.port.flushPort();
-    task_info.error_code = taskWriteRegister(address, static_cast<std::uint16_t>(ServerRegisters::app_start), app_start_request);
     return task_info.error_code;
 }
 
