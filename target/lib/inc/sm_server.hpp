@@ -88,23 +88,24 @@ class ServerResources
      */
     ServerResources() = default;
     /**
-     * @brief 
+     * @brief write new value to the server register
      * 
-     * @param address 
-     * @param value 
-     * @return true 
-     * @return false 
+     * @param address register address
+     * @param value new register value
+     * @return true in case of success write
+     * @return false in case of any fault
      */
     bool writeRegister(const std::uint16_t address, const std::uint16_t value) const;
     /**
-     * @brief 
+     * @brief read specified amount of registers from the server
      * 
-     * @param address 
-     * @param quantity 
-     * @return true 
-     * @return false 
+     * @param server_callback reference to the buffer in which the server response is created
+     * @param address register start address
+     * @param quantity amount of registers to read
+     * @return true in case of success read
+     * @return false in case of any fault
      */
-    bool readRegister(const std::uint16_t address, const std::uint16_t quantity) const;
+    bool readRegister(ServerCallback& server_callback, const std::uint16_t address, const std::uint16_t quantity) const;
     /**
      * @brief 
      * 
@@ -117,15 +118,15 @@ class ServerResources
     /**
      * @brief 
      * 
+     * @param server_callback 
      * @param service 
      * @return true 
      * @return false 
      */
-    bool readFile(const FileService& service) const;
+    bool readFile(ServerCallback& server_callback, const FileService& service) const;
     
     private:
 
-    std::array<std::uint8_t, modbus::max_pdu_size> buffer;
     std::array<std::uint16_t, static_cast<std::size_t>(ServerRegisters::count)> registers;
     std::array<FileInfo, static_cast<std::size_t>(ServerFiles::count)>files;
 
@@ -134,23 +135,41 @@ class ServerResources
 class ModbusServer
 {
     public:
-    /**
-     * @brief Construct a new Modbus Server object
-     * 
-     * @param address server address
-     */
-    ModbusServer(std::uint8_t address) : address(address){}
-    /**
-     * @brief 
-     * 
-     * @param data 
-     * @return ServerExceptions 
-     */
-    ServerExceptions serverTask(std::uint8_t data[]) const;
-
+        /**
+        * @brief Construct a new Modbus Server object
+        * 
+        * @param address server address
+        */
+        ModbusServer(std::uint8_t address) : address(address){}
+        /**
+        * @brief 
+        * 
+        * @param data 
+        * @return ServerExceptions 
+        */
+        ServerExceptions serverTask(std::uint8_t data[]);
+        /**
+        * @brief extract half word from array from big endian to little endian format
+        * 
+        * @param data pointer to array 
+        * @return std::uint16_t extracted half word
+        */
+        static std::uint16_t extractHalfWord(const std::uint8_t data[]);
+        /**
+        * @brief insert half word to array from little endian to big endian format
+        * 
+        * @param data pointer to array to insert
+        * @param half_word half word to insert
+        */
+        static void insertHalfWord(std::uint8_t data[], const std::uint16_t half_word);
+    
     private:
         // server address
         std::uint8_t address = 0;
+        // ServerResources instance with access to registers and files
+        ServerResources server_resources;
+        //actual pdu size
+        std::uint8_t pdu_size = 0;
         /**
         * @brief server method for modbus::write_reg function 
         * 
@@ -181,13 +200,6 @@ class ModbusServer
         * @return modbus::Exceptions 
         */
         modbus::Exceptions readFile(std::uint8_t data[], ServerCallback& server_callback) const;
-        /**
-         * @brief 
-         * 
-         * @param data 
-         * @return std::uint16_t 
-         */
-        std::uint16_t extractHalfWord(const std::uint8_t data[]) const;
 
 };
 
