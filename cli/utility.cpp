@@ -8,7 +8,7 @@
  */
 
 #include <iostream>
-#include "../inc/sm_client.hpp"
+#include "../lib/inc/sm_client.hpp"
 
 const std::string interactive_text = "program started in interactive mode, type help for available commands. \n";
 const std::string error_text = "unsupported command passed, type help to see available commands. \n";
@@ -142,7 +142,7 @@ int main(int argc, char* argv[])
         client.getServerData(slave_address,servers[1]);
         print_metadata(servers[1]);
     }
-    
+    /*
     // (5) send new firmware to master chip
     std::printf("*---------------------------------------------*\n");
     std::printf("trying to update firmware on the master chip...\n");
@@ -176,7 +176,7 @@ int main(int argc, char* argv[])
     
     std::printf("*---------------------------------------------*\n");
     std::printf("success, program exit...\n");
-
+    */
     return 0;
 }
 

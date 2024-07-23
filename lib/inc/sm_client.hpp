@@ -44,7 +44,6 @@ enum class ServerRegisters
     boot_status,
     confirm_update,
     gateway_buffer_size,
-    gateway_file_control,
     count
 };
 

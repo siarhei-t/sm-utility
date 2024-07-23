@@ -361,7 +361,7 @@ std::error_code Client::taskReadFile(const std::uint8_t dev_addr, const ServerFi
             return task_info.error_code;
         }
 
-        control_reg = static_cast<std::uint16_t>(ServerRegisters::gateway_file_control);
+        control_reg = static_cast<std::uint16_t>(ServerRegisters::file_control);
         error = taskWriteRegister(servers[index].info.gateway_addr, control_reg, file_read_prepare);
         if (error)
         {
@@ -428,7 +428,7 @@ std::error_code Client::taskWriteFile(const std::uint8_t dev_addr)
             return task_info.error_code;
         }
 
-        control_reg = static_cast<std::uint16_t>(ServerRegisters::gateway_file_control);
+        control_reg = static_cast<std::uint16_t>(ServerRegisters::file_control);
         error = taskWriteRegister(servers[index].info.gateway_addr, control_reg, file_write_prepare);
         if (error)
         {
