@@ -6,14 +6,14 @@ enable_language(CXX)
 
 set(COMMON_SOURCES
         src/sm_client.cpp
-        src/sm_modbus.cpp
+        src/sm_message.cpp
         src/sm_error.cpp
         src/sm_file.cpp
 )
 
 set(COMMON_HEADERS
         inc/sm_client.hpp
-        inc/sm_modbus.hpp
+        inc/sm_message.hpp
         inc/sm_error.hpp
         inc/sm_file.hpp
 )

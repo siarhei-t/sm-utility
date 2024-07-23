@@ -7,39 +7,14 @@
  *
  */
 
-#ifndef SM_MODBUS_H
-#define SM_MODBUS_H
+#ifndef SM_MESSAGE_H
+#define SM_MESSAGE_H
 
 #include <cstdint>
 #include <vector>
 
 namespace modbus
 {
-////////////////////////////////MODBUS CONSTANTS////////////////////////////////
-constexpr int crc_size = 2;
-constexpr int address_size = 1;
-constexpr int function_size = 1;
-constexpr int rtu_start_size = 4;
-constexpr int rtu_stop_size = 4;
-constexpr int ascii_start_size = 1;
-constexpr int ascii_stop_size = 2;
-constexpr int rtu_msg_edge = (rtu_start_size + rtu_stop_size);
-constexpr int ascii_msg_edge = (ascii_start_size + ascii_stop_size);
-constexpr int rtu_adu_size = (rtu_msg_edge + crc_size + address_size);
-constexpr int ascii_adu_size = (ascii_msg_edge + crc_size + address_size);
-constexpr int max_num_of_records = 10000;
-constexpr std::uint16_t holding_regs_offset = 0x9C40;
-////////////////////////////////////////////////////////////////////////////////
-
-enum class FunctionCodes
-{
-    read_registers = 0x03, // read holding registers
-    write_register = 0x06, // write single register
-    read_file = 0x14,      // read file records
-    write_file = 0x15,     // write file records
-    undefined = 0xFF,      // illegal function code
-};
-
 enum class ModbusMode
 {
     rtu,
@@ -125,4 +100,4 @@ private:
 };
 } // namespace modbus
 
-#endif // SM_MODBUS_H
+#endif // SM_MESSAGE_H

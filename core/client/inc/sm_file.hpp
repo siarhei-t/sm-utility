@@ -10,10 +10,9 @@
 #ifndef SM_FILE_H
 #define SM_FILE_H
 
-#include "../inc/sm_error.hpp"
-#include "../inc/sm_modbus.hpp"
-#include <fstream>
+#include <cstdint>
 #include <memory>
+#include <vector>
 
 namespace sm
 {

@@ -7,11 +7,14 @@
  *
  */
 
-#include "../inc/sm_client.hpp"
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <iostream>
+
+#include "../inc/sm_client.hpp"
+#include "../inc/sm_error.hpp"
+#include "../../common/sm_modbus.hpp"
 
 namespace sm
 {
@@ -230,7 +233,7 @@ std::error_code Client::taskWriteRegister(const std::uint8_t dev_addr, const std
     {
         request_data = modbus_client.msgWriteRegister(dev_addr, reg_addr, value);
         // in case of success we expect message with the same length
-        TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::write_register, request_data.size());
+        TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::write_reg, request_data.size());
         createServerRequest(attr);
     };
     task_info.error_code = make_error_code(ClientErrors::server_not_connected);
@@ -271,7 +274,7 @@ std::error_code Client::taskReadRegisters(const std::uint8_t dev_addr, const std
         request_data = modbus_client.msgReadRegisters(dev_addr, reg_addr, quantity);
         // amount of 16 bit registers + 1 byte for length + 1 byte for func + modbus required part
         size_t expected_length = static_cast<size_t>(modbus_client.getRequriedLength() + (quantity * 2) + 2);
-        TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::read_registers, expected_length);
+        TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::read_regs, expected_length);
         createServerRequest(attr);
     };
     task_info.error_code = make_error_code(ClientErrors::server_not_connected);

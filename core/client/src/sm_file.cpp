@@ -8,6 +8,8 @@
  */
 
 #include "../inc/sm_file.hpp"
+#include "../../common/sm_modbus.hpp"
+#include <fstream>
 #include <cstring>
 
 namespace sm

@@ -7,8 +7,8 @@
  *
  */
 
-#include "../inc/sm_modbus.hpp"
-
+#include "../inc/sm_message.hpp"
+#include "../../common/sm_modbus.hpp"
 namespace
 {
 constexpr std::uint8_t rtu_start_end[] = {0x00, 0x00, 0x00, 0x00};
@@ -85,7 +85,7 @@ std::vector<std::uint8_t>& ModbusClient::msgWriteRegister(const std::uint8_t add
     std::vector<uint8_t> data;
     insertHalfWord(data, reg);
     insertHalfWord(data, value);
-    createMessage(addr, static_cast<std::uint8_t>(FunctionCodes::write_register), data);
+    createMessage(addr, static_cast<std::uint8_t>(FunctionCodes::write_reg), data);
     return buffer;
 }
 
@@ -94,7 +94,7 @@ std::vector<std::uint8_t>& ModbusClient::msgReadRegisters(const std::uint8_t add
     std::vector<std::uint8_t> data;
     insertHalfWord(data, reg);
     insertHalfWord(data, quantity);
-    createMessage(addr, static_cast<std::uint8_t>(FunctionCodes::read_registers), data);
+    createMessage(addr, static_cast<std::uint8_t>(FunctionCodes::read_regs), data);
     return buffer;
 }
 

@@ -13,14 +13,14 @@
 #include <atomic>
 #include <cstddef>
 #include <future>
-#include <memory>
 #include <queue>
 #include <thread>
 
 #include "../../external/simple-serial-port-1.03/lib/inc/serial_port.hpp"
-#include "../inc/sm_error.hpp"
+#include "../../common/sm_modbus.hpp"
 #include "../inc/sm_file.hpp"
-#include "../inc/sm_modbus.hpp"
+#include "../inc/sm_message.hpp"
+
 
 namespace sm
 {
