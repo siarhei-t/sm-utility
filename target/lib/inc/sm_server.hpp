@@ -28,7 +28,7 @@ enum class ServerExceptions
 
 enum class ServerRegisters
 {
-    file_control = 0,  // file control register address, access W
+    file_control,      // file control register address, access W
     prepare_to_update, // firmware update request register, access W
     app_erase,         // firmware erase request register, access W
     record_size,       // common record size in files on server, access R
@@ -39,9 +39,9 @@ enum class ServerRegisters
 
 enum class ServerFiles
 {
-    application = 1, // id for file with server firmware, access W
-    metadata,        // id for file with server metadata, access R
-    count            // enum element counter
+    application, // id for file with server firmware, access W
+    metadata,    // id for file with server metadata, access R
+    count        // enum element counter
 };
 
 struct ServerCallback
@@ -77,6 +77,12 @@ struct FileInfo
     std::uint32_t file_size = 0;      // file size in bytes
     std::uint8_t*  p_data = nullptr;  // pointer to file data
 
+};
+
+struct RegisterInfo
+{
+    bool property_write;
+    std::uint16_t value;
 };
 
 class ServerResources
@@ -127,7 +133,7 @@ class ServerResources
     
     private:
 
-    std::array<std::uint16_t, static_cast<std::size_t>(ServerRegisters::count)> registers;
+    std::array<RegisterInfo, static_cast<std::size_t>(ServerRegisters::count)> registers;
     std::array<FileInfo, static_cast<std::size_t>(ServerFiles::count)>files;
 
 };
@@ -148,6 +154,12 @@ class ModbusServer
         * @return ServerExceptions 
         */
         ServerExceptions serverTask(std::uint8_t data[]);
+        /**
+         * @brief Get the Data Unit Size object
+         * 
+         * @return std::uint8_t actual size
+         */
+        std::uint8_t getDataUnitSize() const { return pdu_size; }
         /**
         * @brief extract half word from array from big endian to little endian format
         * 
