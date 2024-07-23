@@ -9,44 +9,13 @@
 
 #include <cstddef>
 #include <iostream>
-#include "../lib/inc/sm_client.hpp"
+#include "../../core/client/inc/sm_client.hpp"
 
-const std::string interactive_text = "program started in interactive mode, type help for available commands. \n";
-const std::string error_text = "unsupported command passed, type help to see available commands. \n";
-const std::string input_start = ">";
-const std::string help_text = "help";
-const std::string exit_text = "exit";
-const std::string scanport_text = "scanport";
-const std::string status_text = "status";
-const std::string start_text = "start";
-const std::string connect_text = "connect";
-const std::string disconnect_text = "disconnect";
-const std::string upload_text = "upload";
-const std::string erase_text = "erase";
-const std::string stop_text = "stop";
-const std::string goapp_text = "goapp";
 
 const std::string version = "0.01";
 
 constexpr int master_address = 1;
 constexpr int slave_address  = 2;
-
-enum class Commands
-{
-    unknown,
-    help,
-    exit,
-    scanport,
-    start,
-    stop,
-    status,
-    connect,
-    disconnect,
-    upload,
-    erase,
-    goapp
-};
-
 
 static void print_metadata(sm::ServerData& server_data);
 
