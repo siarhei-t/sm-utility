@@ -7,6 +7,7 @@
  *
  */
 
+#include <cstddef>
 #include <iostream>
 #include "../lib/inc/sm_client.hpp"
 
@@ -126,7 +127,7 @@ int main(int argc, char* argv[])
         client.getServerData(master_address,servers[0]);
         print_metadata(servers[0]);
     }
-    
+    /*
     std::printf("*---------------------------------------------*\n");
     std::printf("trying to connect to slave chip server...\n");
     // (4) connecting to slave
@@ -142,7 +143,7 @@ int main(int argc, char* argv[])
         client.getServerData(slave_address,servers[1]);
         print_metadata(servers[1]);
     }
-    /*
+    
     // (5) send new firmware to master chip
     std::printf("*---------------------------------------------*\n");
     std::printf("trying to update firmware on the master chip...\n");
@@ -183,9 +184,24 @@ int main(int argc, char* argv[])
 static void print_metadata(sm::ServerData& server_data)
 {
     std::printf("*---------------------------------------------*\n");
-    std::printf("device name   : %s \n",server_data.data.boot_name);
-    std::printf("boot version  : %s \n",server_data.data.boot_version);
-    std::printf("available ROM : %d KB \n",server_data.data.available_rom/1024);
+    std::printf("device name      : %s \n",server_data.data.boot_name);
+    std::printf("boot version     : %s \n",server_data.data.boot_version);
+    std::printf("available ROM    : %d KB \n",server_data.data.available_rom/1024);
+    
+    std::printf("serial number    : ");
+    for(std::size_t i = 0; i < sizeof(server_data.data.serial_number); ++i)
+    {
+        std::printf("%d ",server_data.data.serial_number[i]);
+    }
+    std::printf("\n");
+    std::printf("temporary nonce  : ");
+
+    for(std::size_t i = 0; i < sizeof(server_data.data.random_nonce); ++i)
+    {
+        std::printf("%d ",server_data.data.random_nonce[i]);
+    }
+    std::printf("\n");
+
     std::cout<<"app status: ";
     switch(server_data.regs[static_cast<int>(sm::ServerRegisters::boot_status)])
     {

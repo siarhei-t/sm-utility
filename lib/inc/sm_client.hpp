@@ -111,8 +111,10 @@ struct TaskInfo
 #pragma pack(2)
 struct BootloaderInfo
 {
-    char boot_version[boot_version_size];
-    char boot_name[boot_name_size];
+    char boot_version[17];
+    char boot_name[33];
+    char serial_number[16]; 
+    uint8_t random_nonce[12];
     std::uint32_t available_rom;
 };
 #pragma pack(pop)
