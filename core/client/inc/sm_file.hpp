@@ -53,7 +53,7 @@ public:
     /// @return actual file id
     std::uint16_t getId() const { return id; }
     /// @brief calculate file size in bytes
-    /// @param path_to_file path to file 
+    /// @param path_to_file path to file
     /// @return size in bytes, 0 in case of error on empty file
     size_t getFileSize(const std::string path_to_file) const;
 

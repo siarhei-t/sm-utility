@@ -16,11 +16,10 @@
 #include <queue>
 #include <thread>
 
-#include "../../external/simple-serial-port-1.03/lib/inc/serial_port.hpp"
 #include "../../common/sm_modbus.hpp"
+#include "../../external/simple-serial-port-1.03/lib/inc/serial_port.hpp"
 #include "../inc/sm_file.hpp"
 #include "../inc/sm_message.hpp"
-
 
 namespace sm
 {
@@ -68,17 +67,14 @@ enum class ClientTasks
     reg_write,
     file_read,
     file_write,
-    ping,//extra command, FunctionCodes::undefined used
-    app_start//extra command, the same as reg_write, but no responce expected
+    ping,     // extra command, FunctionCodes::undefined used
+    app_start // extra command, the same as reg_write, but no responce expected
 };
 
 struct TaskAttributes
 {
     TaskAttributes() = default;
-    TaskAttributes(modbus::FunctionCodes code, size_t length)
-        : code(code), length(length)
-    {
-    }
+    TaskAttributes(modbus::FunctionCodes code, size_t length) : code(code), length(length) {}
     modbus::FunctionCodes code = modbus::FunctionCodes::undefined;
     size_t length = 0;
 };
@@ -86,8 +82,7 @@ struct TaskAttributes
 struct TaskInfo
 {
     TaskInfo() = default;
-    TaskInfo(ClientTasks task, int num_of_exchanges, int index)
-        : task(task), num_of_exchanges(num_of_exchanges), index(index){};
+    TaskInfo(ClientTasks task, int num_of_exchanges, int index) : task(task), num_of_exchanges(num_of_exchanges), index(index) {};
     ClientTasks task = ClientTasks::undefined;
     TaskAttributes attributes;
     std::error_code error_code;
@@ -113,7 +108,7 @@ struct BootloaderInfo
 {
     char boot_version[17];
     char boot_name[33];
-    char serial_number[16]; 
+    char serial_number[16];
     uint8_t random_nonce[12];
     std::uint32_t available_rom;
 };
@@ -197,7 +192,7 @@ private:
     /// @brief async client task variable
     std::future<void> task;
     /// @brief info about actual pending task and function
-    TaskInfo task_info = TaskInfo(ClientTasks::undefined, 0,-1);
+    TaskInfo task_info = TaskInfo(ClientTasks::undefined, 0, -1);
     /// @brief queue with client-server exchanges
     std::queue<std::function<void()>> q_exchange;
     /// @brief queue with client tasks
@@ -250,7 +245,7 @@ private:
     /// @brief callback called for every ClientTasks::file_read
     /// @param message reference to a vector with the message read
     /// @param index server index in servers vector
-    void fileReadCallback(std::vector<std::uint8_t>& message,const int index);
+    void fileReadCallback(std::vector<std::uint8_t>& message, const int index);
 };
 } // namespace sm
 

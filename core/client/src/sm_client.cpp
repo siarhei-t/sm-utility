@@ -12,9 +12,9 @@
 #include <cstring>
 #include <iostream>
 
+#include "../../common/sm_modbus.hpp"
 #include "../inc/sm_client.hpp"
 #include "../inc/sm_error.hpp"
-#include "../../common/sm_modbus.hpp"
 
 namespace sm
 {
@@ -87,35 +87,33 @@ std::error_code Client::connect(const std::uint8_t address)
     // flush port buffer first
     serial_port.port.flushPort();
     task_info.error_code = make_error_code(ClientErrors::server_not_connected);
-    
+
     // (1) ping server, expected answer with exception type 1
     task_info.error_code = taskPing(address);
     if (task_info.error_code)
     {
         return task_info.error_code;
     }
-    
+
     // (2) load all registers
     task_info.error_code = taskReadRegisters(address, modbus::holding_regs_offset, static_cast<std::uint16_t>(ServerRegisters::count));
-    
+
     if (task_info.error_code)
     {
         return task_info.error_code;
     }
-    
-     
+
     // (3.1) prepare to read
     task_info.error_code = taskWriteRegister(address, static_cast<std::uint16_t>(ServerRegisters::file_control), file_read_prepare);
     if (task_info.error_code)
     {
         return task_info.error_code;
     }
-    
+
     // (3.2) file reading
     task_info.error_code = taskReadFile(address, ServerFiles::server_metadata);
-    
+
     return task_info.error_code;
-    
 }
 
 std::error_code Client::eraseApp(const std::uint8_t address)
@@ -157,10 +155,10 @@ std::error_code Client::uploadApp(const std::uint8_t address, const std::string 
         if (task_info.error_code)
         {
             return task_info.error_code;
-        }   
+        }
         // (2) send new file size
         std::uint16_t num_of_records = file.getNumOfRecords();
-        
+
         task_info.error_code = taskWriteRegister(address, static_cast<std::uint16_t>(ServerRegisters::prepare_to_update), num_of_records);
         if (task_info.error_code)
         {
@@ -258,7 +256,7 @@ std::error_code Client::taskWriteRegister(const std::uint8_t dev_addr, const std
     }
 
     // direct register write
-    task_info.reset(ClientTasks::reg_write, 1,index);
+    task_info.reset(ClientTasks::reg_write, 1, index);
     q_task.push([this, lambda_write_reg, dev_addr, reg_addr, value]()
                 { q_exchange.push([lambda_write_reg, dev_addr, reg_addr, value] { lambda_write_reg(dev_addr, reg_addr, value); }); });
     while (!task_info.done)
@@ -316,8 +314,7 @@ std::error_code Client::taskReadFile(const std::uint8_t dev_addr, const ServerFi
         createServerRequest(attr);
     };
 
-    auto lambda_read_file =
-        [this, lambda_read_record](const std::uint8_t dev_addr,const int index, const std::uint16_t file_id)
+    auto lambda_read_file = [this, lambda_read_record](const std::uint8_t dev_addr, const int index, const std::uint16_t file_id)
     {
         auto num_of_records = file.getNumOfRecords();
         task_info.reset(ClientTasks::file_read, num_of_records, index);
@@ -339,7 +336,7 @@ std::error_code Client::taskReadFile(const std::uint8_t dev_addr, const ServerFi
     auto record_size = servers[index].regs[static_cast<int>(ServerRegisters::record_size)];
     auto converted_file_id = static_cast<std::uint16_t>(file_id);
     auto file_size = getFileSize(file_id);
-    if(file.fileReadSetup(converted_file_id, file_size, record_size) != true)
+    if (file.fileReadSetup(converted_file_id, file_size, record_size) != true)
     {
         task_info.error_code = make_error_code(ClientErrors::server_not_connected);
         return task_info.error_code;
@@ -373,8 +370,7 @@ std::error_code Client::taskReadFile(const std::uint8_t dev_addr, const ServerFi
         }
     }
     task_info.reset();
-    q_task.push([this, dev_addr,index, lambda_read_file, converted_file_id]()
-                { lambda_read_file(dev_addr,index, converted_file_id); });
+    q_task.push([this, dev_addr, index, lambda_read_file, converted_file_id]() { lambda_read_file(dev_addr, index, converted_file_id); });
     while (!task_info.done)
         ;
     return task_info.error_code;
@@ -391,7 +387,7 @@ std::error_code Client::taskWriteFile(const std::uint8_t dev_addr)
         createServerRequest(attr);
     };
 
-    auto lambda_write_file = [this, lambda_write_record](const std::uint8_t dev_addr,const int index, const std::uint16_t record_size)
+    auto lambda_write_file = [this, lambda_write_record](const std::uint8_t dev_addr, const int index, const std::uint16_t record_size)
     {
         const std::uint16_t num_of_records = file.getNumOfRecords();
         const std::uint16_t file_id = file.getId();
@@ -529,12 +525,12 @@ void Client::exchangeCallback()
 
                 case ClientTasks::file_read:
 
-                    fileReadCallback(message,task_info.index);
+                    fileReadCallback(message, task_info.index);
                     break;
 
                 case ClientTasks::file_write:
                     printProgressBar(getActualTaskProgress());
-                    //std::printf("progress: %d%% \n", getActualTaskProgress());
+                    // std::printf("progress: %d%% \n", getActualTaskProgress());
                     break;
 
                 default:
@@ -606,13 +602,13 @@ void Client::printProgressBar(const int task_progress)
     int barWidth = 80;
     std::cout << "[";
     int pos = barWidth * progress;
-    for (int i = 0; i < barWidth; ++i) 
+    for (int i = 0; i < barWidth; ++i)
     {
         if (i < pos)
         {
             std::cout << "*";
         }
-        else if (i == pos) 
+        else if (i == pos)
         {
             std::cout << ")";
         }
@@ -623,9 +619,9 @@ void Client::printProgressBar(const int task_progress)
     }
     std::cout << "] " << int(progress * 100.0) << " %\r";
     std::cout.flush();
-    if(task_progress == 100)
+    if (task_progress == 100)
     {
-        std::cout<<std::endl;
+        std::cout << std::endl;
     }
 }
 
@@ -659,13 +655,13 @@ void Client::callServerExchange()
     {
         task_info.error_code = e.code();
     }
-    //std::printf("******************************************\n");
-    //std::printf("data sent : size %d \n",request_data.size());
-    //for(int i = 0; i < request_data.size(); ++i)
+    // std::printf("******************************************\n");
+    // std::printf("data sent : size %d \n",request_data.size());
+    // for(int i = 0; i < request_data.size(); ++i)
     //{
-    //    std::printf("0x%x ",request_data[i]);
-    //}
-    //std::printf("\n\r");
+    //     std::printf("0x%x ",request_data[i]);
+    // }
+    // std::printf("\n\r");
     try
     {
         serial_port.port.readBinary(responce_data, task_info.attributes.length);
@@ -674,13 +670,13 @@ void Client::callServerExchange()
     {
         task_info.error_code = e.code();
     }
-    //std::printf("data received, size : %d \n",responce_data.size());
-    //for(int i = 0; i < responce_data.size(); ++i)
+    // std::printf("data received, size : %d \n",responce_data.size());
+    // for(int i = 0; i < responce_data.size(); ++i)
     //{
-    //    std::printf("0x%x ",responce_data[i]);
-    //}
-    //std::printf("\n\r");
-    //std::printf("******************************************\n");
-    //std::printf("\n\r");
+    //     std::printf("0x%x ",responce_data[i]);
+    // }
+    // std::printf("\n\r");
+    // std::printf("******************************************\n");
+    // std::printf("\n\r");
 }
 } // namespace sm

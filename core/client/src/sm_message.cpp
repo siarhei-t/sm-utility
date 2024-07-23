@@ -176,18 +176,18 @@ std::uint16_t ModbusClient::crc16(const std::vector<std::uint8_t>& data)
     std::uint16_t result = 0xFFFFU;
 
     auto ibm_byte{[](std::uint16_t crc, std::uint8_t data) -> std::uint16_t
-    {
-        const std::uint16_t table[2] = {0x0000, ibm_poly};
-        std::uint8_t xOr = 0;
-        crc ^= data;
-        for (std::uint8_t bit = 0; bit < 8; bit++)
-        {
-            xOr = crc & 0x01;
-            crc >>= 1;
-            crc ^= table[xOr];
-        }
-        return crc;
-    }};
+                  {
+                      const std::uint16_t table[2] = {0x0000, ibm_poly};
+                      std::uint8_t xOr = 0;
+                      crc ^= data;
+                      for (std::uint8_t bit = 0; bit < 8; bit++)
+                      {
+                          xOr = crc & 0x01;
+                          crc >>= 1;
+                          crc ^= table[xOr];
+                      }
+                      return crc;
+                  }};
 
     for (std::size_t i = 0; i < data.size(); ++i)
     {
