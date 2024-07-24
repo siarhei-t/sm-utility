@@ -12,6 +12,7 @@
 
 #include <atomic>
 #include <cstddef>
+#include <cstdint>
 #include <future>
 #include <queue>
 #include <thread>
@@ -31,18 +32,28 @@ constexpr std::uint16_t file_write_prepare = 2;
 constexpr std::uint16_t app_erase_request = 1;
 ////////////////////////////////////////////////////////////////////////////////
 
-enum class ServerRegisters
+
+class ServerRegisters
 {
-    file_control = 0,
-    prepare_to_update,
-    app_erase,
-    record_size,
-    record_counter,
-    boot_status,
-    confirm_update,
-    gateway_buffer_size,
-    count
+public:
+    /**
+     * @brief Construct a new Server Registers object
+     * 
+     */
+    ServerRegisters() = default;
+    static const std::uint16_t file_control = 0;
+    static const std::uint16_t prepare_to_update = 1;
+    static const std::uint16_t app_erase = 2;
+    static const std::uint16_t record_size = 3;
+    static const std::uint16_t record_counter = 4;
+    static const std::uint16_t status = 5;
+    static const std::uint16_t gateway_buffer_size = 6;
+    
+    std::uint16_t getSize() const { return size; }
+private:
+    const std::uint16_t size = 7;
 };
+
 
 enum class ClientTasks
 {

@@ -17,6 +17,11 @@
 
 #pragma pack(push)
 #pragma pack(2)
+namespace
+{
+sm::ServerRegisters registers;
+}
+
 struct BootloaderInfo
 {
     char boot_version[17];
@@ -69,7 +74,7 @@ std::error_code DesktopClient::connect(const std::uint8_t address)
     }
 
     // (2) load all registers
-    error_code = taskReadRegisters(address, modbus::holding_regs_offset, static_cast<std::uint16_t>(sm::ServerRegisters::count));
+    error_code = taskReadRegisters(address, modbus::holding_regs_offset, registers.getSize());
     if (error_code)
     {
         return error_code;
@@ -127,7 +132,7 @@ std::error_code DesktopClient::uploadApp(const std::uint8_t address, const std::
             return error_code;
         }
         // (5) read status back
-        error_code = taskReadRegisters(address, modbus::holding_regs_offset, static_cast<std::uint16_t>(sm::ServerRegisters::count));
+        error_code = taskReadRegisters(address, modbus::holding_regs_offset, registers.getSize());
     }
     else
     {

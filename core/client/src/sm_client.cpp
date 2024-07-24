@@ -381,7 +381,6 @@ void ModbusClient::exchangeCallback()
         server.regs.clear();
         const int id_length = 2;
         const int id_start = 3;
-        int counter = 0;
         if (message[id_start] > (message.size() - (modbus::crc_size + modbus::address_size + modbus::function_size + 1)))
         {
             return;
@@ -392,7 +391,6 @@ void ModbusClient::exchangeCallback()
             std::uint16_t reg = static_cast<std::uint16_t>(message[i]) << 8;
             reg |= message[i + 1];
             server.regs.push_back(reg);
-            ++counter;
         }
     };
     ++task_info.counter;

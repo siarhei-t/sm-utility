@@ -17,7 +17,7 @@
         {
             "type": "shell",
             "label": "LIB-CFG-WIN-RELEASE",
-            "command": "cmake core/client -DTARGET_WINDOWS=ON -DCMAKE_BUILD_TYPE=Release -Bbuild",
+            "command": "cmake core/client -DTARGET_WINDOWS=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Release -Bbuild",
             "options": {
                 "cwd": "${workspaceFolder}"
             },
@@ -26,7 +26,7 @@
         {
             "type": "shell",
             "label": "LIB-CFG-LINUX-RELEASE",
-            "command": "cmake core/client -DTARGET_LINUX=ON -DCMAKE_BUILD_TYPE=Release -Bbuild",
+            "command": "cmake core/client -DTARGET_LINUX=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Release -Bbuild",
             "options": {
                 "cwd": "${workspaceFolder}"
             },
@@ -35,7 +35,7 @@
         {
             "type": "shell",
             "label": "UTILITY-CFG-WIN-DEBUG",
-            "command": "cmake utility/cli -DTARGET_WINDOWS=ON -DCMAKE_BUILD_TYPE=Debug -Bbuild",
+            "command": "cmake utility/cli -DTARGET_WINDOWS=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Debug -Bbuild",
             "options": {
                 "cwd": "${workspaceFolder}"
             },
@@ -44,7 +44,7 @@
         {
             "type": "shell",
             "label": "UTILITY-CFG-LINUX-DEBUG",
-            "command": "cmake utility/cli -DTARGET_LINUX=ON -DCMAKE_BUILD_TYPE=Debug -Bbuild",
+            "command": "cmake utility/cli -DTARGET_LINUX=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Debug -Bbuild",
             "options": {
                 "cwd": "${workspaceFolder}"
             },

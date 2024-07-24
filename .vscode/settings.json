@@ -3,7 +3,7 @@
         "-log=verbose",
         "-pretty",
         "--background-index",
-        "--compile-commands-dir=${workspaceFolder}",
+        "--compile-commands-dir=${workspaceFolder}/build",
         "--query-driver=**"
     ],
     "editor.formatOnSave": true
