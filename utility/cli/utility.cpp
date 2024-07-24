@@ -26,7 +26,7 @@ int main(int argc, char* argv[])
     //array with master and slave servers metadata
     sm::ServerData servers[2];
     //instance of modbus client
-    sm::Client client; 
+    sm::DesktopClient client; 
     //serial port configuration
     sp::PortConfig config;
 
@@ -35,7 +35,7 @@ int main(int argc, char* argv[])
     config.timeout_ms = 2000;
     if(argc != 4)
     {
-        std::printf("incorrect agruments list passed, exit...\n");        
+        std::printf("incorrect agruments list passed, exit...\n");
         return 0;
     }
 

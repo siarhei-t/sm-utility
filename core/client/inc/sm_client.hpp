@@ -134,11 +134,23 @@ struct ServerData
     BootloaderInfo data = {};
 };
 
-class Client
+class ModbusClient
 {
 public:
-    Client() : client_thread(&Client::clientThread, this) {}
-    ~Client();
+    /**
+     * @brief Construct a new Modbus Client object
+     * 
+     */
+    ModbusClient() : client_thread(&ModbusClient::clientThread, this) {}
+    /**
+     * @brief Destroy the Modbus Client object
+     * 
+     */
+    ~ModbusClient();
+    /// @brief serial port instance
+    sp::SerialPort serial_port;
+    /// @brief file control instance
+    File file;
     /// @brief stop client, close port
     void stop();
     /// @param addr server address
@@ -152,51 +164,6 @@ public:
     /// @param config used config
     /// @return error code
     std::error_code configure(sp::PortConfig config);
-    /// @brief add server to the internal servers list
-    /// @brief connect to server with selected id
-    /// @param address server address
-    /// @return error code
-    std::error_code connect(const std::uint8_t address);
-    /// @brief erase firmware on the server
-    /// @return error code
-    std::error_code eraseApp(const std::uint8_t address);
-    /// @brief upload new firmware
-    /// @param path_to_file path to file
-    /// @return error code
-    std::error_code uploadApp(const std::uint8_t address, const std::string path_to_file);
-    /// @brief load last received server data
-    /// @param @param server address in Modbus allpication area
-    /// @param data reference to struct to save
-    void getServerData(const std::uint8_t address, ServerData& data);
-    /// @brief get actual running task progress in %
-    /// @return value from 0 to 100
-    int getActualTaskProgress() const;
-
-private:
-    /// @brief buffer for request message data
-    std::vector<std::uint8_t> request_data;
-    /// @brief buffer for response message data
-    std::vector<std::uint8_t> responce_data;
-    /// @brief modbus protocol message generator
-    modbus::ModbusClient modbus_client;
-    /// @brief file control instance
-    File file;
-    /// @brief serial port instance
-    sp::SerialPort serial_port;
-    /// @brief vector with actual available modbus devices
-    std::vector<ServerData> servers;
-    /// @brief client-server data thread
-    std::thread client_thread;
-    /// @brief logic semaphore to stop client_thread
-    std::atomic<bool> thread_stop{false};
-    /// @brief async client task variable
-    std::future<void> task;
-    /// @brief info about actual pending task and function
-    TaskInfo task_info = TaskInfo(ClientTasks::undefined, 0, -1);
-    /// @brief queue with client-server exchanges
-    std::queue<std::function<void()>> q_exchange;
-    /// @brief queue with client tasks
-    std::queue<std::function<void()>> q_task;
     /// @brief ping server selected by address
     /// @param dev_addr server address
     /// @return error code
@@ -222,6 +189,39 @@ private:
     /// @param dev_addr server address
     /// @return error code
     std::error_code taskWriteFile(const std::uint8_t dev_addr);
+    /// @brief get actual running task progress in %
+    /// @return value from 0 to 100
+    int getActualTaskProgress() const;
+    /// @brief load last received server data
+    /// @param @param server address in Modbus allpication area
+    /// @param data reference to struct to save
+    void getServerData(const std::uint8_t address, ServerData& data);
+    /// @brief get server index in servers vector
+    /// @param address server address
+    /// @return actual index or -1 if server not exist
+    int getServerIndex(const std::uint8_t address);
+
+private:
+    /// @brief buffer for request message data
+    std::vector<std::uint8_t> request_data;
+    /// @brief buffer for response message data
+    std::vector<std::uint8_t> responce_data;
+    /// @brief modbus protocol message generator
+    modbus::ModbusClient modbus_client;
+    /// @brief vector with actual available modbus devices
+    std::vector<ServerData> servers;
+    /// @brief client-server data thread
+    std::thread client_thread;
+    /// @brief logic semaphore to stop client_thread
+    std::atomic<bool> thread_stop{false};
+    /// @brief async client task variable
+    std::future<void> task;
+    /// @brief info about actual pending task and function
+    TaskInfo task_info = TaskInfo(ClientTasks::undefined, 0, -1);
+    /// @brief queue with client-server exchanges
+    std::queue<std::function<void()>> q_exchange;
+    /// @brief queue with client tasks
+    std::queue<std::function<void()>> q_task;
     /// @brief get expected file size based on server predefined logic
     /// @param file_id file id in Modbus application layer
     /// @return file size in bytes
@@ -229,10 +229,6 @@ private:
     /// @brief get expected file size based on server predefined logic
     /// @param task_progress actual task progress in %
     static void printProgressBar(const int task_progress);
-    /// @brief get server index in servers vector
-    /// @param address server address
-    /// @return actual index or -1 if server not exist
-    int getServerIndex(const std::uint8_t address);
     /// @brief handler for client_thread
     void clientThread();
     /// @brief async call for callServerExchange method
@@ -247,6 +243,22 @@ private:
     /// @param index server index in servers vector
     void fileReadCallback(std::vector<std::uint8_t>& message, const int index);
 };
+
+class DesktopClient : public ModbusClient
+{
+public:
+    /// @brief add server to the internal servers list
+    /// @brief connect to server with selected id
+    /// @param address server address
+    /// @return error code
+    std::error_code connect(const std::uint8_t address);
+    /// @brief upload new firmware
+    /// @param path_to_file path to file
+    /// @return error code
+    std::error_code uploadApp(const std::uint8_t address, const std::string path_to_file, const std::uint8_t record_size);
+
+};
+
 } // namespace sm
 
 #endif // SM_CLIENT_H
