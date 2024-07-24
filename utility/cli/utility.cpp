@@ -8,9 +8,36 @@
  */
 
 #include <cstddef>
+#include <cstring>
 #include <iostream>
 #include "../../core/client/inc/sm_client.hpp"
 #include "../../core/client/inc/sm_error.hpp"
+
+#pragma pack(push)
+#pragma pack(2)
+struct BootloaderInfo
+{
+    char boot_version[17];
+    char boot_name[33];
+    char serial_number[16];
+    uint8_t random_nonce[12];
+    std::uint32_t available_rom;
+};
+#pragma pack(pop)
+
+enum class BootloaderStatus
+{
+    unknown = 0,
+    empty = 1,
+    ready = 2,
+    error = 3
+};
+
+enum class ServerFiles
+{
+    application = 1,
+    server_metadata = 2
+};
 
 
 class DesktopClient : public sm::ModbusClient
@@ -54,7 +81,7 @@ std::error_code DesktopClient::connect(const std::uint8_t address)
     }
 
     // (3.2) file reading
-    error_code = taskReadFile(address, sm::ServerFiles::server_metadata);
+    error_code = taskReadFile(address, static_cast<std::uint16_t>(ServerFiles::server_metadata),sizeof(BootloaderInfo));
 
     return error_code;
 }
@@ -68,7 +95,7 @@ std::error_code DesktopClient::uploadApp(const std::uint8_t address, const std::
     {
         return error_code;
     }
-    if (file.fileExternalWriteSetup(static_cast<std::uint16_t>(sm::ServerFiles::application), path_to_file, record_size))
+    if (file.fileExternalWriteSetup(static_cast<std::uint16_t>(ServerFiles::application), path_to_file, record_size))
     {
 
         // (1) erase application
@@ -112,19 +139,18 @@ const std::string version = "0.01";
 constexpr int master_address = 1;
 constexpr int slave_address  = 2;
 
-static void print_metadata(sm::ServerData& server_data);
+static void print_metadata(BootloaderInfo& server_data);
 
 int main(int argc, char* argv[])
 {
     //instance of serial port scanner
     sp::SerialDevice serial_device;
-    //array with master and slave servers metadata
-    sm::ServerData servers[2];
     //instance of modbus client
     DesktopClient client; 
     //serial port configuration
     sp::PortConfig config;
-
+    //bootloader info
+    BootloaderInfo info;
     //setup serial port initial configuration
     config.baudrate = sp::PortBaudRate::BD_9600;
     config.timeout_ms = 2000;
@@ -188,8 +214,8 @@ int main(int argc, char* argv[])
     }
     else
     {
-        client.getServerData(master_address,servers[0]);
-        print_metadata(servers[0]);
+        std::memcpy(&info, &client.file.getData()[0], sizeof(BootloaderInfo));
+        print_metadata(info);
     }
     /*
     std::printf("*---------------------------------------------*\n");
@@ -245,43 +271,25 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-static void print_metadata(sm::ServerData& server_data)
+static void print_metadata(BootloaderInfo& info)
 {
     std::printf("*---------------------------------------------*\n");
-    std::printf("device name      : %s \n",server_data.data.boot_name);
-    std::printf("boot version     : %s \n",server_data.data.boot_version);
-    std::printf("available ROM    : %d KB \n",server_data.data.available_rom/1024);
+    std::printf("device name      : %s \n",info.boot_name);
+    std::printf("boot version     : %s \n",info.boot_version);
+    std::printf("available ROM    : %d KB \n",info.available_rom/1024);
     
     std::printf("serial number    : ");
-    for(std::size_t i = 0; i < sizeof(server_data.data.serial_number); ++i)
+    for(std::size_t i = 0; i < sizeof(info.serial_number); ++i)
     {
-        std::printf("%d ",server_data.data.serial_number[i]);
+        std::printf("%d ",info.serial_number[i]);
     }
     std::printf("\n");
     std::printf("temporary nonce  : ");
 
-    for(std::size_t i = 0; i < sizeof(server_data.data.random_nonce); ++i)
+    for(std::size_t i = 0; i < sizeof(info.random_nonce); ++i)
     {
-        std::printf("%d ",server_data.data.random_nonce[i]);
+        std::printf("%d ",info.random_nonce[i]);
     }
     std::printf("\n");
-
-    std::cout<<"app status: ";
-    switch(server_data.regs[static_cast<int>(sm::ServerRegisters::boot_status)])
-    {
-        case 1:
-            std::cout<<" not presented \n";
-            break;
-        case 2:
-            std::cout<<" ok \n";
-            break;
-        case 3:
-            std::cout<<" error \n";
-            break;            
-        case 0:
-        default:
-            std::cout<<" unknown \n";
-            break;
-    }
     std::printf("*---------------------------------------------*\n");
 }

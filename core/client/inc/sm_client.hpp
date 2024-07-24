@@ -44,20 +44,6 @@ enum class ServerRegisters
     count
 };
 
-enum class BootloaderStatus
-{
-    unknown = 0,
-    empty = 1,
-    ready = 2,
-    error = 3
-};
-
-enum class ServerFiles
-{
-    application = 1,
-    server_metadata = 2
-};
-
 enum class ClientTasks
 {
     undefined,
@@ -100,17 +86,6 @@ struct TaskInfo
     }
 };
 
-#pragma pack(push)
-#pragma pack(2)
-struct BootloaderInfo
-{
-    char boot_version[17];
-    char boot_name[33];
-    char serial_number[16];
-    uint8_t random_nonce[12];
-    std::uint32_t available_rom;
-};
-#pragma pack(pop)
 
 enum class ServerStatus
 {
@@ -129,7 +104,6 @@ struct ServerData
 {
     ServerInfo info;
     std::uint16_t regs[static_cast<std::size_t>(ServerRegisters::count)] = {};
-    BootloaderInfo data = {};
 };
 
 class ModbusClient
@@ -182,7 +156,7 @@ public:
     /// @param dev_addr server address
     /// @param file_id file id
     /// @return error code
-    std::error_code taskReadFile(const std::uint8_t dev_addr, const ServerFiles file_id);
+    std::error_code taskReadFile(const std::uint8_t dev_addr, const std::uint16_t file_id, const std::size_t file_size);
     /// @brief write file stored in file control instance to the server selected by address
     /// @param dev_addr server address
     /// @return error code
@@ -190,10 +164,6 @@ public:
     /// @brief get actual running task progress in %
     /// @return value from 0 to 100
     int getActualTaskProgress() const;
-    /// @brief load last received server data
-    /// @param @param server address in Modbus allpication area
-    /// @param data reference to struct to save
-    void getServerData(const std::uint8_t address, ServerData& data);
     /// @brief get server index in servers vector
     /// @param address server address
     /// @return actual index or -1 if server not exist
@@ -221,10 +191,6 @@ private:
     /// @brief queue with client tasks
     std::queue<std::function<void()>> q_task;
     /// @brief get expected file size based on server predefined logic
-    /// @param file_id file id in Modbus application layer
-    /// @return file size in bytes
-    static size_t getFileSize(const ServerFiles file_id);
-    /// @brief get expected file size based on server predefined logic
     /// @param task_progress actual task progress in %
     static void printProgressBar(const int task_progress);
     /// @brief handler for client_thread
@@ -239,7 +205,7 @@ private:
     /// @brief callback called for every ClientTasks::file_read
     /// @param message reference to a vector with the message read
     /// @param index server index in servers vector
-    void fileReadCallback(std::vector<std::uint8_t>& message, const int index);
+    void fileReadCallback(std::vector<std::uint8_t>& message);
 };
 
 } // namespace sm

@@ -25,19 +25,6 @@ ModbusClient::~ModbusClient()
     client_thread.join();
 }
 
-void ModbusClient::getServerData(const std::uint8_t address, ServerData& data)
-{
-    int index = getServerIndex(address);
-    if (index != -1)
-    {
-        data = servers[index];
-    }
-    else
-    {
-        data = ServerData();
-    }
-}
-
 int ModbusClient::getActualTaskProgress() const { return (task_info.counter * 100) / task_info.num_of_exchanges; }
 
 void ModbusClient::addServer(const std::uint8_t addr, const std::uint8_t gateway_addr)
@@ -198,7 +185,7 @@ std::error_code ModbusClient::taskReadRegisters(const std::uint8_t dev_addr, con
     return task_info.error_code;
 }
 
-std::error_code ModbusClient::taskReadFile(const std::uint8_t dev_addr, const ServerFiles file_id)
+std::error_code ModbusClient::taskReadFile(const std::uint8_t dev_addr, const std::uint16_t file_id, const std::size_t file_size)
 {
     auto lambda_read_record = [this](const std::uint8_t dev_addr, const std::uint16_t file_id, const std::uint16_t record_id, const std::uint16_t length)
     {
@@ -230,9 +217,7 @@ std::error_code ModbusClient::taskReadFile(const std::uint8_t dev_addr, const Se
     }
 
     auto record_size = servers[index].regs[static_cast<int>(ServerRegisters::record_size)];
-    auto converted_file_id = static_cast<std::uint16_t>(file_id);
-    auto file_size = getFileSize(file_id);
-    if (file.fileReadSetup(converted_file_id, file_size, record_size) != true)
+    if (file.fileReadSetup(file_id, file_size, record_size) != true)
     {
         task_info.error_code = make_error_code(ClientErrors::server_not_connected);
         return task_info.error_code;
@@ -266,7 +251,7 @@ std::error_code ModbusClient::taskReadFile(const std::uint8_t dev_addr, const Se
         }
     }
     task_info.reset();
-    q_task.push([this, dev_addr, index, lambda_read_file, converted_file_id]() { lambda_read_file(dev_addr, index, converted_file_id); });
+    q_task.push([this, dev_addr, index, lambda_read_file, file_id]() { lambda_read_file(dev_addr, index, file_id); });
     while (!task_info.done)
         ;
     return task_info.error_code;
@@ -420,8 +405,7 @@ void ModbusClient::exchangeCallback()
                     break;
 
                 case ClientTasks::file_read:
-
-                    fileReadCallback(message, task_info.index);
+                    fileReadCallback(message);
                     break;
 
                 case ClientTasks::file_write:
@@ -454,42 +438,12 @@ void ModbusClient::exchangeCallback()
     }
 }
 
-void ModbusClient::fileReadCallback(std::vector<std::uint8_t>& message, const int index)
+void ModbusClient::fileReadCallback(std::vector<std::uint8_t>& message)
 {
     if (!file.getRecordFromMessage(message))
     {
         task_info.error_code = make_error_code(ClientErrors::internal);
     }
-    else
-    {
-        if (file.isFileReady())
-        {
-            switch (file.getId())
-            {
-                case static_cast<std::uint16_t>(ServerFiles::server_metadata):
-                    std::memcpy(&servers[index].data, &file.getData()[0], sizeof(BootloaderInfo));
-                    break;
-
-                default:
-                    break;
-            }
-        }
-    }
-}
-
-size_t ModbusClient::getFileSize(const ServerFiles file_id)
-{
-    size_t file_size = 0;
-    switch (file_id)
-    {
-        case ServerFiles::server_metadata:
-            file_size = sizeof(BootloaderInfo);
-            break;
-        case ServerFiles::application:
-        default:
-            break;
-    }
-    return file_size;
 }
 
 void ModbusClient::printProgressBar(const int task_progress)
