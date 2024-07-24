@@ -27,6 +27,16 @@ ModbusClient::~ModbusClient()
 
 int ModbusClient::getActualTaskProgress() const { return (task_info.counter * 100) / task_info.num_of_exchanges; }
 
+void ModbusClient::getLastServerRegList(const std::uint8_t addr, std::vector<std::uint16_t>& registers)
+{
+    registers.clear();
+    auto index = getServerIndex(addr);
+    if ( index != -1)
+    {
+        registers.insert(registers.end(),servers[index].regs.begin(),servers[index].regs.end());
+    }
+}
+
 void ModbusClient::addServer(const std::uint8_t addr, const std::uint8_t gateway_addr)
 {
     if (getServerIndex(addr) == -1)
@@ -368,6 +378,7 @@ void ModbusClient::exchangeCallback()
 {
     auto readRegs = [](ServerData& server, const std::vector<uint8_t>& message)
     {
+        server.regs.clear();
         const int id_length = 2;
         const int id_start = 3;
         int counter = 0;
@@ -378,8 +389,9 @@ void ModbusClient::exchangeCallback()
 
         for (int i = id_start; i < (id_start + message[id_length]); i = i + 2)
         {
-            server.regs[counter] = static_cast<std::uint16_t>(message[i]) << 8;
-            server.regs[counter] |= message[i + 1];
+            std::uint16_t reg = static_cast<std::uint16_t>(message[i]) << 8;
+            reg |= message[i + 1];
+            server.regs.push_back(reg);
             ++counter;
         }
     };

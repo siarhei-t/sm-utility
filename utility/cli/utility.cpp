@@ -8,8 +8,10 @@
  */
 
 #include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <iostream>
+#include <vector>
 #include "../../core/client/inc/sm_client.hpp"
 #include "../../core/client/inc/sm_error.hpp"
 
@@ -151,6 +153,8 @@ int main(int argc, char* argv[])
     sp::PortConfig config;
     //bootloader info
     BootloaderInfo info;
+    // bootloader registers
+    std::vector<std::uint16_t> registers;
     //setup serial port initial configuration
     config.baudrate = sp::PortBaudRate::BD_9600;
     config.timeout_ms = 2000;
@@ -215,6 +219,7 @@ int main(int argc, char* argv[])
     else
     {
         std::memcpy(&info, &client.file.getData()[0], sizeof(BootloaderInfo));
+        client.getLastServerRegList(master_address,registers);
         print_metadata(info);
     }
     /*

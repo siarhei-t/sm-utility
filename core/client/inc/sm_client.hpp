@@ -15,6 +15,7 @@
 #include <future>
 #include <queue>
 #include <thread>
+#include <vector>
 
 #include "../../common/sm_modbus.hpp"
 #include "../../external/simple-serial-port-1.03/lib/inc/serial_port.hpp"
@@ -28,7 +29,6 @@ constexpr int not_connected = 255;
 constexpr std::uint16_t file_read_prepare = 1;
 constexpr std::uint16_t file_write_prepare = 2;
 constexpr std::uint16_t app_erase_request = 1;
-constexpr std::uint16_t app_start_request = 1;
 ////////////////////////////////////////////////////////////////////////////////
 
 enum class ServerRegisters
@@ -52,7 +52,6 @@ enum class ClientTasks
     file_read,
     file_write,
     ping,     // extra command, FunctionCodes::undefined used
-    app_start // extra command, the same as reg_write, but no responce expected
 };
 
 struct TaskAttributes
@@ -86,7 +85,6 @@ struct TaskInfo
     }
 };
 
-
 enum class ServerStatus
 {
     Unavailable,
@@ -103,7 +101,7 @@ struct ServerInfo
 struct ServerData
 {
     ServerInfo info;
-    std::uint16_t regs[static_cast<std::size_t>(ServerRegisters::count)] = {};
+    std::vector<std::uint16_t> regs;
 };
 
 class ModbusClient
@@ -168,6 +166,8 @@ public:
     /// @param address server address
     /// @return actual index or -1 if server not exist
     int getServerIndex(const std::uint8_t address);
+
+    void getLastServerRegList(const std::uint8_t addr, std::vector<std::uint16_t>& registers);
 
 private:
     /// @brief buffer for request message data
