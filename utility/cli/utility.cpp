@@ -46,7 +46,6 @@ enum class ServerFiles
     server_metadata = 2
 };
 
-
 class DesktopClient : public sm::ModbusClient
 {
 public:

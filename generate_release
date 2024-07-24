@@ -1,0 +1,16 @@
+#!/bin/bash
+
+echo "########################################################"
+echo "Trying to generate client release from build folder..."
+echo "########################################################"
+echo "create dist folder..."
+mkdir dist
+echo "copy library..."
+cp build/libsm-client.a dist/
+echo "copy headers..."
+cp -r core/client/inc dist/
+cp -r core/common dist/
+cp -r core/external/simple-serial-port-1.03/lib/inc/ dist/
+echo "Done!"
+echo "########################################################"
+
