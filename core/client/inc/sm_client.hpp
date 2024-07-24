@@ -24,8 +24,6 @@
 namespace sm
 {
 //////////////////////////////SERVER CONSTANTS//////////////////////////////////
-constexpr int boot_version_size = 17;
-constexpr int boot_name_size = 33;
 constexpr int not_connected = 255;
 constexpr std::uint16_t file_read_prepare = 1;
 constexpr std::uint16_t file_write_prepare = 2;
@@ -242,21 +240,6 @@ private:
     /// @param message reference to a vector with the message read
     /// @param index server index in servers vector
     void fileReadCallback(std::vector<std::uint8_t>& message, const int index);
-};
-
-class DesktopClient : public ModbusClient
-{
-public:
-    /// @brief add server to the internal servers list
-    /// @brief connect to server with selected id
-    /// @param address server address
-    /// @return error code
-    std::error_code connect(const std::uint8_t address);
-    /// @brief upload new firmware
-    /// @param path_to_file path to file
-    /// @return error code
-    std::error_code uploadApp(const std::uint8_t address, const std::string path_to_file, const std::uint8_t record_size);
-
 };
 
 } // namespace sm

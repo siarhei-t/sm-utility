@@ -10,7 +10,102 @@
 #include <cstddef>
 #include <iostream>
 #include "../../core/client/inc/sm_client.hpp"
+#include "../../core/client/inc/sm_error.hpp"
 
+
+class DesktopClient : public sm::ModbusClient
+{
+public:
+    /// @brief add server to the internal servers list
+    /// @brief connect to server with selected id
+    /// @param address server address
+    /// @return error code
+    std::error_code connect(const std::uint8_t address);
+    /// @brief upload new firmware
+    /// @param path_to_file path to file
+    /// @return error code
+    std::error_code uploadApp(const std::uint8_t address, const std::string path_to_file, const std::uint8_t record_size);
+
+};
+
+std::error_code DesktopClient::connect(const std::uint8_t address)
+{
+    std::error_code error_code = make_error_code(sm::ClientErrors::server_not_connected);
+
+    // (1) ping server, expected answer with exception type 1
+    error_code = taskPing(address);
+    if (error_code)
+    {
+        return error_code;
+    }
+
+    // (2) load all registers
+    error_code = taskReadRegisters(address, modbus::holding_regs_offset, static_cast<std::uint16_t>(sm::ServerRegisters::count));
+    if (error_code)
+    {
+        return error_code;
+    }
+
+    // (3.1) prepare to read
+    error_code = taskWriteRegister(address, static_cast<std::uint16_t>(sm::ServerRegisters::file_control), sm::file_read_prepare);
+    if (error_code)
+    {
+        return error_code;
+    }
+
+    // (3.2) file reading
+    error_code = taskReadFile(address, sm::ServerFiles::server_metadata);
+
+    return error_code;
+}
+
+std::error_code DesktopClient::uploadApp(const std::uint8_t address, const std::string path_to_file, const std::uint8_t record_size)
+{
+
+    std::error_code error_code = make_error_code(sm::ClientErrors::server_not_connected);
+    int index = getServerIndex(address);
+    if (index == -1)
+    {
+        return error_code;
+    }
+    if (file.fileExternalWriteSetup(static_cast<std::uint16_t>(sm::ServerFiles::application), path_to_file, record_size))
+    {
+
+        // (1) erase application
+        error_code = taskWriteRegister(address, static_cast<std::uint16_t>(sm::ServerRegisters::app_erase), sm::app_erase_request);
+        if (error_code)
+        {
+            return error_code;
+        }
+        // (2) send new file size
+        std::uint16_t num_of_records = file.getNumOfRecords();
+
+        error_code = taskWriteRegister(address, static_cast<std::uint16_t>(sm::ServerRegisters::prepare_to_update), num_of_records);
+        if (error_code)
+        {
+            return error_code;
+        }
+        // (3) prepare to write
+        error_code = taskWriteRegister(address, static_cast<std::uint16_t>(sm::ServerRegisters::file_control), sm::file_write_prepare);
+        if (error_code)
+        {
+            return error_code;
+        }
+        // (4) file sending
+        error_code = taskWriteFile(address);
+        if (error_code)
+        {
+            return error_code;
+        }
+        // (5) read status back
+        error_code = taskReadRegisters(address, modbus::holding_regs_offset, static_cast<std::uint16_t>(sm::ServerRegisters::count));
+    }
+    else
+    {
+        error_code = make_error_code(sm::ClientErrors::internal);
+    }
+    return error_code;
+}
 
 const std::string version = "0.01";
 
@@ -26,12 +121,12 @@ int main(int argc, char* argv[])
     //array with master and slave servers metadata
     sm::ServerData servers[2];
     //instance of modbus client
-    sm::DesktopClient client; 
+    DesktopClient client; 
     //serial port configuration
     sp::PortConfig config;
 
     //setup serial port initial configuration
-    config.baudrate = sp::PortBaudRate::BD_115200;
+    config.baudrate = sp::PortBaudRate::BD_9600;
     config.timeout_ms = 2000;
     if(argc != 4)
     {

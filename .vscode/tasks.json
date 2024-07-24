@@ -3,32 +3,50 @@
     "tasks": [
         {
             "type": "shell",
-            "label": "UTILITY-BUILD",
+            "label": "BUILD",
             "command": "cmake --build build",
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
             "options": {
-                "cwd": "${workspaceFolder}/utility/cli"
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "type": "shell",
+            "label": "LIB-CFG-WIN-RELEASE",
+            "command": "cmake core/client -DTARGET_WINDOWS=ON -DCMAKE_BUILD_TYPE=Release -Bbuild",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "type": "shell",
+            "label": "LIB-CFG-LINUX-RELEASE",
+            "command": "cmake core/client -DTARGET_LINUX=ON -DCMAKE_BUILD_TYPE=Release -Bbuild",
+            "options": {
+                "cwd": "${workspaceFolder}"
             },
             "problemMatcher": []
         },
         {
             "type": "shell",
             "label": "UTILITY-CFG-WIN-DEBUG",
-            "command": "cmake -DTARGET_WINDOWS=ON -DCMAKE_BUILD_TYPE=Debug -Bbuild",
+            "command": "cmake utility/cli -DTARGET_WINDOWS=ON -DCMAKE_BUILD_TYPE=Debug -Bbuild",
             "options": {
-                "cwd": "${workspaceFolder}/utility/cli"
+                "cwd": "${workspaceFolder}"
             },
             "problemMatcher": []
         },
         {
             "type": "shell",
             "label": "UTILITY-CFG-LINUX-DEBUG",
-            "command": "cmake -DTARGET_LINUX=ON -DCMAKE_BUILD_TYPE=Debug -Bbuild",
+            "command": "cmake utility/cli -DTARGET_LINUX=ON -DCMAKE_BUILD_TYPE=Debug -Bbuild",
             "options": {
-                "cwd": "${workspaceFolder}/utility/cli"
+                "cwd": "${workspaceFolder}"
             },
             "problemMatcher": []
         },
