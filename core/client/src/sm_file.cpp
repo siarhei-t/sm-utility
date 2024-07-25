@@ -11,6 +11,7 @@
 #include "../../common/sm_modbus.hpp"
 #include <cstring>
 #include <fstream>
+#include <vector>
 
 namespace sm
 {
@@ -61,7 +62,7 @@ bool File::fileReadSetup(const std::uint16_t id, const size_t file_size, const s
     return data != nullptr;
 }
 
-bool File::fileExternalWriteSetup(const std::uint16_t id, const std::string path_to_file, const std::uint8_t record_size)
+bool File::fileWriteSetupFromDrive(const std::uint16_t id, const std::string path_to_file, const std::uint8_t record_size)
 {
     if (data)
     {
@@ -103,6 +104,29 @@ bool File::fileExternalWriteSetup(const std::uint16_t id, const std::string path
     else
     {
         std::printf("unable to open file on path %s \n", path_to_file.c_str());
+        return false;
+    }
+}
+
+bool File::fileWriteSetupFromMemory(const std::uint16_t id, const std::vector<std::uint8_t>& file_data,const std::uint8_t record_size)
+{
+    if (data)
+    {
+        fileDelete();
+    }
+    if (file_data.size() > 0)
+    {
+        this->id = id;
+        this->record_size = record_size;
+        num_of_records = calcNumOfRecords(file_data.size());
+        data = std::make_unique<std::uint8_t[]>(num_of_records * record_size);
+        std::memset(&data.get()[(num_of_records - 1) * record_size], 0xFF, record_size);
+        std::copy(file_data.begin(),file_data.end(),data.get());
+        return true;
+    }
+    else
+    {
+        std::printf("unable to create file from vector \n");
         return false;
     }
 }
