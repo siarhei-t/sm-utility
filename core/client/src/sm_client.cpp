@@ -10,7 +10,6 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
-#include <iostream>
 
 #include "../../common/sm_modbus.hpp"
 #include "../inc/sm_client.hpp"
@@ -25,7 +24,10 @@ ModbusClient::~ModbusClient()
     client_thread.join();
 }
 
-int ModbusClient::getActualTaskProgress() const { return (task_info.counter * 100) / task_info.num_of_exchanges; }
+int ModbusClient::getActualTaskProgress() const 
+{ 
+    return (task_info.counter * 100) / task_info.num_of_exchanges; 
+}
 
 void ModbusClient::getLastServerRegList(const std::uint8_t addr, std::vector<std::uint16_t>& registers)
 {
@@ -261,7 +263,7 @@ std::error_code ModbusClient::taskReadFile(const std::uint8_t dev_addr, const st
         }
     }
     task_info.reset();
-    q_task.push([this, dev_addr, index, lambda_read_file, file_id]() { lambda_read_file(dev_addr, index, file_id); });
+    q_task.push([dev_addr, index, lambda_read_file, file_id]() { lambda_read_file(dev_addr, index, file_id); });
     while (!task_info.done)
         ;
     return task_info.error_code;
@@ -287,7 +289,7 @@ std::error_code ModbusClient::taskWriteFile(const std::uint8_t dev_addr)
         {
             std::vector<uint8_t> data;
             data.assign(&(file.getData()[i * record_size]), &(file.getData()[i * record_size]) + record_size);
-            q_exchange.push([this, lambda_write_record, dev_addr, file_id, i, data]
+            q_exchange.push([lambda_write_record, dev_addr, file_id, i, data]
                             { lambda_write_record(dev_addr, file_id, static_cast<std::uint16_t>(i), data); });
         }
     };
@@ -327,7 +329,7 @@ std::error_code ModbusClient::taskWriteFile(const std::uint8_t dev_addr)
         }
     }
     task_info.reset();
-    q_task.push([this, dev_addr, lambda_write_file, index, record_size]() { lambda_write_file(dev_addr, index, record_size); });
+    q_task.push([dev_addr, lambda_write_file, index, record_size]() { lambda_write_file(dev_addr, index, record_size); });
     while (!task_info.done)
         ;
     return task_info.error_code;
@@ -407,7 +409,7 @@ void ModbusClient::exchangeCallback()
             switch (task_info.task)
             {
                 case ClientTasks::ping: // mark server as available if we have responce on this command
-                    servers[task_info.index].info.status = ServerStatus::Available;
+                    servers[task_info.index].info.status = ServerStatus::available;
                     break;
 
                 case ClientTasks::regs_read:
@@ -416,11 +418,6 @@ void ModbusClient::exchangeCallback()
 
                 case ClientTasks::file_read:
                     fileReadCallback(message);
-                    break;
-
-                case ClientTasks::file_write:
-                    printProgressBar(getActualTaskProgress());
-                    // std::printf("progress: %d%% \n", getActualTaskProgress());
                     break;
 
                 default:
@@ -438,6 +435,7 @@ void ModbusClient::exchangeCallback()
     {
         if (responce_data.size() == 0)
         {
+            servers[task_info.index].info.status = ServerStatus::unavailable;
             task_info.error_code = make_error_code(ClientErrors::timeout);
         }
         else
@@ -453,35 +451,6 @@ void ModbusClient::fileReadCallback(std::vector<std::uint8_t>& message)
     if (!file.getRecordFromMessage(message))
     {
         task_info.error_code = make_error_code(ClientErrors::internal);
-    }
-}
-
-void ModbusClient::printProgressBar(const int task_progress)
-{
-    float progress = 0.01 * task_progress;
-    int barWidth = 80;
-    std::cout << "[";
-    int pos = barWidth * progress;
-    for (int i = 0; i < barWidth; ++i)
-    {
-        if (i < pos)
-        {
-            std::cout << "*";
-        }
-        else if (i == pos)
-        {
-            std::cout << ")";
-        }
-        else
-        {
-            std::cout << " ";
-        }
-    }
-    std::cout << "] " << int(progress * 100.0) << " %\r";
-    std::cout.flush();
-    if (task_progress == 100)
-    {
-        std::cout << std::endl;
     }
 }
 
@@ -524,4 +493,5 @@ void ModbusClient::callServerExchange()
         task_info.error_code = e.code();
     }
 }
+
 } // namespace sm
