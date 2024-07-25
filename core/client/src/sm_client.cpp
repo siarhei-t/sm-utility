@@ -18,6 +18,11 @@
 namespace sm
 {
 
+namespace
+{
+ServerRegisters registers;
+}
+
 ModbusClient::~ModbusClient()
 {
     thread_stop.store(true, std::memory_order_relaxed);
@@ -135,6 +140,10 @@ std::error_code ModbusClient::taskWriteRegister(const std::uint8_t dev_addr, con
     {
         return task_info.error_code;
     }
+    if(servers[index].info.status == ServerStatus::unavailable)
+    {
+        return task_info.error_code;
+    }
     // we are trying to reach this server through the gateway, perform gateway setup first
     if ((servers[index].info.gateway_addr != 0) && !recurced)
     {
@@ -173,6 +182,10 @@ std::error_code ModbusClient::taskReadRegisters(const std::uint8_t dev_addr, con
     task_info.error_code = make_error_code(ClientErrors::server_not_connected);
     int index = getServerIndex(dev_addr);
     if (index == -1)
+    {
+        return task_info.error_code;
+    }
+    if(servers[index].info.status == ServerStatus::unavailable)
     {
         return task_info.error_code;
     }
@@ -227,8 +240,11 @@ std::error_code ModbusClient::taskReadFile(const std::uint8_t dev_addr, const st
     {
         return task_info.error_code;
     }
-
-    auto record_size = servers[index].regs[static_cast<int>(ServerRegisters::record_size)];
+    if(servers[index].info.status == ServerStatus::unavailable)
+    {
+        return task_info.error_code;
+    }
+    auto record_size = servers[index].info.record_size;
     if (file.fileReadSetup(file_id, file_size, record_size) != true)
     {
         task_info.error_code = make_error_code(ClientErrors::server_not_connected);
@@ -300,7 +316,11 @@ std::error_code ModbusClient::taskWriteFile(const std::uint8_t dev_addr)
     {
         return task_info.error_code;
     }
-    auto record_size = servers[index].regs[static_cast<int>(ServerRegisters::record_size)];
+    if(servers[index].info.status == ServerStatus::unavailable)
+    {
+        return task_info.error_code;
+    }
+    auto record_size = servers[index].info.record_size;
     // we are trying to reach this server through the gateway, perform gateway setup first
     if (servers[index].info.gateway_addr != 0)
     {
@@ -387,14 +407,20 @@ void ModbusClient::exchangeCallback()
         {
             return;
         }
-
+        std::uint16_t reg = 0;
         for (int i = id_start; i < (id_start + message[id_length]); i = i + 2)
         {
-            std::uint16_t reg = static_cast<std::uint16_t>(message[i]) << 8;
+            reg = static_cast<std::uint16_t>(message[i]) << 8;
             reg |= message[i + 1];
             server.regs.push_back(reg);
         }
+        //get record size for the server, fix it in future with checking for reading start address 
+        if(server.regs.size() >= registers.getSize() && (server.info.record_size == 0) )
+        {
+            server.info.record_size = server.regs[registers.record_size];
+        }
     };
+
     ++task_info.counter;
     if (modbus_client.isChecksumValid(responce_data))
     {
