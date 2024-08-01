@@ -108,8 +108,7 @@ std::error_code ModbusClient::taskPing(const std::uint8_t dev_addr)
     if (servers[index].info.gateway_addr != 0)
     {
         std::uint16_t expected_length = modbus_client.getRequriedLength() + 2;
-        std::uint16_t control_reg = static_cast<std::uint16_t>(ServerRegisters::gateway_buffer_size);
-        auto error = taskWriteRegister(servers[index].info.gateway_addr, control_reg, expected_length);
+        auto error = taskWriteRegister(servers[index].info.gateway_addr, registers.gateway_buffer_size, expected_length);
         if (error)
         {
             task_info.error_code = make_error_code(ClientErrors::gateway_not_responding);
@@ -149,8 +148,7 @@ std::error_code ModbusClient::taskWriteRegister(const std::uint8_t dev_addr, con
     {
         recurced = true;
         std::uint16_t expected_length = modbus_client.getRequriedLength() + 5;
-        std::uint16_t control_reg = static_cast<std::uint16_t>(ServerRegisters::gateway_buffer_size);
-        auto error = taskWriteRegister(servers[index].info.gateway_addr, control_reg, expected_length);
+        auto error = taskWriteRegister(servers[index].info.gateway_addr, registers.gateway_buffer_size, expected_length);
         if (error)
         {
             task_info.error_code = make_error_code(ClientErrors::gateway_not_responding);
@@ -175,7 +173,7 @@ std::error_code ModbusClient::taskReadRegisters(const std::uint8_t dev_addr, con
     {
         request_data = modbus_client.msgReadRegisters(dev_addr, reg_addr, quantity);
         // amount of 16 bit registers + 1 byte for length + 1 byte for func + modbus required part
-        size_t expected_length = static_cast<size_t>(modbus_client.getRequriedLength() + (quantity * 2) + 2);
+        size_t expected_length = modbus_client.getRequriedLength() + (quantity * 2) + 2;
         TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::read_regs, expected_length);
         createServerRequest(attr);
     };
@@ -192,9 +190,8 @@ std::error_code ModbusClient::taskReadRegisters(const std::uint8_t dev_addr, con
     // we are trying to reach this server through the gateway, perform gateway setup first
     if (servers[index].info.gateway_addr != 0)
     {
-        std::uint16_t expected_length = static_cast<size_t>(modbus_client.getRequriedLength() + (quantity * 2) + 2);
-        std::uint16_t control_reg = static_cast<std::uint16_t>(ServerRegisters::gateway_buffer_size);
-        auto error = taskWriteRegister(servers[index].info.gateway_addr, control_reg, expected_length);
+        std::uint16_t expected_length = modbus_client.getRequriedLength() + (quantity * 2) + 2;
+        auto error = taskWriteRegister(servers[index].info.gateway_addr, registers.gateway_buffer_size, expected_length);
         if (error)
         {
             task_info.error_code = make_error_code(ClientErrors::gateway_not_responding);
@@ -254,24 +251,20 @@ std::error_code ModbusClient::taskReadFile(const std::uint8_t dev_addr, const st
     // we are trying to reach this server through the gateway, perform gateway setup first
     if (servers[index].info.gateway_addr != 0)
     {
-        std::uint16_t expected_length = static_cast<size_t>(modbus_client.getRequriedLength() + record_size + 4);
-        std::uint16_t control_reg = static_cast<std::uint16_t>(ServerRegisters::gateway_buffer_size);
-        auto error = taskWriteRegister(servers[index].info.gateway_addr, control_reg, expected_length);
+        std::uint16_t expected_length = modbus_client.getRequriedLength() + record_size + 4;
+        auto error = taskWriteRegister(servers[index].info.gateway_addr, registers.gateway_buffer_size, expected_length);
         if (error)
         {
             task_info.error_code = make_error_code(ClientErrors::gateway_not_responding);
             return task_info.error_code;
         }
-        control_reg = static_cast<std::uint16_t>(ServerRegisters::record_counter);
-        error = taskWriteRegister(servers[index].info.gateway_addr, control_reg, file.getNumOfRecords());
+        error = taskWriteRegister(servers[index].info.gateway_addr, registers.record_counter, file.getNumOfRecords());
         if (error)
         {
             task_info.error_code = make_error_code(ClientErrors::gateway_not_responding);
             return task_info.error_code;
         }
-
-        control_reg = static_cast<std::uint16_t>(ServerRegisters::file_control);
-        error = taskWriteRegister(servers[index].info.gateway_addr, control_reg, file_read_prepare);
+        error = taskWriteRegister(servers[index].info.gateway_addr, registers.file_control, file_read_prepare);
         if (error)
         {
             task_info.error_code = make_error_code(ClientErrors::gateway_not_responding);
@@ -324,24 +317,20 @@ std::error_code ModbusClient::taskWriteFile(const std::uint8_t dev_addr)
     // we are trying to reach this server through the gateway, perform gateway setup first
     if (servers[index].info.gateway_addr != 0)
     {
-        std::uint16_t expected_length = static_cast<size_t>(modbus_client.getRequriedLength() + record_size + 9);
-        std::uint16_t control_reg = static_cast<std::uint16_t>(ServerRegisters::gateway_buffer_size);
-        auto error = taskWriteRegister(servers[index].info.gateway_addr, control_reg, expected_length);
+        std::uint16_t expected_length = modbus_client.getRequriedLength() + record_size + 9;
+        auto error = taskWriteRegister(servers[index].info.gateway_addr, registers.gateway_buffer_size, expected_length);
         if (error)
         {
             task_info.error_code = make_error_code(ClientErrors::gateway_not_responding);
             return task_info.error_code;
         }
-        control_reg = static_cast<std::uint16_t>(ServerRegisters::record_counter);
-        error = taskWriteRegister(servers[index].info.gateway_addr, control_reg, file.getNumOfRecords());
+        error = taskWriteRegister(servers[index].info.gateway_addr, registers.record_counter, file.getNumOfRecords());
         if (error)
         {
             task_info.error_code = make_error_code(ClientErrors::gateway_not_responding);
             return task_info.error_code;
         }
-
-        control_reg = static_cast<std::uint16_t>(ServerRegisters::file_control);
-        error = taskWriteRegister(servers[index].info.gateway_addr, control_reg, file_write_prepare);
+        error = taskWriteRegister(servers[index].info.gateway_addr, registers.file_control, file_write_prepare);
         if (error)
         {
             task_info.error_code = make_error_code(ClientErrors::gateway_not_responding);
