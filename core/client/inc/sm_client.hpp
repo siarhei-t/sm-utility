@@ -216,6 +216,14 @@ private:
      */
     int getServerIndex(const std::uint8_t address);
     /**
+     * @brief get expected server response length
+     * 
+     * @param task task to execute
+     * @param extra extra length in bytes to receive
+     * @return size in bytes
+     */
+    size_t getExpectedLength(const ClientTasks task, const size_t extra = 0) const;
+    /**
      * @brief handler for client_thread
      * 
      */

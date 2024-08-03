@@ -8,6 +8,7 @@
  */
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 
@@ -271,6 +272,11 @@ std::error_code ModbusClient::taskReadFile(const std::uint8_t dev_addr, const st
             return task_info.error_code;
         }
     }
+    task_info.error_code = taskWriteRegister(servers[index].info.addr, registers.file_control, file_read_prepare);
+    if (task_info.error_code)
+    {
+        return task_info.error_code;
+    }
     task_info.reset();
     q_task.push([dev_addr, index, lambda_read_file, file_id]() { lambda_read_file(dev_addr, index, file_id); });
     while (!task_info.done)
@@ -296,7 +302,7 @@ std::error_code ModbusClient::taskWriteFile(const std::uint8_t dev_addr)
         task_info.reset(ClientTasks::file_write, num_of_records, index);
         for (auto i = 0; i < num_of_records; ++i)
         {
-            std::vector<uint8_t> data;
+            std::vector<std::uint8_t> data;
             data.assign(&(file.getData()[i * record_size]), &(file.getData()[i * record_size]) + record_size);
             q_exchange.push([lambda_write_record, dev_addr, file_id, i, data]
                             { lambda_write_record(dev_addr, file_id, static_cast<std::uint16_t>(i), data); });
@@ -336,6 +342,11 @@ std::error_code ModbusClient::taskWriteFile(const std::uint8_t dev_addr)
             task_info.error_code = make_error_code(ClientErrors::gateway_not_responding);
             return task_info.error_code;
         }
+    }
+    task_info.error_code = taskWriteRegister(servers[index].info.addr, registers.file_control, file_write_prepare);
+    if (task_info.error_code)
+    {
+        return task_info.error_code;
     }
     task_info.reset();
     q_task.push([dev_addr, lambda_write_file, index, record_size]() { lambda_write_file(dev_addr, index, record_size); });
@@ -459,6 +470,31 @@ void ModbusClient::exchangeCallback()
         }
         task_info.done = true;
     }
+}
+
+size_t ModbusClient::getExpectedLength(const ClientTasks task, const size_t extra) const
+{
+    switch (task) 
+    {
+        case sm::ClientTasks::undefined:
+            return 0;
+
+        case sm::ClientTasks::ping:
+            return modbus_client.getRequriedLength() + 2;
+        
+        case sm::ClientTasks::reg_write:
+            return modbus_client.getRequriedLength() + 4;
+        
+        case sm::ClientTasks::regs_read:
+            return modbus_client.getRequriedLength() + extra + 2;
+        
+        case sm::ClientTasks::file_write:
+            return modbus::read_file_pdu_size + extra;
+        
+        case sm::ClientTasks::file_read:
+            return modbus::read_file_pdu_size + extra;
+    };
+    return 0;
 }
 
 void ModbusClient::fileReadCallback(std::vector<std::uint8_t>& message)
