@@ -272,11 +272,7 @@ std::error_code ModbusClient::taskReadFile(const std::uint8_t dev_addr, const st
             return task_info.error_code;
         }
     }
-    task_info.error_code = taskWriteRegister(servers[index].info.addr, registers.file_control, file_read_prepare);
-    if (task_info.error_code)
-    {
-        return task_info.error_code;
-    }
+
     task_info.reset();
     q_task.push([dev_addr, index, lambda_read_file, file_id]() { lambda_read_file(dev_addr, index, file_id); });
     while (!task_info.done)
@@ -343,11 +339,7 @@ std::error_code ModbusClient::taskWriteFile(const std::uint8_t dev_addr)
             return task_info.error_code;
         }
     }
-    task_info.error_code = taskWriteRegister(servers[index].info.addr, registers.file_control, file_write_prepare);
-    if (task_info.error_code)
-    {
-        return task_info.error_code;
-    }
+
     task_info.reset();
     q_task.push([dev_addr, lambda_write_file, index, record_size]() { lambda_write_file(dev_addr, index, record_size); });
     while (!task_info.done)
