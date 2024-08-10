@@ -248,7 +248,12 @@ std::error_code ModbusClient::taskReadFile(const std::uint8_t dev_addr, const st
         task_info.error_code = make_error_code(ClientErrors::server_not_connected);
         return task_info.error_code;
     }
-
+    // setup file read prepare
+    task_info.error_code = taskWriteRegister(dev_addr,registers.file_control, file_read_prepare);
+    if(task_info.error_code)
+    {
+        return task_info.error_code;
+    }
     // we are trying to reach this server through the gateway, perform gateway setup first
     if (servers[index].info.gateway_addr != 0)
     {
@@ -316,6 +321,12 @@ std::error_code ModbusClient::taskWriteFile(const std::uint8_t dev_addr)
         return task_info.error_code;
     }
     auto record_size = servers[index].info.record_size;
+    // setup file read prepare
+    task_info.error_code = taskWriteRegister(dev_addr,registers.file_control, file_write_prepare);
+    if(task_info.error_code)
+    {
+        return task_info.error_code;
+    }
     // we are trying to reach this server through the gateway, perform gateway setup first
     if (servers[index].info.gateway_addr != 0)
     {
