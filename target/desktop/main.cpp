@@ -7,20 +7,45 @@
  *
  */
 
-#include <cstdint>
+
 #include <iostream>
-#include "lib/inc/sm_modbus.hpp"
-#include "lib/inc/sm_server.hpp"
+
+#include "../../core/client/inc/sm_client.hpp"
+#include "../../core/client/inc/sm_error.hpp"
 
 int main(int argc, char* argv[])
 {
     (void)(argc);
     (void)(argv);
-    sm::ModbusServer server(1);
-    std::array<std::uint8_t, modbus::max_adu_size> data = {2,0,0,0,0};
-    
-    auto responce = server.serverTask(data.data());
+     //serial port configuration
+    sp::PortConfig config;
+    //hardcoded port baudrate
+    config.baudrate = sp::PortBaudRate::BD_57600;
+    config.timeout_ms = 2000;
 
+    sm::ModbusClient client;
+    auto error_code = client.start("COM4");
+    if(error_code)
+    {
+        std::cout<<"failed to start client. \n"; 
+        std::cout<<"error: "<<error_code.message()<<"\n";
+        return 0;
+    }
+    error_code = client.configure(config);
+    if(error_code)
+    {
+        std::cout<<"failed to configure client. \n";
+        std::cout<<"error: "<<error_code.message()<<"\n";
+        return 0;
+    }
+    // (3) create master and slave server instances
+    client.addServer(1);
 
-    std::cout<<"test :"<< int(responce)<<"\n";
+    error_code = make_error_code(sm::ClientErrors::server_not_connected);
+    // ping server, expected answer with modbus::Exceptions::exception_1
+    error_code = client.taskPing(1);
+    if (error_code)
+    {
+        std::cout<<"error: "<<error_code.message()<<"\n";
+    }
 }

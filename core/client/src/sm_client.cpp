@@ -531,13 +531,6 @@ void ModbusClient::createServerRequest(const TaskAttributes& attr)
 void ModbusClient::callServerExchange()
 {
     responce_data.clear();
-    std::printf("data to sent : \n");
-    for(size_t i = 0; i < request_data.size(); ++i)
-    {
-        std::printf(" 0x%x ",request_data[0]);
-    }
-    std::printf("\n");
-
     try
     {
         serial_port.port.writeBinary(request_data);
@@ -554,12 +547,6 @@ void ModbusClient::callServerExchange()
     {
         task_info.error_code = e.code();
     }
-    std::printf("data received : \n");
-    for(size_t i = 0; i < responce_data.size(); ++i)
-    {
-        std::printf(" 0x%x ",responce_data[0]);
-    }
-    std::printf("\n");
 }
 
 } // namespace sm

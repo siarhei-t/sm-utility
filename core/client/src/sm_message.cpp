@@ -88,7 +88,7 @@ void ModbusMessage::msgReadRegisters(std::vector<std::uint8_t>& buffer,
 
 bool ModbusMessage::isChecksumValid(const std::vector<std::uint8_t>& data) const
 {
-    if (data.size() <= 5)
+    if (data.size() < 5)
     {
         return false;
     }
