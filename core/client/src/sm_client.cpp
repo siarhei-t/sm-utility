@@ -405,18 +405,20 @@ void ModbusClient::exchangeCallback()
     auto readRegs = [](ServerData& server, const std::vector<uint8_t>& message)
     {
         server.regs.clear();
-        const int id_length = 2;
-        const int id_start = 3;
-        if (message[id_start] > (message.size() - (modbus::crc_size + modbus::address_size + modbus::function_size + 1)))
+        const int id_length = 1;
+        if (message[id_length] > (message.size() - modbus::function_size - 1))
         {
             return;
         }
         std::uint16_t reg = 0;
-        for (int i = id_start; i < (id_start + message[id_length]); i = i + 2)
+        std::uint8_t num_of_bytes = message[id_length];
+        int index = 2;
+        for (int i = 0; i < num_of_bytes/2; ++i)
         {
-            reg = static_cast<std::uint16_t>(message[i]) << 8;
-            reg |= message[i + 1];
+            reg = static_cast<std::uint16_t>(message[index]) << 8;
+            reg |= message[index + 1];
             server.regs.push_back(reg);
+            index +=2;
         }
         //get record size for the server, fix it in future with checking for reading start address 
         if(server.regs.size() >= registers.getSize() && (server.info.record_size == 0) )
@@ -429,8 +431,8 @@ void ModbusClient::exchangeCallback()
     if (modbus_message.isChecksumValid(responce_data))
     {
         std::vector<std::uint8_t> message;
-        modbus_message.extractData(responce_data, message);
-        if (responce_data.size() != task_info.attributes.length)
+
+        if ((responce_data.size() != task_info.attributes.length) || !modbus_message.extractData(responce_data, message))
         {
             task_info.error_code = make_error_code(ClientErrors::server_exception);
         }
@@ -455,7 +457,6 @@ void ModbusClient::exchangeCallback()
                     break;
             }
         }
-
         if (task_info.counter == task_info.num_of_exchanges)
         {
             task_info.done = true;

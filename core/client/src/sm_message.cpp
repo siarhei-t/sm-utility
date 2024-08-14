@@ -113,7 +113,7 @@ bool ModbusMessage::isChecksumValid(const std::vector<std::uint8_t>& data) const
 bool ModbusMessage::extractData(const std::vector<std::uint8_t>& data, std::vector<std::uint8_t>& message) const
 {
     message.clear();
-    if(data.size() <= 5)
+    if(data.size() < 5)
     {
         return false;
     }

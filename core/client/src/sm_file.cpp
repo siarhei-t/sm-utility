@@ -46,6 +46,10 @@ bool File::fileReadSetup(const std::uint16_t id, const size_t file_size, const s
     {
         fileDelete();
     }
+    if(record_size == 0)
+    {
+        return false;
+    }
     if (file_size < record_size)
     {
         data = std::make_unique<std::uint8_t[]>(record_size);
@@ -133,8 +137,8 @@ bool File::fileWriteSetupFromMemory(const std::uint16_t id, const std::vector<st
 
 bool File::getRecordFromMessage(const std::vector<std::uint8_t>& message)
 {
-    const std::uint8_t data_idx = 5;
-    const std::uint8_t data_size = message[2] - 1;
+    const std::uint8_t data_idx = 4;
+    const std::uint8_t data_size = message[2];
     const int record_idx = counter * record_size;
 
     if (static_cast<size_t>(record_idx + data_size) <= file_size)
