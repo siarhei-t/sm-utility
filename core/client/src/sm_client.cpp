@@ -405,14 +405,14 @@ void ModbusClient::exchangeCallback()
     auto readRegs = [](ServerData& server, const std::vector<uint8_t>& message)
     {
         server.regs.clear();
-        const int id_length = 1;
+        const int id_length = modbus::read_regs_responce_data_length_idx;
         if (message[id_length] > (message.size() - modbus::function_size - 1))
         {
             return;
         }
         std::uint16_t reg = 0;
         std::uint8_t num_of_bytes = message[id_length];
-        int index = 2;
+        int index = modbus::read_regs_responce_data_start_idx;
         for (int i = 0; i < num_of_bytes/2; ++i)
         {
             reg = static_cast<std::uint16_t>(message[index]) << 8;

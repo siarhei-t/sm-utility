@@ -25,6 +25,10 @@ constexpr std::uint16_t files_offset = 0x0001;
 constexpr std::uint8_t function_error_mask = 0x80;
 constexpr std::uint8_t max_adu_size = 253;
 constexpr std::uint8_t min_amount_of_regs = 1;
+constexpr std::uint8_t read_regs_responce_data_length_idx = 1;
+constexpr std::uint8_t read_regs_responce_data_start_idx  = 2;
+constexpr std::uint8_t read_file_responce_data_length_idx = 2;
+constexpr std::uint8_t read_file_responce_data_start_idx = 4;
 constexpr std::uint8_t max_amount_of_regs = 125;
 constexpr std::uint8_t rw_file_reference = 6;
 constexpr std::uint8_t min_rw_file_byte_counter = 7;
@@ -61,11 +65,6 @@ constexpr std::uint16_t crc16_table[256] = {
     0X4400u, 0X84C1u, 0X8581u, 0X4540u, 0X8701u, 0X47C0u, 0X4680u, 0X8641u, 0X8201u, 0X42C0u, 0X4380u, 0X8341u, 0X4100u, 0X81C1u, 0X8081u, 0X4040u};
 ////////////////////////////////////////////////////////////////////////////////
 
-enum class Mode
-{
-    rtu,
-    ascii
-};
 
 // General Modbus function codes, for reference see https://modbus.org/
 enum class FunctionCodes

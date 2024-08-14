@@ -137,13 +137,13 @@ bool File::fileWriteSetupFromMemory(const std::uint16_t id, const std::vector<st
 
 bool File::getRecordFromMessage(const std::vector<std::uint8_t>& message)
 {
-    const std::uint8_t data_idx = 4;
-    const std::uint8_t data_size = message[2];
+    const std::uint8_t data_idx = modbus::read_file_responce_data_start_idx;
+    const std::uint8_t data_length = message[modbus::read_file_responce_data_length_idx];
     const int record_idx = counter * record_size;
 
-    if (static_cast<size_t>(record_idx + data_size) <= file_size)
+    if (static_cast<size_t>(record_idx + data_length) <= file_size)
     {
-        std::copy(message.data() + data_idx, message.data() + data_idx + data_size, data.get() + record_idx);
+        std::copy(message.data() + data_idx, message.data() + data_idx + data_length, data.get() + record_idx);
         ++counter;
         if (counter == num_of_records)
         {
