@@ -32,23 +32,5 @@
             },
             "problemMatcher": []
         },
-        {
-            "type": "shell",
-            "label": "UTILITY-CFG-WIN-DEBUG",
-            "command": "cmake utility/cli -DTARGET_WINDOWS=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Debug -Bbuild",
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
-            "problemMatcher": []
-        },
-        {
-            "type": "shell",
-            "label": "UTILITY-CFG-LINUX-DEBUG",
-            "command": "cmake utility/cli -DTARGET_LINUX=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Debug -Bbuild",
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
-            "problemMatcher": []
-        },
     ]
 }

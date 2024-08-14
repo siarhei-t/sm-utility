@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 
 #include "../../common/sm_modbus.hpp"
@@ -93,9 +94,9 @@ std::error_code ModbusClient::taskPing(const std::uint8_t dev_addr)
     {
         std::uint8_t function = static_cast<uint8_t>(modbus::FunctionCodes::undefined);
         std::vector<uint8_t> message{0x00, 0x00, 0x00, 0x00};
-        request_data = modbus_client.msgCustom(address, function, message);
+        modbus_message.msgCustom(request_data, function, message,address);
         // 1 byte for exception + 1 byte for func + modbus required part
-        TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::undefined, static_cast<size_t>(modbus_client.getRequriedLength() + 2));
+        TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::undefined, static_cast<size_t>(modbus_message.getRequriedLength() + 2));
         createServerRequest(attr);
     };
 
@@ -108,7 +109,7 @@ std::error_code ModbusClient::taskPing(const std::uint8_t dev_addr)
     // we are trying to reach this server through the gateway, perform gateway setup first
     if (servers[index].info.gateway_addr != 0)
     {
-        std::uint16_t expected_length = modbus_client.getRequriedLength() + 2;
+        std::uint16_t expected_length = modbus_message.getRequriedLength() + 2;
         auto error = taskWriteRegister(servers[index].info.gateway_addr, registers.gateway_buffer_size, expected_length);
         if (error)
         {
@@ -129,7 +130,7 @@ std::error_code ModbusClient::taskWriteRegister(const std::uint8_t dev_addr, con
     static bool recurced = false;
     auto lambda_write_reg = [this](const std::uint8_t dev_addr, const std::uint16_t reg_addr, const std::uint16_t value)
     {
-        request_data = modbus_client.msgWriteRegister(dev_addr, reg_addr, value);
+        modbus_message.msgWriteRegister(request_data, reg_addr, value, dev_addr);
         // in case of success we expect message with the same length
         TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::write_reg, request_data.size());
         createServerRequest(attr);
@@ -148,7 +149,7 @@ std::error_code ModbusClient::taskWriteRegister(const std::uint8_t dev_addr, con
     if ((servers[index].info.gateway_addr != 0) && !recurced)
     {
         recurced = true;
-        std::uint16_t expected_length = modbus_client.getRequriedLength() + 5;
+        std::uint16_t expected_length = modbus_message.getRequriedLength() + 5;
         auto error = taskWriteRegister(servers[index].info.gateway_addr, registers.gateway_buffer_size, expected_length);
         if (error)
         {
@@ -172,9 +173,9 @@ std::error_code ModbusClient::taskReadRegisters(const std::uint8_t dev_addr, con
 {
     auto lambda_read_regs = [this](const std::uint8_t dev_addr, const std::uint16_t reg_addr, const std::uint16_t quantity)
     {
-        request_data = modbus_client.msgReadRegisters(dev_addr, reg_addr, quantity);
+        modbus_message.msgReadRegisters(request_data, reg_addr, quantity,dev_addr);
         // amount of 16 bit registers + 1 byte for length + 1 byte for func + modbus required part
-        size_t expected_length = modbus_client.getRequriedLength() + (quantity * 2) + 2;
+        size_t expected_length = modbus_message.getRequriedLength() + (quantity * 2) + 2;
         TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::read_regs, expected_length);
         createServerRequest(attr);
     };
@@ -191,7 +192,7 @@ std::error_code ModbusClient::taskReadRegisters(const std::uint8_t dev_addr, con
     // we are trying to reach this server through the gateway, perform gateway setup first
     if (servers[index].info.gateway_addr != 0)
     {
-        std::uint16_t expected_length = modbus_client.getRequriedLength() + (quantity * 2) + 2;
+        std::uint16_t expected_length = modbus_message.getRequriedLength() + (quantity * 2) + 2;
         auto error = taskWriteRegister(servers[index].info.gateway_addr, registers.gateway_buffer_size, expected_length);
         if (error)
         {
@@ -212,10 +213,10 @@ std::error_code ModbusClient::taskReadFile(const std::uint8_t dev_addr, const st
 {
     auto lambda_read_record = [this](const std::uint8_t dev_addr, const std::uint16_t file_id, const std::uint16_t record_id, const std::uint16_t length)
     {
-        request_data = modbus_client.msgReadFileRecord(dev_addr, file_id, record_id, length);
+        modbus_message.msgReadFileRecord(request_data, file_id, record_id, length, dev_addr);
         // amount of half words + 1 byte for ref type + 1 byte for data length
         // + 1 byte for resp length + 1 byte for func + modbus required part
-        size_t expected_length = static_cast<size_t>(modbus_client.getRequriedLength() + (length * 2) + 4);
+        size_t expected_length = static_cast<size_t>(modbus_message.getRequriedLength() + (length * 2) + 4);
         TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::read_file, expected_length);
         createServerRequest(attr);
     };
@@ -257,7 +258,7 @@ std::error_code ModbusClient::taskReadFile(const std::uint8_t dev_addr, const st
     // we are trying to reach this server through the gateway, perform gateway setup first
     if (servers[index].info.gateway_addr != 0)
     {
-        std::uint16_t expected_length = modbus_client.getRequriedLength() + record_size + 4;
+        std::uint16_t expected_length = modbus_message.getRequriedLength() + record_size + 4;
         auto error = taskWriteRegister(servers[index].info.gateway_addr, registers.gateway_buffer_size, expected_length);
         if (error)
         {
@@ -290,7 +291,7 @@ std::error_code ModbusClient::taskWriteFile(const std::uint8_t dev_addr)
     auto lambda_write_record =
         [this](const std::uint8_t dev_addr, const std::uint16_t file_id, const std::uint16_t record_id, const std::vector<std::uint8_t>& data)
     {
-        request_data = modbus_client.msgWriteFileRecord(dev_addr, file_id, record_id, data);
+        modbus_message.msgWriteFileRecord(request_data, file_id, record_id, data, dev_addr);
         // in case of success we expect message with the same length
         TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::write_file, request_data.size());
         createServerRequest(attr);
@@ -330,7 +331,7 @@ std::error_code ModbusClient::taskWriteFile(const std::uint8_t dev_addr)
     // we are trying to reach this server through the gateway, perform gateway setup first
     if (servers[index].info.gateway_addr != 0)
     {
-        std::uint16_t expected_length = modbus_client.getRequriedLength() + record_size + 9;
+        std::uint16_t expected_length = modbus_message.getRequriedLength() + record_size + 9;
         auto error = taskWriteRegister(servers[index].info.gateway_addr, registers.gateway_buffer_size, expected_length);
         if (error)
         {
@@ -425,10 +426,10 @@ void ModbusClient::exchangeCallback()
     };
 
     ++task_info.counter;
-    if (modbus_client.isChecksumValid(responce_data))
+    if (modbus_message.isChecksumValid(responce_data))
     {
         std::vector<std::uint8_t> message;
-        modbus_client.extractData(responce_data, message);
+        modbus_message.extractData(responce_data, message);
         if (responce_data.size() != task_info.attributes.length)
         {
             task_info.error_code = make_error_code(ClientErrors::server_exception);
@@ -483,13 +484,13 @@ size_t ModbusClient::getExpectedLength(const ClientTasks task, const size_t extr
             return 0;
 
         case sm::ClientTasks::ping:
-            return modbus_client.getRequriedLength() + 2;
+            return modbus_message.getRequriedLength() + 2;
         
         case sm::ClientTasks::reg_write:
-            return modbus_client.getRequriedLength() + 4;
+            return modbus_message.getRequriedLength() + 4;
         
         case sm::ClientTasks::regs_read:
-            return modbus_client.getRequriedLength() + extra + 2;
+            return modbus_message.getRequriedLength() + extra + 2;
         
         case sm::ClientTasks::file_write:
             return modbus::read_file_pdu_size + extra;
@@ -530,6 +531,13 @@ void ModbusClient::createServerRequest(const TaskAttributes& attr)
 void ModbusClient::callServerExchange()
 {
     responce_data.clear();
+    std::printf("data to sent : \n");
+    for(size_t i = 0; i < request_data.size(); ++i)
+    {
+        std::printf(" 0x%x ",request_data[0]);
+    }
+    std::printf("\n");
+
     try
     {
         serial_port.port.writeBinary(request_data);
@@ -546,6 +554,12 @@ void ModbusClient::callServerExchange()
     {
         task_info.error_code = e.code();
     }
+    std::printf("data received : \n");
+    for(size_t i = 0; i < responce_data.size(); ++i)
+    {
+        std::printf(" 0x%x ",responce_data[0]);
+    }
+    std::printf("\n");
 }
 
 } // namespace sm

@@ -200,7 +200,7 @@ public:
 private:
     std::vector<std::uint8_t> request_data;
     std::vector<std::uint8_t> responce_data;
-    modbus::ModbusClient modbus_client;
+    modbus::ModbusMessage modbus_message = modbus::ModbusMessage(modbus::ModbusMode::rtu);
     std::vector<ServerData> servers;
     std::thread client_thread;
     std::atomic<bool> thread_stop{false};
