@@ -31,18 +31,15 @@ ModbusClient::~ModbusClient()
     client_thread.join();
 }
 
-int ModbusClient::getActualTaskProgress() const 
-{ 
-    return (task_info.counter * 100) / task_info.num_of_exchanges; 
-}
+int ModbusClient::getActualTaskProgress() const { return (task_info.counter * 100) / task_info.num_of_exchanges; }
 
 void ModbusClient::getLastServerRegList(const std::uint8_t addr, std::vector<std::uint16_t>& registers)
 {
     registers.clear();
     auto index = getServerIndex(addr);
-    if ( index != -1)
+    if (index != -1)
     {
-        registers.insert(registers.end(),servers[index].regs.begin(),servers[index].regs.end());
+        registers.insert(registers.end(), servers[index].regs.begin(), servers[index].regs.end());
     }
 }
 
@@ -94,7 +91,7 @@ std::error_code ModbusClient::taskPing(const std::uint8_t dev_addr)
     {
         std::uint8_t function = static_cast<uint8_t>(modbus::FunctionCodes::undefined);
         std::vector<uint8_t> message{0x00, 0x00, 0x00, 0x00};
-        modbus_message.msgCustom(request_data, function, message,address);
+        modbus_message.msgCustom(request_data, function, message, address);
         // 1 byte for exception + 1 byte for func + modbus required part
         TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::undefined, static_cast<size_t>(modbus_message.getRequriedLength() + 2));
         createServerRequest(attr);
@@ -141,7 +138,7 @@ std::error_code ModbusClient::taskWriteRegister(const std::uint8_t dev_addr, con
     {
         return task_info.error_code;
     }
-    if(servers[index].info.status == ServerStatus::unavailable)
+    if (servers[index].info.status == ServerStatus::unavailable)
     {
         return task_info.error_code;
     }
@@ -173,7 +170,7 @@ std::error_code ModbusClient::taskReadRegisters(const std::uint8_t dev_addr, con
 {
     auto lambda_read_regs = [this](const std::uint8_t dev_addr, const std::uint16_t reg_addr, const std::uint16_t quantity)
     {
-        modbus_message.msgReadRegisters(request_data, reg_addr, quantity,dev_addr);
+        modbus_message.msgReadRegisters(request_data, reg_addr, quantity, dev_addr);
         // amount of 16 bit registers + 1 byte for length + 1 byte for func + modbus required part
         size_t expected_length = modbus_message.getRequriedLength() + (quantity * 2) + 2;
         TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::read_regs, expected_length);
@@ -185,7 +182,7 @@ std::error_code ModbusClient::taskReadRegisters(const std::uint8_t dev_addr, con
     {
         return task_info.error_code;
     }
-    if(servers[index].info.status == ServerStatus::unavailable)
+    if (servers[index].info.status == ServerStatus::unavailable)
     {
         return task_info.error_code;
     }
@@ -239,7 +236,7 @@ std::error_code ModbusClient::taskReadFile(const std::uint8_t dev_addr, const st
     {
         return task_info.error_code;
     }
-    if(servers[index].info.status == ServerStatus::unavailable)
+    if (servers[index].info.status == ServerStatus::unavailable)
     {
         return task_info.error_code;
     }
@@ -250,8 +247,8 @@ std::error_code ModbusClient::taskReadFile(const std::uint8_t dev_addr, const st
         return task_info.error_code;
     }
     // setup file read prepare
-    task_info.error_code = taskWriteRegister(dev_addr,registers.file_control, file_read_prepare);
-    if(task_info.error_code)
+    task_info.error_code = taskWriteRegister(dev_addr, registers.file_control, file_read_prepare);
+    if (task_info.error_code)
     {
         return task_info.error_code;
     }
@@ -306,8 +303,7 @@ std::error_code ModbusClient::taskWriteFile(const std::uint8_t dev_addr)
         {
             std::vector<std::uint8_t> data;
             data.assign(&(file.getData()[i * record_size]), &(file.getData()[i * record_size]) + record_size);
-            q_exchange.push([lambda_write_record, dev_addr, file_id, i, data]
-                            { lambda_write_record(dev_addr, file_id, static_cast<std::uint16_t>(i), data); });
+            q_exchange.push([lambda_write_record, dev_addr, file_id, i, data] { lambda_write_record(dev_addr, file_id, static_cast<std::uint16_t>(i), data); });
         }
     };
 
@@ -317,14 +313,14 @@ std::error_code ModbusClient::taskWriteFile(const std::uint8_t dev_addr)
     {
         return task_info.error_code;
     }
-    if(servers[index].info.status == ServerStatus::unavailable)
+    if (servers[index].info.status == ServerStatus::unavailable)
     {
         return task_info.error_code;
     }
     auto record_size = servers[index].info.record_size;
     // setup file read prepare
-    task_info.error_code = taskWriteRegister(dev_addr,registers.file_control, file_write_prepare);
-    if(task_info.error_code)
+    task_info.error_code = taskWriteRegister(dev_addr, registers.file_control, file_write_prepare);
+    if (task_info.error_code)
     {
         return task_info.error_code;
     }
@@ -413,15 +409,15 @@ void ModbusClient::exchangeCallback()
         std::uint16_t reg = 0;
         std::uint8_t num_of_bytes = message[id_length];
         int index = modbus::read_regs_responce_data_start_idx;
-        for (int i = 0; i < num_of_bytes/2; ++i)
+        for (int i = 0; i < num_of_bytes / 2; ++i)
         {
             reg = static_cast<std::uint16_t>(message[index]) << 8;
             reg |= message[index + 1];
             server.regs.push_back(reg);
-            index +=2;
+            index += 2;
         }
-        //get record size for the server, fix it in future with checking for reading start address 
-        if(server.regs.size() >= registers.getSize() && (server.info.record_size == 0) )
+        // get record size for the server, fix it in future with checking for reading start address
+        if (server.regs.size() >= registers.getSize() && (server.info.record_size == 0))
         {
             server.info.record_size = server.regs[registers.record_size];
         }
@@ -479,23 +475,23 @@ void ModbusClient::exchangeCallback()
 
 size_t ModbusClient::getExpectedLength(const ClientTasks task, const size_t extra) const
 {
-    switch (task) 
+    switch (task)
     {
         case sm::ClientTasks::undefined:
             return 0;
 
         case sm::ClientTasks::ping:
             return modbus_message.getRequriedLength() + 2;
-        
+
         case sm::ClientTasks::reg_write:
             return modbus_message.getRequriedLength() + 4;
-        
+
         case sm::ClientTasks::regs_read:
             return modbus_message.getRequriedLength() + extra + 2;
-        
+
         case sm::ClientTasks::file_write:
             return modbus::read_file_pdu_size + extra;
-        
+
         case sm::ClientTasks::file_read:
             return modbus::read_file_pdu_size + extra;
     };

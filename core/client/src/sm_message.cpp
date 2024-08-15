@@ -23,22 +23,16 @@ void insertHalfWord(std::vector<std::uint8_t>& arr, const std::uint16_t value)
 namespace modbus
 {
 
-void ModbusMessage::msgCustom(std::vector<std::uint8_t>& buffer,
-                   const std::uint8_t func, 
-                   const std::vector<std::uint8_t>& data,
-                   const std::uint8_t addr)
+void ModbusMessage::msgCustom(std::vector<std::uint8_t>& buffer, const std::uint8_t func, const std::vector<std::uint8_t>& data, const std::uint8_t addr)
 {
     createMessage(buffer, func, data, addr);
 }
 
-void ModbusMessage::msgWriteFileRecord(std::vector<std::uint8_t>& buffer,
-                                      const std::uint16_t file_id,
-                                      const std::uint16_t record_id,
-                                      const std::vector<std::uint8_t>& record_data,
-                                      const std::uint8_t addr)
+void ModbusMessage::msgWriteFileRecord(std::vector<std::uint8_t>& buffer, const std::uint16_t file_id, const std::uint16_t record_id,
+                                       const std::vector<std::uint8_t>& record_data, const std::uint8_t addr)
 {
     const std::uint8_t rec_data_length = record_data.size() + min_rw_file_byte_counter;
-    const std::uint16_t record_length = record_data.size() / 2;  // record splited into half words
+    const std::uint16_t record_length = record_data.size() / 2; // record splited into half words
     std::vector<std::uint8_t> record;
 
     record.insert(record.end(), {rec_data_length, rw_file_reference});
@@ -49,11 +43,8 @@ void ModbusMessage::msgWriteFileRecord(std::vector<std::uint8_t>& buffer,
     createMessage(buffer, static_cast<std::uint8_t>(FunctionCodes::write_file), record, addr);
 }
 
-void ModbusMessage::msgReadFileRecord(std::vector<std::uint8_t>& buffer,
-                                     const std::uint16_t file_id,
-                                     const std::uint16_t record_id,
-                                     const std::uint16_t length,
-                                     const std::uint8_t addr)
+void ModbusMessage::msgReadFileRecord(std::vector<std::uint8_t>& buffer, const std::uint16_t file_id, const std::uint16_t record_id, const std::uint16_t length,
+                                      const std::uint8_t addr)
 {
     std::vector<uint8_t> record;
     // 7 bytes in this message (support for reading only one record per message)
@@ -64,10 +55,7 @@ void ModbusMessage::msgReadFileRecord(std::vector<std::uint8_t>& buffer,
     createMessage(buffer, static_cast<std::uint8_t>(FunctionCodes::read_file), record, addr);
 }
 
-void ModbusMessage::msgWriteRegister(std::vector<std::uint8_t>& buffer, 
-                                    const std::uint16_t reg,
-                                    const std::uint16_t value,
-                                    const std::uint8_t addr)
+void ModbusMessage::msgWriteRegister(std::vector<std::uint8_t>& buffer, const std::uint16_t reg, const std::uint16_t value, const std::uint8_t addr)
 {
     std::vector<uint8_t> data;
     insertHalfWord(data, reg);
@@ -75,10 +63,7 @@ void ModbusMessage::msgWriteRegister(std::vector<std::uint8_t>& buffer,
     createMessage(buffer, static_cast<std::uint8_t>(FunctionCodes::write_reg), data, addr);
 }
 
-void ModbusMessage::msgReadRegisters(std::vector<std::uint8_t>& buffer,
-                                    const std::uint16_t reg,
-                                    const std::uint16_t quantity,
-                                    const std::uint8_t addr)
+void ModbusMessage::msgReadRegisters(std::vector<std::uint8_t>& buffer, const std::uint16_t reg, const std::uint16_t quantity, const std::uint8_t addr)
 {
     std::vector<std::uint8_t> data;
     insertHalfWord(data, reg);
@@ -113,7 +98,7 @@ bool ModbusMessage::isChecksumValid(const std::vector<std::uint8_t>& data) const
 bool ModbusMessage::extractData(const std::vector<std::uint8_t>& data, std::vector<std::uint8_t>& message) const
 {
     message.clear();
-    if(data.size() < 5)
+    if (data.size() < 5)
     {
         return false;
     }
@@ -140,19 +125,16 @@ std::uint8_t ModbusMessage::getRequriedLength() const
     return length;
 }
 
-void ModbusMessage::createMessage(std::vector<std::uint8_t>& buffer,
-                                 const std::uint8_t func,
-                                 const std::vector<std::uint8_t>& data,
-                                 const std::uint8_t addr)
+void ModbusMessage::createMessage(std::vector<std::uint8_t>& buffer, const std::uint8_t func, const std::vector<std::uint8_t>& data, const std::uint8_t addr)
 {
     buffer.clear();
-    if(mode == ModbusMode::rtu)
+    if (mode == ModbusMode::rtu)
     {
         buffer.insert(buffer.end(), {addr});
     }
     buffer.insert(buffer.end(), {func});
     buffer.insert(buffer.end(), data.begin(), data.end());
-    if(mode == ModbusMode::rtu)
+    if (mode == ModbusMode::rtu)
     {
         uint16_t crc = crc16(buffer);
         insertHalfWord(buffer, crc);

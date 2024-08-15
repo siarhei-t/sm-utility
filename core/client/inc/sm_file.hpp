@@ -19,52 +19,26 @@ namespace sm
 class File
 {
 public:
-    /// @brief delete file, release buffer
     void fileDelete();
-    /// @brief prepare instance for file reading from the server
-    /// @param id file id on the server
-    /// @param file_size file size to read
-    /// @return true in case of success
+
     bool fileReadSetup(const std::uint16_t id, const size_t file_size, const std::uint8_t record_size);
-    /// @brief prepare instance for file from drive to send to the server
-    /// @param id file id on the server
-    /// @param path_to_file path to file on the disk
-    /// @return true in case of success
+
     bool fileWriteSetupFromDrive(const std::uint16_t id, const std::string path_to_file, const std::uint8_t record_size);
-    /**
-     * @brief prepare instance for file from memory to send to the server
-     * 
-     * @param id file id on the server
-     * @param file_data reference to a vector with file data
-     * @param record_size supported server record size
-     * @return true in case of success
-     * @return false in case of fault
-     */
-    bool fileWriteSetupFromMemory(const std::uint16_t id, const std::vector<std::uint8_t>& file_data,const std::uint8_t record_size);
-    /// @brief get actual record size based on file_size, num_of_records and
-    /// record_size
-    /// @param index record index in file
-    /// @return record size in bytes
+
+    bool fileWriteSetupFromMemory(const std::uint16_t id, const std::vector<std::uint8_t>& file_data, const std::uint8_t record_size);
+
     std::uint16_t getActualRecordLength(const int index) const;
-    /// @brief get actual number of records
-    /// @return number of records
+
     std::uint16_t getNumOfRecords() const { return num_of_records; };
-    /// @brief load record from Modbus PDU
-    /// @param message vector with PDU
-    /// @return true in case of success
+
     bool getRecordFromMessage(const std::vector<std::uint8_t>& message);
-    /// @brief check if file is loaded completely
-    /// @return true if yes false if not
+
     bool isFileReady() const { return ready; }
-    /// @brief get pointer to file
-    /// @return pointer to buffer with file
+
     std::uint8_t* getData() const { return data.get(); }
-    /// @brief get file id
-    /// @return actual file id
+
     std::uint16_t getId() const { return id; }
-    /// @brief calculate file size in bytes
-    /// @param path_to_file path to file
-    /// @return size in bytes, 0 in case of error on empty file
+
     size_t getFileSize(const std::string path_to_file) const;
 
 private:
@@ -75,9 +49,7 @@ private:
     std::uint16_t id = 0;
     std::uint8_t record_size = 0;
     bool ready = false;
-    /// @brief get num of records in file
-    /// @param file_size file size in bytes
-    /// @return expected number of records
+
     std::uint16_t calcNumOfRecords(const size_t file_size) const;
 };
 } // namespace sm
