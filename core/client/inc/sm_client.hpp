@@ -27,6 +27,7 @@ namespace sm
 {
 
 constexpr int server_not_found = -1;
+constexpr int default_task_wait_delay_ms = 50;
 constexpr std::uint16_t file_read_prepare = 1;
 constexpr std::uint16_t file_write_prepare = 2;
 constexpr std::uint16_t app_erase_request = 1;
@@ -158,7 +159,7 @@ public:
      * @param value new register address
      * @return std::error_code
      */
-    std::error_code taskWriteRegister(const std::uint8_t dev_addr, const std::uint16_t reg_addr, const std::uint16_t value);
+    std::error_code taskWriteRegister(const std::uint8_t dev_addr, const std::uint16_t reg_addr, const std::uint16_t value, const bool print_progress = false);
     /**
      * @brief read registers from the server
      *
@@ -167,7 +168,7 @@ public:
      * @param quantity amount of registers
      * @return std::error_code
      */
-    std::error_code taskReadRegisters(const std::uint8_t dev_addr, const std::uint16_t reg_addr, const std::uint16_t quantity);
+    std::error_code taskReadRegisters(const std::uint8_t dev_addr, const std::uint16_t reg_addr, const std::uint16_t quantity, const bool print_progress = false);
     /**
      * @brief read file from the server
      *
@@ -176,14 +177,14 @@ public:
      * @param file_size expected file size
      * @return std::error_code
      */
-    std::error_code taskReadFile(const std::uint8_t dev_addr, const std::uint16_t file_id, const std::size_t file_size);
+    std::error_code taskReadFile(const std::uint8_t dev_addr, const std::uint16_t file_id, const std::size_t file_size, const bool print_progress = false);
     /**
      * @brief write file to the server
      *
      * @param dev_addr server address in Modbus application layer
      * @return std::error_code
      */
-    std::error_code taskWriteFile(const std::uint8_t dev_addr);
+    std::error_code taskWriteFile(const std::uint8_t dev_addr, const bool print_progress = false);
     /**
      * @brief Get the actual task progress
      *

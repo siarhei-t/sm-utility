@@ -152,7 +152,7 @@ std::error_code ModbusClient::taskPing(const std::uint8_t dev_addr)
     return task_info.error_code;
 }
 
-std::error_code ModbusClient::taskWriteRegister(const std::uint8_t dev_addr, const std::uint16_t reg_addr, const std::uint16_t value)
+std::error_code ModbusClient::taskWriteRegister(const std::uint8_t dev_addr, const std::uint16_t reg_addr, const std::uint16_t value, const bool print_progress)
 {
     static bool recurced = false;
     auto lambda_write_reg = [this](const std::uint8_t dev_addr, const std::uint16_t reg_addr, const std::uint16_t value)
@@ -191,12 +191,18 @@ std::error_code ModbusClient::taskWriteRegister(const std::uint8_t dev_addr, con
     q_task.push([this, lambda_write_reg, dev_addr, reg_addr, value]()
                 { q_exchange.push([lambda_write_reg, dev_addr, reg_addr, value] { lambda_write_reg(dev_addr, reg_addr, value); }); });
     while (!task_info.done)
-        ;
+    {
+        if(print_progress)
+        {
+            printProgressBar(getActualTaskProgress());
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(default_task_wait_delay_ms));
+    }
     recurced = false;
     return task_info.error_code;
 }
 
-std::error_code ModbusClient::taskReadRegisters(const std::uint8_t dev_addr, const std::uint16_t reg_addr, const std::uint16_t quantity)
+std::error_code ModbusClient::taskReadRegisters(const std::uint8_t dev_addr, const std::uint16_t reg_addr, const std::uint16_t quantity, const bool print_progress)
 {
     auto lambda_read_regs = [this](const std::uint8_t dev_addr, const std::uint16_t reg_addr, const std::uint16_t quantity)
     {
@@ -232,11 +238,17 @@ std::error_code ModbusClient::taskReadRegisters(const std::uint8_t dev_addr, con
     q_task.push([this, lambda_read_regs, dev_addr, reg_addr, quantity]()
                 { q_exchange.push([lambda_read_regs, dev_addr, reg_addr, quantity] { lambda_read_regs(dev_addr, reg_addr, quantity); }); });
     while (!task_info.done)
-        ;
+    {
+        if(print_progress)
+        {
+            printProgressBar(getActualTaskProgress());
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(default_task_wait_delay_ms));
+    }
     return task_info.error_code;
 }
 
-std::error_code ModbusClient::taskReadFile(const std::uint8_t dev_addr, const std::uint16_t file_id, const std::size_t file_size)
+std::error_code ModbusClient::taskReadFile(const std::uint8_t dev_addr, const std::uint16_t file_id, const std::size_t file_size, const bool print_progress)
 {
     auto lambda_read_record = [this](const std::uint8_t dev_addr, const std::uint16_t file_id, const std::uint16_t record_id, const std::uint16_t length)
     {
@@ -309,11 +321,17 @@ std::error_code ModbusClient::taskReadFile(const std::uint8_t dev_addr, const st
     task_info.reset();
     q_task.push([dev_addr, index, lambda_read_file, file_id]() { lambda_read_file(dev_addr, index, file_id); });
     while (!task_info.done)
-        ;
+    {
+        if(print_progress)
+        {
+            printProgressBar(getActualTaskProgress());
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(default_task_wait_delay_ms));
+    }
     return task_info.error_code;
 }
 
-std::error_code ModbusClient::taskWriteFile(const std::uint8_t dev_addr)
+std::error_code ModbusClient::taskWriteFile(const std::uint8_t dev_addr, const bool print_progress)
 {
     auto lambda_write_record =
         [this](const std::uint8_t dev_addr, const std::uint16_t file_id, const std::uint16_t record_id, const std::vector<std::uint8_t>& data)
@@ -386,7 +404,13 @@ std::error_code ModbusClient::taskWriteFile(const std::uint8_t dev_addr)
     task_info.reset();
     q_task.push([dev_addr, lambda_write_file, index, record_size]() { lambda_write_file(dev_addr, index, record_size); });
     while (!task_info.done)
-        ;
+    {
+        if(print_progress)
+        {
+            printProgressBar(getActualTaskProgress());
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(default_task_wait_delay_ms));
+    }
     return task_info.error_code;
 }
 
