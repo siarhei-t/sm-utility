@@ -81,8 +81,8 @@ bool ModbusMessage::isChecksumValid(const std::vector<std::uint8_t>& data) const
     {
         std::vector<std::uint8_t> message;
         message.insert(message.end(), data.begin(), data.end() - crc_size);
-        std::uint16_t rec_crc = data[data.size() - crc_size];
-        rec_crc = (rec_crc << 8) | data[data.size() - crc_size + 1];
+        std::uint16_t rec_crc = data[data.size() - crc_size + 1];
+        rec_crc = (rec_crc << 8) | data[data.size() - crc_size];
         std::uint16_t actual_crc = crc16(message);
         if (actual_crc == rec_crc)
         {
@@ -137,7 +137,8 @@ void ModbusMessage::createMessage(std::vector<std::uint8_t>& buffer, const std::
     if (mode == ModbusMode::rtu)
     {
         uint16_t crc = crc16(buffer);
-        insertHalfWord(buffer, crc);
+        buffer.push_back(crc & 0xFF);
+        buffer.push_back((crc >> 8) & 0xFF);
     }
 }
 
