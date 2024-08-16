@@ -187,15 +187,11 @@ std::error_code ModbusClient::taskWriteRegister(const std::uint8_t dev_addr, con
     }
 
     // direct register write
-    task_info.reset(ClientTasks::reg_write, 1, index);
+    task_info.reset(ClientTasks::reg_write, 1, index, print_progress);
     q_task.push([this, lambda_write_reg, dev_addr, reg_addr, value]()
                 { q_exchange.push([lambda_write_reg, dev_addr, reg_addr, value] { lambda_write_reg(dev_addr, reg_addr, value); }); });
     while (!task_info.done)
     {
-        if(print_progress)
-        {
-            printProgressBar(getActualTaskProgress());
-        }
         std::this_thread::sleep_for(std::chrono::milliseconds(default_task_wait_delay_ms));
     }
     recurced = false;
@@ -234,15 +230,11 @@ std::error_code ModbusClient::taskReadRegisters(const std::uint8_t dev_addr, con
         }
     }
     // direct registers reading
-    task_info.reset(ClientTasks::regs_read, 1, index);
+    task_info.reset(ClientTasks::regs_read, 1, index,print_progress);
     q_task.push([this, lambda_read_regs, dev_addr, reg_addr, quantity]()
                 { q_exchange.push([lambda_read_regs, dev_addr, reg_addr, quantity] { lambda_read_regs(dev_addr, reg_addr, quantity); }); });
     while (!task_info.done)
     {
-        if(print_progress)
-        {
-            printProgressBar(getActualTaskProgress());
-        }
         std::this_thread::sleep_for(std::chrono::milliseconds(default_task_wait_delay_ms));
     }
     return task_info.error_code;
@@ -260,10 +252,10 @@ std::error_code ModbusClient::taskReadFile(const std::uint8_t dev_addr, const st
         createServerRequest(attr);
     };
 
-    auto lambda_read_file = [this, lambda_read_record](const std::uint8_t dev_addr, const int index, const std::uint16_t file_id)
+    auto lambda_read_file = [this, lambda_read_record,print_progress](const std::uint8_t dev_addr, const int index, const std::uint16_t file_id)
     {
         const std::uint16_t num_of_records = file.getNumOfRecords();
-        task_info.reset(ClientTasks::file_read, num_of_records, index);
+        task_info.reset(ClientTasks::file_read, num_of_records, index, print_progress);
         for (std::uint16_t i = 0; i < num_of_records; ++i)
         {
             auto words_in_record = file.getActualRecordLength(i) / 2;
@@ -322,10 +314,6 @@ std::error_code ModbusClient::taskReadFile(const std::uint8_t dev_addr, const st
     q_task.push([dev_addr, index, lambda_read_file, file_id]() { lambda_read_file(dev_addr, index, file_id); });
     while (!task_info.done)
     {
-        if(print_progress)
-        {
-            printProgressBar(getActualTaskProgress());
-        }
         std::this_thread::sleep_for(std::chrono::milliseconds(default_task_wait_delay_ms));
     }
     return task_info.error_code;
@@ -342,11 +330,11 @@ std::error_code ModbusClient::taskWriteFile(const std::uint8_t dev_addr, const b
         createServerRequest(attr);
     };
 
-    auto lambda_write_file = [this, lambda_write_record](const std::uint8_t dev_addr, const int index, const std::uint16_t record_size)
+    auto lambda_write_file = [this, lambda_write_record, print_progress](const std::uint8_t dev_addr, const int index, const std::uint16_t record_size)
     {
         const std::uint16_t num_of_records = file.getNumOfRecords();
         const std::uint16_t file_id = file.getId();
-        task_info.reset(ClientTasks::file_write, num_of_records, index);
+        task_info.reset(ClientTasks::file_write, num_of_records, index, print_progress);
         for (std::uint16_t i = 0; i < num_of_records; ++i)
         {
             std::vector<std::uint8_t> data;
@@ -405,10 +393,6 @@ std::error_code ModbusClient::taskWriteFile(const std::uint8_t dev_addr, const b
     q_task.push([dev_addr, lambda_write_file, index, record_size]() { lambda_write_file(dev_addr, index, record_size); });
     while (!task_info.done)
     {
-        if(print_progress)
-        {
-            printProgressBar(getActualTaskProgress());
-        }
         std::this_thread::sleep_for(std::chrono::milliseconds(default_task_wait_delay_ms));
     }
     return task_info.error_code;
@@ -510,6 +494,10 @@ void ModbusClient::exchangeCallback()
                 default:
                     // nothing to do for now
                     break;
+            }
+            if(task_info.is_printable)
+            {
+                printProgressBar(getActualTaskProgress());
             }
         }
         if (task_info.counter == task_info.num_of_exchanges)
