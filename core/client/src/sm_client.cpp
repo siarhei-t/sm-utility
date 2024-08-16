@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <iostream>
 
 #include "../../common/sm_modbus.hpp"
 #include "../inc/sm_client.hpp"
@@ -37,15 +38,44 @@ void ModbusClient::getLastServerRegList(const std::uint8_t addr, std::vector<std
 {
     registers.clear();
     auto index = getServerIndex(addr);
-    if (index != -1)
+    if (index != server_not_found)
     {
         registers.insert(registers.end(), servers[index].regs.begin(), servers[index].regs.end());
     }
 }
 
+void ModbusClient::printProgressBar(const int task_progress)
+{
+    float progress = 0.01 * task_progress;
+    int bar_width = 80;
+    std::cout << "[";
+    int pos = bar_width * progress;
+    for (int i = 0; i < bar_width; ++i) 
+    {
+        if (i < pos)
+        {
+            std::cout << "*";
+        }
+        else if (i == pos) 
+        {
+            std::cout << ")";
+        }
+        else
+        {
+            std::cout << " ";
+        }
+    }
+    std::cout << "] " << int(progress * 100.0) << " %\r";
+    std::cout.flush();
+    if(task_progress == 100)
+    {
+        std::cout<<std::endl;
+    }
+}
+
 void ModbusClient::addServer(const std::uint8_t addr, const std::uint8_t gateway_addr)
 {
-    if (getServerIndex(addr) == -1)
+    if (getServerIndex(addr) == server_not_found)
     {
         servers.push_back(ServerData());
         servers.back().info.addr = addr;
@@ -99,7 +129,7 @@ std::error_code ModbusClient::taskPing(const std::uint8_t dev_addr)
 
     task_info.error_code = make_error_code(ClientErrors::server_not_connected);
     int index = getServerIndex(dev_addr);
-    if (index == -1)
+    if (index == server_not_found)
     {
         return task_info.error_code;
     }
@@ -134,7 +164,7 @@ std::error_code ModbusClient::taskWriteRegister(const std::uint8_t dev_addr, con
     };
     task_info.error_code = make_error_code(ClientErrors::server_not_connected);
     int index = getServerIndex(dev_addr);
-    if (index == -1)
+    if (index == server_not_found)
     {
         return task_info.error_code;
     }
@@ -178,7 +208,7 @@ std::error_code ModbusClient::taskReadRegisters(const std::uint8_t dev_addr, con
     };
     task_info.error_code = make_error_code(ClientErrors::server_not_connected);
     int index = getServerIndex(dev_addr);
-    if (index == -1)
+    if (index == server_not_found)
     {
         return task_info.error_code;
     }
@@ -220,19 +250,19 @@ std::error_code ModbusClient::taskReadFile(const std::uint8_t dev_addr, const st
 
     auto lambda_read_file = [this, lambda_read_record](const std::uint8_t dev_addr, const int index, const std::uint16_t file_id)
     {
-        auto num_of_records = file.getNumOfRecords();
+        const std::uint16_t num_of_records = file.getNumOfRecords();
         task_info.reset(ClientTasks::file_read, num_of_records, index);
-        for (auto i = 0; i < num_of_records; ++i)
+        for (std::uint16_t i = 0; i < num_of_records; ++i)
         {
             auto words_in_record = file.getActualRecordLength(i) / 2;
             q_exchange.push([words_in_record, file_id, i, lambda_read_record, dev_addr]
-                            { lambda_read_record(dev_addr, file_id, static_cast<std::uint16_t>(i), words_in_record); });
+                            { lambda_read_record(dev_addr, file_id, i, words_in_record); });
         }
     };
 
     task_info.error_code = make_error_code(ClientErrors::server_not_connected);
     int index = getServerIndex(dev_addr);
-    if (index == -1)
+    if (index ==server_not_found)
     {
         return task_info.error_code;
     }
@@ -299,22 +329,27 @@ std::error_code ModbusClient::taskWriteFile(const std::uint8_t dev_addr)
         const std::uint16_t num_of_records = file.getNumOfRecords();
         const std::uint16_t file_id = file.getId();
         task_info.reset(ClientTasks::file_write, num_of_records, index);
-        for (auto i = 0; i < num_of_records; ++i)
+        for (std::uint16_t i = 0; i < num_of_records; ++i)
         {
             std::vector<std::uint8_t> data;
             data.assign(&(file.getData()[i * record_size]), &(file.getData()[i * record_size]) + record_size);
-            q_exchange.push([lambda_write_record, dev_addr, file_id, i, data] { lambda_write_record(dev_addr, file_id, static_cast<std::uint16_t>(i), data); });
+            q_exchange.push([lambda_write_record, dev_addr, file_id, i, data] { lambda_write_record(dev_addr, file_id, i, data); });
         }
     };
 
     task_info.error_code = make_error_code(ClientErrors::server_not_connected);
     int index = getServerIndex(dev_addr);
-    if (index == -1)
+    if (index == server_not_found)
     {
         return task_info.error_code;
     }
     if (servers[index].info.status == ServerStatus::unavailable)
     {
+        return task_info.error_code;
+    }
+    if (!file.isFileReady())
+    {
+        task_info.error_code = make_error_code(ClientErrors::file_buffer_is_empty);
         return task_info.error_code;
     }
     auto record_size = servers[index].info.record_size;
@@ -515,7 +550,7 @@ int ModbusClient::getServerIndex(const std::uint8_t address)
     }
     else
     {
-        return -1;
+        return server_not_found;
     }
 }
 
@@ -535,6 +570,7 @@ void ModbusClient::callServerExchange()
     catch (const std::system_error& e)
     {
         task_info.error_code = e.code();
+        return;
     }
     try
     {
@@ -543,6 +579,7 @@ void ModbusClient::callServerExchange()
     catch (const std::system_error& e)
     {
         task_info.error_code = e.code();
+        return;
     }
 }
 

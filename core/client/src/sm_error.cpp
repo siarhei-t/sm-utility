@@ -36,6 +36,9 @@ class sm_category_impl : public std::error_category
 
             case sm::ClientErrors::server_not_connected:
                 return "the server is not connected";
+            
+            case sm::ClientErrors::file_buffer_is_empty:
+                return "internal file buffer is empty";
 
             case sm::ClientErrors::internal:
                 return "internal logic error";

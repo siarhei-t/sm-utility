@@ -60,10 +60,17 @@ bool File::fileReadSetup(const std::uint16_t id, const size_t file_size, const s
         data = std::make_unique<std::uint8_t[]>(file_size);
         this->file_size = file_size;
     }
-    this->id = id;
-    this->record_size = record_size;
-    num_of_records = calcNumOfRecords(file_size);
-    return data != nullptr;
+    if(data != nullptr)
+    {
+        this->id = id;
+        this->record_size = record_size;
+        num_of_records = calcNumOfRecords(file_size);
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
 
 bool File::fileWriteSetupFromDrive(const std::uint16_t id, const std::string path_to_file, const std::uint8_t record_size)
@@ -97,17 +104,16 @@ bool File::fileWriteSetupFromDrive(const std::uint16_t id, const std::string pat
         }
         if (file_size == length)
         {
+            ready = true;
             return true;
         }
         else
         {
-            std::printf("error at file read operation.\n");
             return false;
         }
     }
     else
     {
-        std::printf("unable to open file on path %s \n", path_to_file.c_str());
         return false;
     }
 }
@@ -126,11 +132,11 @@ bool File::fileWriteSetupFromMemory(const std::uint16_t id, const std::vector<st
         data = std::make_unique<std::uint8_t[]>(num_of_records * record_size);
         std::memset(&data.get()[(num_of_records - 1) * record_size], 0xFF, record_size);
         std::copy(file_data.begin(), file_data.end(), data.get());
+        ready = true;
         return true;
     }
     else
     {
-        std::printf("unable to create file from vector \n");
         return false;
     }
 }

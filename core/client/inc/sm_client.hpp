@@ -26,7 +26,7 @@
 namespace sm
 {
 
-constexpr int not_connected = 255;
+constexpr int server_not_found = -1;
 constexpr std::uint16_t file_read_prepare = 1;
 constexpr std::uint16_t file_write_prepare = 2;
 constexpr std::uint16_t app_erase_request = 1;
@@ -251,6 +251,11 @@ private:
      * @param message received message with record
      */
     void fileReadCallback(std::vector<std::uint8_t>& message);
+    /**
+     * @brief print task progress to command line
+     * 
+     */
+    void printProgressBar(const int task_progress);
 };
 
 } // namespace sm

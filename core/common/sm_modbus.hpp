@@ -25,6 +25,7 @@ constexpr std::uint16_t files_offset = 0x0001;
 constexpr std::uint8_t function_error_mask = 0x80;
 constexpr std::uint8_t max_adu_size = 253;
 constexpr std::uint8_t min_amount_of_regs = 1;
+constexpr std::uint8_t min_pdu_with_data_size = 5;
 constexpr std::uint8_t read_regs_responce_data_length_idx = 1;
 constexpr std::uint8_t read_regs_responce_data_start_idx  = 2;
 constexpr std::uint8_t read_file_responce_data_length_idx = 2;
