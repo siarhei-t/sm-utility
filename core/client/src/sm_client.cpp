@@ -91,7 +91,12 @@ void ModbusClient::addServer(const std::uint8_t addr, const std::uint8_t gateway
     {
         servers.push_back(ServerData());
         servers.back().info.addr = addr;
-        servers.back().info.gateway_addr = gateway_addr;
+        if ((gateway_addr != 0) && (getServerIndex(gateway_addr) == server_not_found))
+        {
+            servers.back().info.gateway_addr = gateway_addr;
+            servers.push_back(ServerData());
+            servers.back().info.addr = gateway_addr;
+        }
     }
 }
 
@@ -146,6 +151,11 @@ std::error_code ModbusClient::taskPing(const std::uint8_t dev_addr)
     // we are trying to reach this server through the gateway, perform gateway setup first
     if (servers[index].info.gateway_addr != 0)
     {
+        auto gateway_index = getServerIndex(servers[index].info.gateway_addr);
+        if(servers[gateway_index].info.status == ServerStatus::unavailable)
+        {
+            return make_error_code(ClientErrors::gateway_not_connected);
+        }
         std::uint16_t expected_length = getExpectedLength(ClientTasks::ping);
         auto error_code = taskWriteRegister(servers[index].info.gateway_addr, registers.gateway_buffer_size, expected_length);
         if (error_code)
@@ -186,6 +196,12 @@ std::error_code ModbusClient::taskWriteRegister(const std::uint8_t dev_addr, con
     if ((servers[index].info.gateway_addr != 0) && !recurced)
     {
         recurced = true;
+        auto gateway_index = getServerIndex(servers[index].info.gateway_addr);
+        if(servers[gateway_index].info.status == ServerStatus::unavailable)
+        {
+            recurced = false;
+            return make_error_code(ClientErrors::gateway_not_connected);
+        }
         std::uint16_t expected_length = getExpectedLength(ClientTasks::reg_write);
         auto error_code = taskWriteRegister(servers[index].info.gateway_addr, registers.gateway_buffer_size, expected_length);
         if (error_code)
@@ -228,6 +244,11 @@ std::error_code ModbusClient::taskReadRegisters(const std::uint8_t dev_addr, con
     // we are trying to reach this server through the gateway, perform gateway setup first
     if (servers[index].info.gateway_addr != 0)
     {
+        auto gateway_index = getServerIndex(servers[index].info.gateway_addr);
+        if(servers[gateway_index].info.status == ServerStatus::unavailable)
+        {
+            return make_error_code(ClientErrors::gateway_not_connected);
+        }
         size_t expected_length = getExpectedLength(ClientTasks::regs_read, quantity * 2);
         auto error_code = taskWriteRegister(servers[index].info.gateway_addr, registers.gateway_buffer_size, expected_length);
         if (error_code)
@@ -296,6 +317,11 @@ std::error_code ModbusClient::taskReadFile(const std::uint8_t dev_addr, const st
     // we are trying to reach this server through the gateway, perform gateway setup first
     if (servers[index].info.gateway_addr != 0)
     {
+        auto gateway_index = getServerIndex(servers[index].info.gateway_addr);
+        if(servers[gateway_index].info.status == ServerStatus::unavailable)
+        {
+            return make_error_code(ClientErrors::gateway_not_connected);
+        }
         std::uint16_t expected_length = getExpectedLength(ClientTasks::file_read, record_size);
         error_code = taskWriteRegister(servers[index].info.gateway_addr, registers.gateway_buffer_size, expected_length);
         if (error_code)
@@ -373,6 +399,11 @@ std::error_code ModbusClient::taskWriteFile(const std::uint8_t dev_addr, const b
     // we are trying to reach this server through the gateway, perform gateway setup first
     if (servers[index].info.gateway_addr != 0)
     {
+        auto gateway_index = getServerIndex(servers[index].info.gateway_addr);
+        if(servers[gateway_index].info.status == ServerStatus::unavailable)
+        {
+            return make_error_code(ClientErrors::gateway_not_connected);
+        }
         std::uint16_t expected_length = getExpectedLength(ClientTasks::file_write,record_size);
         error_code = taskWriteRegister(servers[index].info.gateway_addr, registers.gateway_buffer_size, expected_length);
         if (error_code)
@@ -531,10 +562,10 @@ size_t ModbusClient::getExpectedLength(const ClientTasks task, const size_t extr
             return modbus_message.getRequriedLength() + modbus::exception_pdu_size;
 
         case sm::ClientTasks::reg_write:
-            return modbus_message.getRequriedLength() + modbus::rw_reg_pdu_suze;
+            return modbus_message.getRequriedLength() + modbus::responce_write_reg_pdu_size;
 
         case sm::ClientTasks::regs_read:
-            return modbus_message.getRequriedLength() + extra + 2;
+            return modbus_message.getRequriedLength() + modbus::responce_read_reg_pdu_part + extra;
 
         case sm::ClientTasks::file_write:
             return modbus_message.getRequriedLength() + modbus::responce_write_file_pdu_part + extra;

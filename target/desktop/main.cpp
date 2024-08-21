@@ -13,17 +13,6 @@
 #include "../../core/client/inc/sm_client.hpp"
 #include "../../core/client/inc/sm_error.hpp"
 
-struct BootloaderInfo
-{
-    char boot_version[17];
-    char boot_name[33];
-    char serial_number[16];
-    std::uint8_t random_salt[12];
-    std::uint8_t device_id[16];
-
-};
-
-std::vector<std::uint8_t> nonce = {1,2,3,4,5,6,7,8,9,10,11,12};
 
 int main(int argc, char* argv[])
 {
@@ -62,24 +51,5 @@ int main(int argc, char* argv[])
     if (error_code)
     {
         std::cout<<"error: "<<error_code.message()<<"\n";
-    }
-    error_code = client.taskReadRegisters(address, modbus::holding_regs_offset, 7);
-    if (error_code)
-    {
-        std::cout<<"error: "<<error_code.message()<<"\n";
-    }
-    std::vector<std::uint16_t> regs;
-    client.getLastServerRegList(address, regs);
-    std::uint16_t record_size = regs[3];
-    error_code = client.taskReadFile(address, 2,sizeof(BootloaderInfo));
-    if (error_code)
-    {
-        std::cout<<"error: "<<error_code.message()<<"\n";
-    }
-
-    if (client.file.fileWriteSetupFromMemory(4, nonce, record_size))
-    {
-        // file sending, we send what we actually have in buffer
-        error_code = client.taskWriteFile(address);
     }
 }

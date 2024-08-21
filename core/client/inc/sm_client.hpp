@@ -103,7 +103,9 @@ struct ServerInfo
 {
     std::uint8_t addr = 0;
     std::uint8_t gateway_addr = 0;
+    // record size will be configured automatically if register with ServerRegisters::record_size index will be read
     std::uint8_t record_size = 0;
+    // the server will be marked as available if ClientTasks::ping completes successfully
     ServerStatus status = ServerStatus::unavailable;
 };
 

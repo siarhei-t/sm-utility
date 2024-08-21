@@ -34,13 +34,10 @@ constexpr std::uint8_t max_amount_of_regs = 125;
 constexpr std::uint8_t rw_file_reference = 6;
 constexpr std::uint8_t min_rw_file_byte_counter = 7;
 constexpr std::uint8_t max_rw_file_byte_counter = 245;
-////////////////////////////////////////////////////////////////////////////////
-// The size of this block must be a multiple of the encryption block
-constexpr std::uint8_t data_block_size = 32;
-// The size of this block together with the technical data should not exceed max_adu_size
 constexpr std::uint8_t exception_pdu_size = function_size + 1;
-constexpr std::uint8_t file_record_size = data_block_size * 6;
-constexpr std::uint8_t rw_reg_pdu_suze = function_size + 4;
+constexpr std::uint8_t request_rw_reg_pdu_suze = function_size + 4;
+constexpr std::uint8_t responce_read_reg_pdu_part = function_size + 1;
+constexpr std::uint8_t responce_write_reg_pdu_size = request_rw_reg_pdu_suze;
 constexpr std::uint8_t request_read_file_pdu_size = function_size + 8;
 constexpr std::uint8_t request_write_file_pdu_part = request_read_file_pdu_size;
 constexpr std::uint8_t responce_read_file_pdu_part = function_size + 3;

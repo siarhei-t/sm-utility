@@ -14,6 +14,7 @@
 
 namespace sm
 {
+
 enum class ClientErrors
 {
     no_error,
@@ -22,6 +23,7 @@ enum class ClientErrors
     server_exception,
     server_not_exist,
     server_not_connected,
+    gateway_not_connected,
     file_buffer_is_empty,
     max_record_length_not_configured,
     internal
