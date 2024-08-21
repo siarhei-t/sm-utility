@@ -23,7 +23,7 @@ enum class ClientErrors
     server_not_exist,
     server_not_connected,
     file_buffer_is_empty,
-    gateway_not_responding,
+    max_record_length_not_configured,
     internal
 };
 

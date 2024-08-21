@@ -32,7 +32,19 @@ ModbusClient::~ModbusClient()
     client_thread.join();
 }
 
-int ModbusClient::getActualTaskProgress() const { return (task_info.counter * 100) / task_info.num_of_exchanges; }
+int ModbusClient::getActualTaskProgress() const 
+{
+    auto volume = task_info.num_of_exchanges;
+    auto progress = task_info.counter;
+    if((volume > 0) && (progress <= volume))
+    {
+        return (progress * 100) / volume;
+    }
+    else
+    {
+        return 0;
+    }
+}
 
 void ModbusClient::getLastServerRegList(const std::uint8_t addr, std::vector<std::uint16_t>& registers)
 {
@@ -85,20 +97,20 @@ void ModbusClient::addServer(const std::uint8_t addr, const std::uint8_t gateway
 
 std::error_code ModbusClient::start(std::string device)
 {
-    task_info.error_code = std::error_code();
+    auto error_code = std::error_code();
     if (serial_port.getState() != sp::PortState::Open)
     {
-        task_info.error_code = serial_port.open(device);
+        error_code = serial_port.open(device);
     }
     else
     {
         if (device != serial_port.getPath())
         {
             serial_port.close();
-            task_info.error_code = serial_port.open(device);
+            error_code = serial_port.open(device);
         }
     }
-    return task_info.error_code;
+    return error_code;
 }
 
 void ModbusClient::stop()
@@ -111,8 +123,7 @@ void ModbusClient::stop()
 
 std::error_code ModbusClient::configure(sp::PortConfig config)
 {
-    task_info.error_code = serial_port.setup(config);
-    return task_info.error_code;
+    return serial_port.setup(config);
 }
 
 std::error_code ModbusClient::taskPing(const std::uint8_t dev_addr)
@@ -120,35 +131,35 @@ std::error_code ModbusClient::taskPing(const std::uint8_t dev_addr)
     auto lambda_ping = [this](const std::uint8_t address)
     {
         std::uint8_t function = static_cast<uint8_t>(modbus::FunctionCodes::undefined);
-        std::vector<uint8_t> message{0x00, 0x00, 0x00, 0x00};
+        std::vector<std::uint8_t> message{0x00, 0x00, 0x00, 0x00};
         modbus_message.msgCustom(request_data, function, message, address);
         // 1 byte for exception + 1 byte for func + modbus required part
-        TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::undefined, static_cast<size_t>(modbus_message.getRequriedLength() + 2));
+        TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::undefined, getExpectedLength(ClientTasks::ping));
         createServerRequest(attr);
     };
 
-    task_info.error_code = make_error_code(ClientErrors::server_not_connected);
     int index = getServerIndex(dev_addr);
     if (index == server_not_found)
     {
-        return task_info.error_code;
+        return make_error_code(ClientErrors::server_not_connected);
     }
     // we are trying to reach this server through the gateway, perform gateway setup first
     if (servers[index].info.gateway_addr != 0)
     {
-        std::uint16_t expected_length = modbus_message.getRequriedLength() + 2;
-        auto error = taskWriteRegister(servers[index].info.gateway_addr, registers.gateway_buffer_size, expected_length);
-        if (error)
+        std::uint16_t expected_length = getExpectedLength(ClientTasks::ping);
+        auto error_code = taskWriteRegister(servers[index].info.gateway_addr, registers.gateway_buffer_size, expected_length);
+        if (error_code)
         {
-            task_info.error_code = make_error_code(ClientErrors::gateway_not_responding);
-            return task_info.error_code;
+            return error_code;
         }
     }
     // direct address ping
     task_info.reset(ClientTasks::ping, 1, index);
     q_task.push([this, lambda_ping, dev_addr]() { q_exchange.push([lambda_ping, dev_addr] { lambda_ping(dev_addr); }); });
-    while (!task_info.done)
-        ;
+    while (!task_info.done.load(std::memory_order_relaxed))
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(default_task_wait_delay_ms));
+    }
     return task_info.error_code;
 }
 
@@ -159,38 +170,35 @@ std::error_code ModbusClient::taskWriteRegister(const std::uint8_t dev_addr, con
     {
         modbus_message.msgWriteRegister(request_data, reg_addr, value, dev_addr);
         // in case of success we expect message with the same length
-        TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::write_reg, request_data.size());
+        TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::write_reg, getExpectedLength(ClientTasks::reg_write));
         createServerRequest(attr);
     };
-    task_info.error_code = make_error_code(ClientErrors::server_not_connected);
     int index = getServerIndex(dev_addr);
     if (index == server_not_found)
     {
-        return task_info.error_code;
+        return make_error_code(ClientErrors::server_not_connected);
     }
     if (servers[index].info.status == ServerStatus::unavailable)
     {
-        return task_info.error_code;
+        return make_error_code(ClientErrors::server_not_connected);
     }
     // we are trying to reach this server through the gateway, perform gateway setup first
     if ((servers[index].info.gateway_addr != 0) && !recurced)
     {
         recurced = true;
-        std::uint16_t expected_length = modbus_message.getRequriedLength() + 5;
-        auto error = taskWriteRegister(servers[index].info.gateway_addr, registers.gateway_buffer_size, expected_length);
-        if (error)
+        std::uint16_t expected_length = getExpectedLength(ClientTasks::reg_write);
+        auto error_code = taskWriteRegister(servers[index].info.gateway_addr, registers.gateway_buffer_size, expected_length);
+        if (error_code)
         {
-            task_info.error_code = make_error_code(ClientErrors::gateway_not_responding);
             recurced = false;
-            return task_info.error_code;
+            return error_code;
         }
     }
-
     // direct register write
     task_info.reset(ClientTasks::reg_write, 1, index, print_progress);
     q_task.push([this, lambda_write_reg, dev_addr, reg_addr, value]()
                 { q_exchange.push([lambda_write_reg, dev_addr, reg_addr, value] { lambda_write_reg(dev_addr, reg_addr, value); }); });
-    while (!task_info.done)
+    while (!task_info.done.load(std::memory_order_relaxed))
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(default_task_wait_delay_ms));
     }
@@ -204,36 +212,34 @@ std::error_code ModbusClient::taskReadRegisters(const std::uint8_t dev_addr, con
     {
         modbus_message.msgReadRegisters(request_data, reg_addr, quantity, dev_addr);
         // amount of 16 bit registers + 1 byte for length + 1 byte for func + modbus required part
-        size_t expected_length = modbus_message.getRequriedLength() + (quantity * 2) + 2;
+        size_t expected_length = getExpectedLength(ClientTasks::regs_read, quantity * 2);
         TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::read_regs, expected_length);
         createServerRequest(attr);
     };
-    task_info.error_code = make_error_code(ClientErrors::server_not_connected);
     int index = getServerIndex(dev_addr);
     if (index == server_not_found)
     {
-        return task_info.error_code;
+        return make_error_code(ClientErrors::server_not_connected);
     }
     if (servers[index].info.status == ServerStatus::unavailable)
     {
-        return task_info.error_code;
+        return make_error_code(ClientErrors::server_not_connected);
     }
     // we are trying to reach this server through the gateway, perform gateway setup first
     if (servers[index].info.gateway_addr != 0)
     {
-        std::uint16_t expected_length = modbus_message.getRequriedLength() + (quantity * 2) + 2;
-        auto error = taskWriteRegister(servers[index].info.gateway_addr, registers.gateway_buffer_size, expected_length);
-        if (error)
+        size_t expected_length = getExpectedLength(ClientTasks::regs_read, quantity * 2);
+        auto error_code = taskWriteRegister(servers[index].info.gateway_addr, registers.gateway_buffer_size, expected_length);
+        if (error_code)
         {
-            task_info.error_code = make_error_code(ClientErrors::gateway_not_responding);
-            return task_info.error_code;
+            return error_code;
         }
     }
     // direct registers reading
     task_info.reset(ClientTasks::regs_read, 1, index,print_progress);
     q_task.push([this, lambda_read_regs, dev_addr, reg_addr, quantity]()
                 { q_exchange.push([lambda_read_regs, dev_addr, reg_addr, quantity] { lambda_read_regs(dev_addr, reg_addr, quantity); }); });
-    while (!task_info.done)
+    while (!task_info.done.load(std::memory_order_relaxed))
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(default_task_wait_delay_ms));
     }
@@ -247,12 +253,12 @@ std::error_code ModbusClient::taskReadFile(const std::uint8_t dev_addr, const st
         modbus_message.msgReadFileRecord(request_data, file_id, record_id, length, dev_addr);
         // amount of half words + 1 byte for ref type + 1 byte for data length
         // + 1 byte for resp length + 1 byte for func + modbus required part
-        size_t expected_length = static_cast<size_t>(modbus_message.getRequriedLength() + (length * 2) + 4);
+        size_t expected_length = getExpectedLength(ClientTasks::file_read, length * 2);
         TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::read_file, expected_length);
         createServerRequest(attr);
     };
 
-    auto lambda_read_file = [this, lambda_read_record,print_progress](const std::uint8_t dev_addr, const int index, const std::uint16_t file_id)
+    auto lambda_read_file = [this, lambda_read_record, print_progress](const std::uint8_t dev_addr, const int index, const std::uint16_t file_id)
     {
         const std::uint16_t num_of_records = file.getNumOfRecords();
         task_info.reset(ClientTasks::file_read, num_of_records, index, print_progress);
@@ -263,56 +269,53 @@ std::error_code ModbusClient::taskReadFile(const std::uint8_t dev_addr, const st
                             { lambda_read_record(dev_addr, file_id, i, words_in_record); });
         }
     };
-
-    task_info.error_code = make_error_code(ClientErrors::server_not_connected);
     int index = getServerIndex(dev_addr);
     if (index ==server_not_found)
     {
-        return task_info.error_code;
+        return make_error_code(ClientErrors::server_not_connected);
     }
     if (servers[index].info.status == ServerStatus::unavailable)
     {
-        return task_info.error_code;
+        return make_error_code(ClientErrors::server_not_connected);
     }
     auto record_size = servers[index].info.record_size;
+    if(record_size == 0)
+    {
+        return make_error_code(ClientErrors::max_record_length_not_configured);
+    }
     if (file.fileReadSetup(file_id, file_size, record_size) != true)
     {
-        task_info.error_code = make_error_code(ClientErrors::server_not_connected);
-        return task_info.error_code;
+        return make_error_code(ClientErrors::internal);
     }
     // setup file read prepare
-    task_info.error_code = taskWriteRegister(dev_addr, registers.file_control, file_read_prepare);
-    if (task_info.error_code)
+    auto error_code = taskWriteRegister(dev_addr, registers.file_control, file_read_prepare);
+    if (error_code)
     {
-        return task_info.error_code;
+        return error_code;
     }
     // we are trying to reach this server through the gateway, perform gateway setup first
     if (servers[index].info.gateway_addr != 0)
     {
-        std::uint16_t expected_length = modbus_message.getRequriedLength() + record_size + 4;
-        auto error = taskWriteRegister(servers[index].info.gateway_addr, registers.gateway_buffer_size, expected_length);
-        if (error)
+        std::uint16_t expected_length = getExpectedLength(ClientTasks::file_read, record_size);
+        error_code = taskWriteRegister(servers[index].info.gateway_addr, registers.gateway_buffer_size, expected_length);
+        if (error_code)
         {
-            task_info.error_code = make_error_code(ClientErrors::gateway_not_responding);
-            return task_info.error_code;
+            return error_code;
         }
-        error = taskWriteRegister(servers[index].info.gateway_addr, registers.record_counter, file.getNumOfRecords());
-        if (error)
+        error_code = taskWriteRegister(servers[index].info.gateway_addr, registers.record_counter, file.getNumOfRecords());
+        if (error_code)
         {
-            task_info.error_code = make_error_code(ClientErrors::gateway_not_responding);
-            return task_info.error_code;
+            return error_code;
         }
-        error = taskWriteRegister(servers[index].info.gateway_addr, registers.file_control, file_read_prepare);
-        if (error)
+        error_code = taskWriteRegister(servers[index].info.gateway_addr, registers.file_control, file_read_prepare);
+        if (error_code)
         {
-            task_info.error_code = make_error_code(ClientErrors::gateway_not_responding);
-            return task_info.error_code;
+            return error_code;
         }
     }
-
     task_info.reset();
     q_task.push([dev_addr, index, lambda_read_file, file_id]() { lambda_read_file(dev_addr, index, file_id); });
-    while (!task_info.done)
+    while (!task_info.done.load(std::memory_order_relaxed))
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(default_task_wait_delay_ms));
     }
@@ -326,7 +329,8 @@ std::error_code ModbusClient::taskWriteFile(const std::uint8_t dev_addr, const b
     {
         modbus_message.msgWriteFileRecord(request_data, file_id, record_id, data, dev_addr);
         // in case of success we expect message with the same length
-        TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::write_file, request_data.size());
+        std::uint16_t expected_length = getExpectedLength(ClientTasks::file_write, data.size());
+        TaskAttributes attr = TaskAttributes(modbus::FunctionCodes::write_file, expected_length);
         createServerRequest(attr);
     };
 
@@ -342,56 +346,53 @@ std::error_code ModbusClient::taskWriteFile(const std::uint8_t dev_addr, const b
             q_exchange.push([lambda_write_record, dev_addr, file_id, i, data] { lambda_write_record(dev_addr, file_id, i, data); });
         }
     };
-
-    task_info.error_code = make_error_code(ClientErrors::server_not_connected);
     int index = getServerIndex(dev_addr);
     if (index == server_not_found)
     {
-        return task_info.error_code;
+        return make_error_code(ClientErrors::server_not_connected);
     }
     if (servers[index].info.status == ServerStatus::unavailable)
     {
-        return task_info.error_code;
+        return make_error_code(ClientErrors::server_not_connected);
     }
     if (!file.isFileReady())
     {
-        task_info.error_code = make_error_code(ClientErrors::file_buffer_is_empty);
-        return task_info.error_code;
+        return make_error_code(ClientErrors::file_buffer_is_empty);
     }
     auto record_size = servers[index].info.record_size;
-    // setup file read prepare
-    task_info.error_code = taskWriteRegister(dev_addr, registers.file_control, file_write_prepare);
-    if (task_info.error_code)
+    if (record_size == 0)
     {
-        return task_info.error_code;
+        return make_error_code(ClientErrors::max_record_length_not_configured);
+    }
+    // setup file read prepare
+    auto error_code = taskWriteRegister(dev_addr, registers.file_control, file_write_prepare);
+    if (error_code)
+    {
+        return error_code;
     }
     // we are trying to reach this server through the gateway, perform gateway setup first
     if (servers[index].info.gateway_addr != 0)
     {
-        std::uint16_t expected_length = modbus_message.getRequriedLength() + record_size + 9;
-        auto error = taskWriteRegister(servers[index].info.gateway_addr, registers.gateway_buffer_size, expected_length);
-        if (error)
+        std::uint16_t expected_length = getExpectedLength(ClientTasks::file_write,record_size);
+        error_code = taskWriteRegister(servers[index].info.gateway_addr, registers.gateway_buffer_size, expected_length);
+        if (error_code)
         {
-            task_info.error_code = make_error_code(ClientErrors::gateway_not_responding);
-            return task_info.error_code;
+            return error_code;
         }
-        error = taskWriteRegister(servers[index].info.gateway_addr, registers.record_counter, file.getNumOfRecords());
-        if (error)
+        error_code = taskWriteRegister(servers[index].info.gateway_addr, registers.record_counter, file.getNumOfRecords());
+        if (error_code)
         {
-            task_info.error_code = make_error_code(ClientErrors::gateway_not_responding);
-            return task_info.error_code;
+            return error_code;
         }
-        error = taskWriteRegister(servers[index].info.gateway_addr, registers.file_control, file_write_prepare);
-        if (error)
+        error_code = taskWriteRegister(servers[index].info.gateway_addr, registers.file_control, file_write_prepare);
+        if (error_code)
         {
-            task_info.error_code = make_error_code(ClientErrors::gateway_not_responding);
-            return task_info.error_code;
+            return error_code;
         }
     }
-
     task_info.reset();
     q_task.push([dev_addr, lambda_write_file, index, record_size]() { lambda_write_file(dev_addr, index, record_size); });
-    while (!task_info.done)
+    while (!task_info.done.load(std::memory_order_relaxed))
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(default_task_wait_delay_ms));
     }
@@ -502,7 +503,7 @@ void ModbusClient::exchangeCallback()
         }
         if (task_info.counter == task_info.num_of_exchanges)
         {
-            task_info.done = true;
+            task_info.done.store(true, std::memory_order_relaxed);
         }
     }
     else
@@ -516,7 +517,7 @@ void ModbusClient::exchangeCallback()
         {
             task_info.error_code = make_error_code(ClientErrors::bad_crc);
         }
-        task_info.done = true;
+        task_info.done.store(true, std::memory_order_relaxed);
     }
 }
 
@@ -526,21 +527,20 @@ size_t ModbusClient::getExpectedLength(const ClientTasks task, const size_t extr
     {
         case sm::ClientTasks::undefined:
             return 0;
-
         case sm::ClientTasks::ping:
-            return modbus_message.getRequriedLength() + 2;
+            return modbus_message.getRequriedLength() + modbus::exception_pdu_size;
 
         case sm::ClientTasks::reg_write:
-            return modbus_message.getRequriedLength() + 4;
+            return modbus_message.getRequriedLength() + modbus::rw_reg_pdu_suze;
 
         case sm::ClientTasks::regs_read:
             return modbus_message.getRequriedLength() + extra + 2;
 
         case sm::ClientTasks::file_write:
-            return modbus::read_file_pdu_size + extra;
+            return modbus_message.getRequriedLength() + modbus::responce_write_file_pdu_part + extra;
 
         case sm::ClientTasks::file_read:
-            return modbus::read_file_pdu_size + extra;
+            return modbus_message.getRequriedLength() + modbus::responce_read_file_pdu_part + extra;
     };
     return 0;
 }

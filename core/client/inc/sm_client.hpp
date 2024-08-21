@@ -79,7 +79,7 @@ struct TaskInfo
     int counter = 0;
     int index = -1;
     bool is_printable = false;
-    std::atomic<bool> done = false;
+    std::atomic<bool> done{false};
     void reset(ClientTasks task = ClientTasks::undefined, int num_of_exchanges = 0, int index = -1, bool is_printable = false)
     {
         this->task = task;
@@ -87,7 +87,7 @@ struct TaskInfo
         this->index = index;
         this->is_printable = is_printable;
         counter = 0;
-        done = false;
+        done.store(false, std::memory_order_relaxed);
         attributes = TaskAttributes();
         error_code = std::error_code();
     }

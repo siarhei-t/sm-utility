@@ -38,14 +38,13 @@ constexpr std::uint8_t max_rw_file_byte_counter = 245;
 // The size of this block must be a multiple of the encryption block
 constexpr std::uint8_t data_block_size = 32;
 // The size of this block together with the technical data should not exceed max_adu_size
-constexpr std::uint8_t exception_pdu_size = 3;
+constexpr std::uint8_t exception_pdu_size = function_size + 1;
 constexpr std::uint8_t file_record_size = data_block_size * 6;
 constexpr std::uint8_t rw_reg_pdu_suze = function_size + 4;
-constexpr std::uint8_t read_file_pdu_size = function_size + 8;
-constexpr std::uint8_t service_min_size = rw_reg_pdu_suze;
-constexpr std::uint8_t service_max_size = read_file_pdu_size;
-constexpr std::uint8_t write_file_pdu_size = read_file_pdu_size + file_record_size;
-constexpr std::uint8_t max_pdu_size = write_file_pdu_size;
+constexpr std::uint8_t request_read_file_pdu_size = function_size + 8;
+constexpr std::uint8_t request_write_file_pdu_part = request_read_file_pdu_size;
+constexpr std::uint8_t responce_read_file_pdu_part = function_size + 3;
+constexpr std::uint8_t responce_write_file_pdu_part = request_write_file_pdu_part;
 // table for CRC16 with 0xA001 poly
 constexpr std::uint16_t crc16_table[256] = {
     0X0000u, 0XC0C1u, 0XC181u, 0X0140u, 0XC301u, 0X03C0u, 0X0280u, 0XC241u, 0XC601u, 0X06C0u, 0X0780u, 0XC741u, 0X0500u, 0XC5C1u, 0XC481u, 0X0440u,
