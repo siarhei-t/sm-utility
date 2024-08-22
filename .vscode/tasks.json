@@ -41,5 +41,14 @@
             },
             "problemMatcher": []
         },
+        {
+            "type": "shell",
+            "label": "CFG-LINUX-TEST",
+            "command": "cmake target/desktop -DTARGET_LINUX=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Debug -Bbuild",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
     ]
 }

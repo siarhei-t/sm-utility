@@ -91,12 +91,7 @@ void ModbusClient::addServer(const std::uint8_t addr, const std::uint8_t gateway
     {
         servers.push_back(ServerData());
         servers.back().info.addr = addr;
-        if ((gateway_addr != 0) && (getServerIndex(gateway_addr) == server_not_found))
-        {
-            servers.back().info.gateway_addr = gateway_addr;
-            servers.push_back(ServerData());
-            servers.back().info.addr = gateway_addr;
-        }
+        servers.back().info.gateway_addr = gateway_addr;
     }
 }
 
