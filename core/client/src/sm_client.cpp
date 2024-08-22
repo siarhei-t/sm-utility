@@ -23,13 +23,7 @@ namespace sm
 
 namespace
 {
-ServerRegisters registers;
-}
-
-ModbusClient::~ModbusClient()
-{
-    thread_stop.store(true, std::memory_order_relaxed);
-    client_thread.join();
+RegisterDefinitions registers;
 }
 
 int ModbusClient::getActualTaskProgress() const 
@@ -52,7 +46,7 @@ void ModbusClient::getLastServerRegList(const std::uint8_t addr, std::vector<std
     auto index = getServerIndex(addr);
     if (index != server_not_found)
     {
-        registers.insert(registers.end(), servers[index].regs.begin(), servers[index].regs.end());
+        registers.insert(registers.end(), servers[index].regs.values.begin(), servers[index].regs.values.end());
     }
 }
 
@@ -119,6 +113,7 @@ void ModbusClient::stop()
     {
         serial_port.close();
     }
+    task_info.reset();
 }
 
 std::error_code ModbusClient::configure(sp::PortConfig config)
@@ -158,7 +153,6 @@ std::error_code ModbusClient::taskPing(const std::uint8_t dev_addr)
             return error_code;
         }
     }
-    // direct address ping
     task_info.reset(ClientTasks::ping, 1, index);
     q_task.push([this, lambda_ping, dev_addr]() { q_exchange.push([lambda_ping, dev_addr] { lambda_ping(dev_addr); }); });
     while (!task_info.done.load(std::memory_order_relaxed))
@@ -205,7 +199,6 @@ std::error_code ModbusClient::taskWriteRegister(const std::uint8_t dev_addr, con
             return error_code;
         }
     }
-    // direct register write
     task_info.reset(ClientTasks::reg_write, 1, index, print_progress);
     q_task.push([this, lambda_write_reg, dev_addr, reg_addr, value]()
                 { q_exchange.push([lambda_write_reg, dev_addr, reg_addr, value] { lambda_write_reg(dev_addr, reg_addr, value); }); });
@@ -251,8 +244,9 @@ std::error_code ModbusClient::taskReadRegisters(const std::uint8_t dev_addr, con
             return error_code;
         }
     }
-    // direct registers reading
     task_info.reset(ClientTasks::regs_read, 1, index,print_progress);
+    servers[index].regs.reg_start_address = reg_addr;
+    servers[index].regs.values.clear();
     q_task.push([this, lambda_read_regs, dev_addr, reg_addr, quantity]()
                 { q_exchange.push([lambda_read_regs, dev_addr, reg_addr, quantity] { lambda_read_regs(dev_addr, reg_addr, quantity); }); });
     while (!task_info.done.load(std::memory_order_relaxed))
@@ -303,7 +297,6 @@ std::error_code ModbusClient::taskReadFile(const std::uint8_t dev_addr, const st
     {
         return make_error_code(ClientErrors::internal);
     }
-    // setup file read prepare
     auto error_code = taskWriteRegister(dev_addr, registers.file_control, file_read_prepare);
     if (error_code)
     {
@@ -385,7 +378,6 @@ std::error_code ModbusClient::taskWriteFile(const std::uint8_t dev_addr, const b
     {
         return make_error_code(ClientErrors::max_record_length_not_configured);
     }
-    // setup file read prepare
     auto error_code = taskWriteRegister(dev_addr, registers.file_control, file_write_prepare);
     if (error_code)
     {
@@ -427,7 +419,6 @@ std::error_code ModbusClient::taskWriteFile(const std::uint8_t dev_addr, const b
 
 void ModbusClient::clientThread()
 {
-    using namespace std::chrono_literals;
     while (!thread_stop.load(std::memory_order_relaxed))
     {
         while (!q_task.empty())
@@ -462,7 +453,7 @@ void ModbusClient::clientThread()
             }
             q_task.pop();
         }
-        std::this_thread::sleep_for(50ms);
+        std::this_thread::sleep_for(std::chrono::milliseconds(default_task_wait_delay_ms));
     }
 }
 
@@ -470,7 +461,7 @@ void ModbusClient::exchangeCallback()
 {
     auto readRegs = [](ServerData& server, const std::vector<uint8_t>& message)
     {
-        server.regs.clear();
+        server.regs.values.clear();
         const int id_length = modbus::read_regs_responce_data_length_idx;
         if (message[id_length] > (message.size() - modbus::function_size - 1))
         {
@@ -483,13 +474,15 @@ void ModbusClient::exchangeCallback()
         {
             reg = static_cast<std::uint16_t>(message[index]) << 8;
             reg |= message[index + 1];
-            server.regs.push_back(reg);
+            server.regs.values.push_back(reg);
             index += 2;
         }
-        // get record size for the server, fix it in future with checking for reading start address
-        if (server.regs.size() >= registers.getSize() && (server.info.record_size == 0))
+        auto amount_of_regs = server.regs.values.size();
+        if(server.regs.reg_start_address <= (modbus::holding_regs_offset + registers.record_size) &&
+           (server.regs.reg_start_address + amount_of_regs) >= (modbus::holding_regs_offset + registers.record_size)
+          )
         {
-            server.info.record_size = server.regs[registers.record_size];
+            server.info.record_size = server.regs.values[registers.record_size];
         }
     };
 

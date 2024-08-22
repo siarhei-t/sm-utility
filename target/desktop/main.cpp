@@ -12,6 +12,7 @@
 
 #include "../../core/client/inc/sm_client.hpp"
 #include "../../core/client/inc/sm_error.hpp"
+#include "sm_modbus.hpp"
 
 
 int main(int argc, char* argv[])
@@ -40,16 +41,18 @@ int main(int argc, char* argv[])
         return 0;
     }
     std::uint8_t address = 1;
-    std::uint8_t gateway_address = 0;
     // (3) create master and slave server instances
-    client.addServer(gateway_address);
-    client.addServer(address,gateway_address);
-
-    error_code = make_error_code(sm::ClientErrors::server_not_connected);
+    client.addServer(address);
     // ping server, expected answer with modbus::Exceptions::exception_1
     error_code = client.taskPing(address);
     if (error_code)
     {
         std::cout<<"error: "<<error_code.message()<<"\n";
     }
+    error_code = client.taskReadRegisters(address,modbus::holding_regs_offset + 4,1);
+    if (error_code)
+    {
+        std::cout<<"error: "<<error_code.message()<<"\n";
+    }
+
 }

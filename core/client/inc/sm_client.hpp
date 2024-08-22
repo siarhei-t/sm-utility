@@ -32,10 +32,9 @@ constexpr std::uint16_t file_read_prepare = 1;
 constexpr std::uint16_t file_write_prepare = 2;
 constexpr std::uint16_t app_erase_request = 1;
 
-class ServerRegisters
+class RegisterDefinitions
 {
 public:
-    ServerRegisters() = default;
     static const std::uint16_t file_control = 0;
     static const std::uint16_t prepare_to_update = 1;
     static const std::uint16_t app_erase = 2;
@@ -109,17 +108,27 @@ struct ServerInfo
     ServerStatus status = ServerStatus::unavailable;
 };
 
+struct ServerRegisters
+{
+    std::uint16_t reg_start_address = modbus::holding_regs_offset;
+    std::vector<std::uint16_t> values;
+};
+
 struct ServerData
 {
     ServerInfo info;
-    std::vector<std::uint16_t> regs;
+    ServerRegisters regs;
 };
 
 class ModbusClient
 {
 public:
     ModbusClient() : client_thread(&ModbusClient::clientThread, this) {}
-    ~ModbusClient();
+    ~ModbusClient()
+    {
+        thread_stop.store(true, std::memory_order_relaxed);
+        client_thread.join();
+    }
     sp::SerialPort serial_port;
     File file;
     /**
