@@ -34,23 +34,6 @@ constexpr std::uint16_t file_read_prepare = 1;
 constexpr std::uint16_t file_write_prepare = 2;
 constexpr std::uint16_t app_erase_request = 1;
 
-class RegisterDefinitions
-{
-public:
-    static const std::uint16_t file_control = 0;
-    static const std::uint16_t prepare_to_update = 1;
-    static const std::uint16_t app_erase = 2;
-    static const std::uint16_t record_size = 3;
-    static const std::uint16_t record_counter = 4;
-    static const std::uint16_t status = 5;
-    static const std::uint16_t gateway_buffer_size = 6;
-
-    std::uint16_t getSize() const { return size; }
-
-private:
-    const std::uint16_t size = 7;
-};
-
 enum class ClientTasks
 {
     undefined,
@@ -243,7 +226,7 @@ private:
     std::queue<std::function<void()>> q_exchange;
     std::queue<std::function<void()>> q_task;
     /**
-     * @brief Get the Server Index object
+     * @brief get server index in internal vector with servers
      *
      * @param dev_addr server address in Modbus application layer
      * @return int index in servers array, server_not_found if server not exist
@@ -279,13 +262,13 @@ private:
      */
     void exchangeCallback();
     /**
-     * @brief callback for file read/write processing
+     * @brief callback for server file read/write processing
      *
      * @param message received message with record
      */
     void fileReadCallback(std::vector<std::uint8_t>& message);
     /**
-     * @brief print task progress to command line
+     * @brief print task progress to stdout
      * 
      */
     void printProgressBar(const int task_progress);

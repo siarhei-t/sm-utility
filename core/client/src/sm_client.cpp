@@ -14,7 +14,7 @@
 #include <cstring>
 #include <iostream>
 
-#include "../../common/sm_modbus.hpp"
+#include "../../common/sm_common.hpp"
 #include "../inc/sm_client.hpp"
 #include "../inc/sm_error.hpp"
 
