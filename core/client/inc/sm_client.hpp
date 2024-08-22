@@ -28,6 +28,8 @@ namespace sm
 
 constexpr int server_not_found = -1;
 constexpr int default_task_wait_delay_ms = 50;
+constexpr int task_complete_value = 100;
+constexpr int task_not_started_value = 0;
 constexpr std::uint16_t file_read_prepare = 1;
 constexpr std::uint16_t file_write_prepare = 2;
 constexpr std::uint16_t app_erase_request = 1;
@@ -117,7 +119,7 @@ struct ServerRegisters
 struct ServerData
 {
     ServerInfo info;
-    ServerRegisters regs;
+    ServerRegisters registers;
 };
 
 class ModbusClient
@@ -139,10 +141,10 @@ public:
     /**
      * @brief adds erver to the vector with used servers
      *
-     * @param addr server address in Modbus application layer
+     * @param dev_addr server address in Modbus application layer
      * @param gateway_addr gateway address in case of gatewayed access
      */
-    void addServer(const std::uint8_t addr, const std::uint8_t gateway_addr = 0);
+    void addServer(const std::uint8_t dev_addr, const std::uint8_t gateway_addr = 0);
     /**
      * @brief start client on selected serial port
      *
@@ -201,16 +203,33 @@ public:
     /**
      * @brief Get the actual task progress
      *
-     * @return int value from 0 to 100
+     * @return int value from task_not_started_value to task_complete_value
      */
     int getActualTaskProgress() const;
     /**
      * @brief Get vector with actual values of server registers
      *
-     * @param addr server address in Modbus application layer
+     * @param dev_addr server address in Modbus application layer
      * @param registers reference to vector with registers
      */
-    void getLastServerRegList(const std::uint8_t addr, std::vector<std::uint16_t>& registers);
+    void getLastServerRegList(const std::uint8_t dev_addr, ServerRegisters& registers);
+    /**
+     * @brief forced setup server as available to skip ClientTasks::ping task 
+     * 
+     * @param dev_addr server address in Modbus application layer
+     * @return true in case of success
+     * @return false if server was not found
+     */
+    bool setServerAsAvailable(const std::uint8_t dev_addr);
+    /**
+     * @brief forced setup max record size for the server
+     * 
+     * @param dev_addr server address in Modbus application layer
+     * @param record_size record size in bytes
+     * @return true in case of success
+     * @return false if server was not found
+     */
+    bool setServerRecordMaxSize(const std::uint8_t dev_addr, const std::uint8_t record_size);
 
 private:
     std::vector<std::uint8_t> request_data;
@@ -226,10 +245,10 @@ private:
     /**
      * @brief Get the Server Index object
      *
-     * @param address server address in Modbus application layer
-     * @return int index in servers array
+     * @param dev_addr server address in Modbus application layer
+     * @return int index in servers array, server_not_found if server not exist
      */
-    int getServerIndex(const std::uint8_t address);
+    int getServerIndex(const std::uint8_t dev_addr) const;
     /**
      * @brief get expected server response length
      *

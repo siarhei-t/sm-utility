@@ -32,21 +32,62 @@ int ModbusClient::getActualTaskProgress() const
     auto progress = task_info.counter;
     if((volume > 0) && (progress <= volume))
     {
-        return (progress * 100) / volume;
+        return (progress * task_complete_value) / volume;
     }
     else
     {
-        return 0;
+        return task_not_started_value;
     }
 }
 
-void ModbusClient::getLastServerRegList(const std::uint8_t addr, std::vector<std::uint16_t>& registers)
+int ModbusClient::getServerIndex(const std::uint8_t address) const
 {
-    registers.clear();
-    auto index = getServerIndex(addr);
+    auto it = std::find_if(servers.begin(), servers.end(), [address](const ServerData& server) { return server.info.addr == address; });
+    if (it != servers.end())
+    {
+        return std::distance(servers.begin(), it);
+    }
+    else
+    {
+        return server_not_found;
+    }
+}
+
+void ModbusClient::getLastServerRegList(const std::uint8_t dev_addr, ServerRegisters& registers)
+{
+    registers = ServerRegisters();
+    auto index = getServerIndex(dev_addr);
     if (index != server_not_found)
     {
-        registers.insert(registers.end(), servers[index].regs.values.begin(), servers[index].regs.values.end());
+        registers = servers[index].registers;
+    }
+}
+
+bool ModbusClient::setServerAsAvailable(const std::uint8_t dev_addr)
+{
+    auto index = getServerIndex(dev_addr);
+    if (index != server_not_found)
+    {
+        servers[index].info.status = ServerStatus::available;
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+bool ModbusClient::setServerRecordMaxSize(const std::uint8_t dev_addr, const std::uint8_t record_size)
+{
+    auto index = getServerIndex(dev_addr);
+    if (index != server_not_found)
+    {
+        servers[index].info.record_size = record_size;
+        return true;
+    }
+    else
+    {
+        return false;
     }
 }
 
@@ -71,9 +112,9 @@ void ModbusClient::printProgressBar(const int task_progress)
             std::cout << " ";
         }
     }
-    std::cout << "] " << int(progress * 100.0) << " %\r";
+    std::cout << "] " << int(progress * task_complete_value) << " %\r";
     std::cout.flush();
-    if(task_progress == 100)
+    if(task_progress == task_complete_value)
     {
         std::cout<<std::endl;
     }
@@ -245,8 +286,8 @@ std::error_code ModbusClient::taskReadRegisters(const std::uint8_t dev_addr, con
         }
     }
     task_info.reset(ClientTasks::regs_read, 1, index,print_progress);
-    servers[index].regs.reg_start_address = reg_addr;
-    servers[index].regs.values.clear();
+    servers[index].registers.reg_start_address = reg_addr;
+    servers[index].registers.values.clear();
     q_task.push([this, lambda_read_regs, dev_addr, reg_addr, quantity]()
                 { q_exchange.push([lambda_read_regs, dev_addr, reg_addr, quantity] { lambda_read_regs(dev_addr, reg_addr, quantity); }); });
     while (!task_info.done.load(std::memory_order_relaxed))
@@ -461,7 +502,7 @@ void ModbusClient::exchangeCallback()
 {
     auto readRegs = [](ServerData& server, const std::vector<uint8_t>& message)
     {
-        server.regs.values.clear();
+        server.registers.values.clear();
         const int id_length = modbus::read_regs_responce_data_length_idx;
         if (message[id_length] > (message.size() - modbus::function_size - 1))
         {
@@ -474,15 +515,15 @@ void ModbusClient::exchangeCallback()
         {
             reg = static_cast<std::uint16_t>(message[index]) << 8;
             reg |= message[index + 1];
-            server.regs.values.push_back(reg);
+            server.registers.values.push_back(reg);
             index += 2;
         }
-        auto amount_of_regs = server.regs.values.size();
-        if(server.regs.reg_start_address <= (modbus::holding_regs_offset + registers.record_size) &&
-           (server.regs.reg_start_address + amount_of_regs) >= (modbus::holding_regs_offset + registers.record_size)
+        auto amount_of_regs = server.registers.values.size();
+        if(server.registers.reg_start_address <= (modbus::holding_regs_offset + registers.record_size) &&
+           (server.registers.reg_start_address + amount_of_regs) >= (modbus::holding_regs_offset + registers.record_size)
           )
         {
-            server.info.record_size = server.regs.values[registers.record_size];
+            server.info.record_size = server.registers.values[registers.record_size];
         }
     };
 
@@ -569,19 +610,6 @@ void ModbusClient::fileReadCallback(std::vector<std::uint8_t>& message)
     if (!file.getRecordFromMessage(message))
     {
         task_info.error_code = make_error_code(ClientErrors::internal);
-    }
-}
-
-int ModbusClient::getServerIndex(const std::uint8_t address)
-{
-    auto it = std::find_if(servers.begin(), servers.end(), [address](ServerData& server) { return server.info.addr == address; });
-    if (it != servers.end())
-    {
-        return std::distance(servers.begin(), it);
-    }
-    else
-    {
-        return server_not_found;
     }
 }
 
