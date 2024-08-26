@@ -29,7 +29,7 @@ public:
     std::uint16_t getSize() const { return size; }
 
 private:
-    const std::uint16_t size = 7;
+    static const std::uint16_t size = 7;
 };
 
 class FileDefinitions
@@ -41,7 +41,7 @@ public:
     std::uint16_t getSize() const { return size; }
 
 private:
-    const std::uint16_t size = 2;
+    static const std::uint16_t size = 2;
 };
 
 } // namespace sm
