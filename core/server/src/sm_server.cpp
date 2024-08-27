@@ -15,21 +15,6 @@ namespace sm
 {
 
 template<size_t amount_of_regs, size_t amount_of_files, std::uint8_t record_define> 
-std::uint16_t ModbusServer<amount_of_regs, amount_of_files, record_define>::extractHalfWord(const std::uint8_t data[])
-{
-    std::uint16_t half_word = data[1];
-    half_word |= static_cast<std::uint16_t>(data[0]) << 8;
-    return half_word;
-}
-
-template<size_t amount_of_regs, size_t amount_of_files, std::uint8_t record_define> 
-void ModbusServer<amount_of_regs, amount_of_files, record_define>::insertHalfWord(std::uint8_t data[], const std::uint16_t half_word)
-{
-    data[0] = static_cast<std::uint8_t>((half_word >> 8));
-    data[1] = static_cast<std::uint8_t>(half_word);
-}
-
-template<size_t amount_of_regs, size_t amount_of_files, std::uint8_t record_define> 
 ServerExceptions ModbusServer<amount_of_regs, amount_of_files, record_define>::serverTask(std::uint8_t data[], const std::uint8_t length)
 {
     auto lambda_crc16 = [](const std::uint8_t data[], const std::uint16_t length)
@@ -117,8 +102,8 @@ ServerExceptions ModbusServer<amount_of_regs, amount_of_files, record_define>::s
 template<size_t amount_of_regs, size_t amount_of_files, std::uint8_t record_define> 
 modbus::Exceptions ModbusServer<amount_of_regs, amount_of_files, record_define>::writeRegister(std::uint8_t data[])
 {
-    std::uint16_t address = extractHalfWord(data);
-    std::uint16_t value = extractHalfWord(data + sizeof(std::uint16_t));
+    std::uint16_t address = server_resources.extractHalfWord(data);
+    std::uint16_t value = server_resources.extractHalfWord(data + sizeof(std::uint16_t));
 
     if (server_resources.writeRegister(address, value))
     {
@@ -133,8 +118,8 @@ modbus::Exceptions ModbusServer<amount_of_regs, amount_of_files, record_define>:
 template<size_t amount_of_regs, size_t amount_of_files, std::uint8_t record_define> 
 modbus::Exceptions ModbusServer<amount_of_regs, amount_of_files, record_define>::readRegister(std::uint8_t data[], std::uint8_t& length)
 {
-    std::uint16_t address = extractHalfWord(data);
-    std::uint16_t quantity = extractHalfWord(data + sizeof(std::uint16_t));
+    std::uint16_t address = server_resources.extractHalfWord(data);
+    std::uint16_t quantity = server_resources.extractHalfWord(data + sizeof(std::uint16_t));
 
     if ((quantity < modbus::min_amount_of_regs) && (quantity > modbus::max_amount_of_regs))
     {
@@ -142,7 +127,7 @@ modbus::Exceptions ModbusServer<amount_of_regs, amount_of_files, record_define>:
     }
     else
     {
-        if (server_resources.readRegister(address, quantity,length))
+        if (server_resources.readRegister(address, quantity, data, length))
         {
             return modbus::Exceptions::no_exception;
         }
@@ -158,9 +143,9 @@ modbus::Exceptions ModbusServer<amount_of_regs, amount_of_files, record_define>:
 {
     std::uint8_t byte_counter = data[0];
     std::uint8_t reference_type = data[1];
-    FileService file_service(extractHalfWord(data + sizeof(std::uint16_t)), 
-                             extractHalfWord(data + (sizeof(std::uint16_t) * 2)), 
-                             extractHalfWord(data + (sizeof(std::uint16_t) * 3)));
+    FileService file_service(server_resources.extractHalfWord(data + sizeof(std::uint16_t)), 
+                             server_resources.extractHalfWord(data + (sizeof(std::uint16_t) * 2)), 
+                             server_resources.extractHalfWord(data + (sizeof(std::uint16_t) * 3)));
 
     if ((reference_type != modbus::rw_file_reference) || (byte_counter < modbus::min_rw_file_byte_counter) || (byte_counter > modbus::max_rw_file_byte_counter))
     {
@@ -185,9 +170,9 @@ modbus::Exceptions ModbusServer<amount_of_regs, amount_of_files, record_define>:
     std::uint8_t byte_counter = data[0];
     std::uint8_t reference_type = data[1];
 
-    FileService file_service(extractHalfWord(data + sizeof(std::uint16_t)), 
-                             extractHalfWord(data + (sizeof(std::uint16_t) * 2)), 
-                             extractHalfWord(data + (sizeof(std::uint16_t) * 3)));
+    FileService file_service(server_resources.extractHalfWord(data + sizeof(std::uint16_t)), 
+                             server_resources.extractHalfWord(data + (sizeof(std::uint16_t) * 2)), 
+                             server_resources.extractHalfWord(data + (sizeof(std::uint16_t) * 3)));
 
     if ((reference_type != modbus::rw_file_reference) || (byte_counter < modbus::min_rw_file_byte_counter) || (byte_counter > modbus::max_rw_file_byte_counter))
     {
@@ -195,7 +180,7 @@ modbus::Exceptions ModbusServer<amount_of_regs, amount_of_files, record_define>:
     }
     else
     {
-        if (server_resources.readFile(file_service, length))
+        if (server_resources.readFile(file_service, data, length))
         {
             return modbus::Exceptions::no_exception;
         }
@@ -205,50 +190,5 @@ modbus::Exceptions ModbusServer<amount_of_regs, amount_of_files, record_define>:
         }
     }
 }
-
-/*
-bool ServerResources::writeRegister(const std::uint16_t address, const std::uint16_t value) const
-{
-    (void)(address);
-    (void)(value);
-    return true;
-}
-
-bool ServerResources::readRegister(ServerCallback& server_callback, const std::uint16_t address, const std::uint16_t quantity) const
-{
-    const std::uint16_t offset_address = address - modbus::holding_regs_offset;
-    if ((offset_address + quantity) <= static_cast<std::uint16_t>(ServerRegisters::count))
-    {
-        server_callback.data[0] = static_cast<std::uint8_t>((quantity * 2));
-        int counter = 1;
-        for (int i = 0; i < quantity; ++i)
-        {
-            ModbusServer::insertHalfWord(&server_callback.data[counter], registers[offset_address + i].value);
-            counter += 2;
-        }
-        server_callback.length = (quantity * 2) + 1;
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
-
-
-bool ModbusServer::writeFile(const FileService& service, const uint8_t data[]) const
-{
-    (void)(service);
-    (void)(data);
-    return true;
-}
-
-bool ModbusServer::readFile(const FileService& service) const
-{
-    (void)(service);
-    return true;
-}
-
-*/
 
 } // namespace sm

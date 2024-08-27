@@ -6,12 +6,14 @@ enable_language(CXX)
 
 set(COMMON_SOURCES
         src/sm_server.cpp
-
+        src/sm_resources.cpp
 )
 
 set(COMMON_HEADERS
         inc/sm_server.hpp
-        inc/sm_modbus.hpp
+        inc/sm_resources.hpp
+        ../common/sm_common.hpp
+        ../common/sm_modbus.hpp
 )
 
 add_library (${PROJECT_NAME} STATIC ${COMMON_SOURCES} ${COMMON_HEADERS})

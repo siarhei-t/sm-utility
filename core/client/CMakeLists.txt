@@ -17,6 +17,7 @@ set(COMMON_HEADERS
         inc/sm_error.hpp
         inc/sm_file.hpp
         ../common/sm_common.hpp
+        ../common/sm_modbus.hpp
 )
 
 add_subdirectory(../external/simple-serial-port-1.03/lib serial-port)
