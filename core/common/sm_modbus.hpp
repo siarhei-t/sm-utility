@@ -76,11 +76,11 @@ enum class FunctionCodes
 // General Modbus exception codes, for reference see https://modbus.org/
 enum class Exceptions
 {
-    no_exception = 0x0,
-    exception_1 = 0x1,
-    exception_2 = 0x2,
-    exception_3 = 0x3,
-    exception_4 = 0x4
+    no_exception = 0,
+    exception_1 = 1,
+    exception_2 = 2,
+    exception_3 = 3,
+    exception_4 = 4
 };
 
 } // namespace modbus

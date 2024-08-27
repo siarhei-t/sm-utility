@@ -3,8 +3,8 @@
     "tasks": [
         {
             "type": "shell",
-            "label": "BUILD",
-            "command": "cmake --build build",
+            "label": "BUILD-CLIENT",
+            "command": "cmake --build build-client",
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -17,7 +17,7 @@
         {
             "type": "shell",
             "label": "LIB-CFG-WIN-RELEASE",
-            "command": "cmake core/client -DTARGET_WINDOWS=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Release -Bbuild",
+            "command": "cmake core/client -DTARGET_WINDOWS=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Release -Bbuild-client",
             "options": {
                 "cwd": "${workspaceFolder}"
             },
@@ -26,7 +26,7 @@
         {
             "type": "shell",
             "label": "LIB-CFG-LINUX-RELEASE",
-            "command": "cmake core/client -DTARGET_LINUX=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Release -Bbuild",
+            "command": "cmake core/client -DTARGET_LINUX=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Release -Bbuild-client",
             "options": {
                 "cwd": "${workspaceFolder}"
             },
