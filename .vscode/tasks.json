@@ -3,11 +3,37 @@
     "tasks": [
         {
             "type": "shell",
+            "label": "BUILD-CLIENT-LIB",
+            "command": "cmake --build build-lib",
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "type": "shell",
             "label": "BUILD-CLIENT",
             "command": "cmake --build build-client",
             "group": {
                 "kind": "build",
-                "isDefault": true
+                "isDefault": false
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "type": "shell",
+            "label": "BUILD-SERVER",
+            "command": "cmake --build build-server",
+            "group": {
+                "kind": "build",
+                "isDefault": false
             },
             "options": {
                 "cwd": "${workspaceFolder}"
@@ -17,7 +43,7 @@
         {
             "type": "shell",
             "label": "LIB-CFG-WIN-RELEASE",
-            "command": "cmake core/client -DTARGET_WINDOWS=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Release -Bbuild-client",
+            "command": "cmake core/client -DTARGET_WINDOWS=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Release -Bbuild-lib",
             "options": {
                 "cwd": "${workspaceFolder}"
             },
@@ -26,7 +52,7 @@
         {
             "type": "shell",
             "label": "LIB-CFG-LINUX-RELEASE",
-            "command": "cmake core/client -DTARGET_LINUX=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Release -Bbuild-client",
+            "command": "cmake core/client -DTARGET_LINUX=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Release -Bbuild-lib",
             "options": {
                 "cwd": "${workspaceFolder}"
             },
@@ -34,8 +60,8 @@
         },
         {
             "type": "shell",
-            "label": "CFG-WIN-TEST",
-            "command": "cmake target/desktop -DTARGET_WINDOWS=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Debug -Bbuild",
+            "label": "CFG-CLIENT-WIN-DESKTOP",
+            "command": "cmake target/client/desktop -DTARGET_WINDOWS=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Debug -Bbuild-client",
             "options": {
                 "cwd": "${workspaceFolder}"
             },
@@ -43,8 +69,26 @@
         },
         {
             "type": "shell",
-            "label": "CFG-LINUX-TEST",
-            "command": "cmake target/desktop -DTARGET_LINUX=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Debug -Bbuild",
+            "label": "CFG-CLIENT-LINUX-DESKTOP",
+            "command": "cmake target/client/desktop -DTARGET_LINUX=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Debug -Bbuild-client",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "type": "shell",
+            "label": "CFG-SERVER-WIN-DESKTOP",
+            "command": "cmake target/server/desktop -DTARGET_WINDOWS=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Debug -Bbuild-server",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "type": "shell",
+            "label": "CFG-SERVER-LINUX-DESKTOP",
+            "command": "cmake target/server/desktop -DTARGET_LINUX=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Debug -Bbuild-server",
             "options": {
                 "cwd": "${workspaceFolder}"
             },

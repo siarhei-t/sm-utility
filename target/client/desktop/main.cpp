@@ -10,10 +10,8 @@
 
 #include <iostream>
 
-#include "../../core/client/inc/sm_client.hpp"
-#include "../../core/client/inc/sm_error.hpp"
-#include "sm_modbus.hpp"
-
+#include "../../../core/client/inc/sm_client.hpp"
+#include "../../../core/client/inc/sm_error.hpp"
 
 int main(int argc, char* argv[])
 {
