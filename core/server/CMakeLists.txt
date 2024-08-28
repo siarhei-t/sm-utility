@@ -7,6 +7,7 @@ enable_language(CXX)
 set(COMMON_SOURCES
         src/sm_server.cpp
         src/sm_resources.cpp
+        src/sm_com.cpp
 )
 
 set(COMMON_HEADERS

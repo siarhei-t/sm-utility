@@ -28,7 +28,7 @@ struct FileService
 
 struct FileControl
 {
-    size_t index = 0;                // file index in files array in chip memory
+    size_t index = 0;                 // file index in files array in chip memory
     std::uint8_t* p_record = nullptr; // pointer to record
     std::uint8_t length = 0;          // actual record length in bytes
 };
