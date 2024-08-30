@@ -17,15 +17,25 @@
 namespace sm
 {
 
-template<size_t amount_of_regs, size_t amount_of_files, std::uint8_t record_define> class Com
+class Com
 {
 public:
-    
-private:
-    std::uint8_t rx_length;
-    std::uint8_t tx_length;
-    ModbusServer<amount_of_regs,amount_of_files,record_define> server;
+    void readData(std::uint8_t data[], const size_t amount);
+    void sendData(const std::uint8_t data[], const size_t amount);
+};
 
+template<size_t amount_of_regs, size_t amount_of_files, std::uint8_t record_define, typename c = Com> class DataNode
+{
+public:
+    DataNode(std::uint8_t address) : server(address) {}
+    void loop(); 
+    std::uint8_t* getBufferPtr() const;
+
+private:
+    std::uint8_t rx_length = 0;
+    std::uint8_t tx_length = 0;
+    ModbusServer<amount_of_regs,amount_of_files,record_define> server;
+    c com;
 };
 
 } // namespace sm

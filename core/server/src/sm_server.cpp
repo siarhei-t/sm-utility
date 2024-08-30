@@ -33,12 +33,17 @@ ServerExceptions ModbusServer<amount_of_regs, amount_of_files, record_define>::s
         return crc;
     };
 
-    auto lambda_generate_exception = [lambda_crc16](std::uint8_t data[], const modbus::Exceptions exception)
+    auto lambda_generate_exception = [this,lambda_crc16](std::uint8_t data[], const modbus::Exceptions exception)
     {
         data[1] |= modbus::function_error_mask;
         data[2] = static_cast<std::uint8_t>(exception);
-        return lambda_crc16(data, modbus::exception_pdu_size);
+        auto crc =  lambda_crc16(data, modbus::exception_pdu_size);
+        data[3] = static_cast<std::uint8_t>(crc & 0xFF);
+        data[4] = static_cast<std::uint8_t>((crc & 0xFF00) >> 8);
+        tramsmit_length = modbus::address_size + modbus::exception_pdu_size + modbus::crc_size;
     };
+    //recend what we have by default
+    tramsmit_length = length;
 
     std::uint8_t received_address = data[0];
     std::uint8_t received_function = data[1];
@@ -94,6 +99,7 @@ ServerExceptions ModbusServer<amount_of_regs, amount_of_files, record_define>::s
             std::uint16_t new_crc = lambda_crc16(data, required_offset + generated_length);
             data[required_offset + generated_length] = static_cast<std::uint8_t>(new_crc & 0xFF);
             data[required_offset + generated_length + 1] = static_cast<std::uint8_t>((new_crc & 0xFF00) >> 8);
+            tramsmit_length = required_offset + generated_length + modbus::crc_size;
         }
         return ServerExceptions::no_error;
     }

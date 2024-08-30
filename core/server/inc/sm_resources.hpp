@@ -67,7 +67,12 @@ public:
     
     void insertHalfWord(std::uint8_t data[], const std::uint16_t half_word);
 
+    void setBufferSize(const std::uint8_t new_size){ buffer_size = new_size; }
+    
+    std::uint8_t getBufferSize() const { return buffer_size; }
+
 private:
+    std::uint8_t buffer_size = 0;
     std::array<RegisterInfo, amount_of_regs> registers;
     std::array<FileInfo, amount_of_files> files;
 };
