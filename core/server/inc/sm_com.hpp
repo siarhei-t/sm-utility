@@ -66,8 +66,15 @@ class Com
 public:
     std::atomic<bool> data_ready{false};
     std::atomic<bool> data_in_progress{false};
-    void startReadData(std::uint8_t data[], const size_t amount);
-    void startSendData(std::uint8_t data[], const size_t amount);
+    void startReadData(std::uint8_t data[], const size_t amount)
+    {
+        data_ready.store(false, std::memory_order_relaxed);
+        platformReadData(data,amount);
+    }
+    void startSendData(std::uint8_t data[], const size_t amount)
+    {
+        platformSendData(data,amount);
+    }
     void flush(){ platformFlush(); }
 
 private:
@@ -88,8 +95,36 @@ template<size_t amount_of_regs, size_t amount_of_files, std::uint8_t record_defi
 {
 public:
     DataNode(std::uint8_t address) : server(address){}
-    void start();
-    void loop(); 
+    void start()
+    {
+        com.startReadData(buffer.data(),server.getReceiveBufferSize());
+    }
+    void loop()
+    {
+        for(;;)
+        {
+            //start receiver timeout timer
+            if(com.data_in_progress.load(std::memory_order_relaxed) && !timer.isStarted())
+            {
+                timer.start();
+            }
+            // data process
+            if(com.data_ready.load(std::memory_order_relaxed))
+            {
+                com.data_ready.store(false, std::memory_order_relaxed);
+                last_error = server.serverTask(buffer.data(), server.getReceiveBufferSize());
+                com.startSendData(buffer.data(),server.getTransmitBufferSize());
+                com.startReadData(buffer.data(),server.getReceiveBufferSize());
+            }
+            // port flush in case of timeout
+            if(timer.done.load(std::memory_order_relaxed) && com.data_in_progress.load(std::memory_order_relaxed))
+            {
+                com.flush();
+                timer.stop();
+                com.startReadData(buffer.data(),server.getReceiveBufferSize());
+            }
+        }
+    } 
     std::uint8_t* getBufferPtr() { return buffer.data(); };
 
 private:

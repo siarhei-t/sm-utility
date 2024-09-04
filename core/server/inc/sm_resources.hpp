@@ -13,6 +13,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include "../../common/sm_modbus.hpp"
 
 namespace sm
 {
@@ -55,17 +56,69 @@ struct RegisterInfo
 template<size_t amount_of_regs, size_t amount_of_files> class ServerResources
 {
 public:
-    bool writeRegister(const std::uint16_t address, const std::uint16_t value);
+    bool writeRegister(const std::uint16_t address, const std::uint16_t value)
+    {
+        (void)(address);
+        (void)(value);
+        return true;
+    }
 
-    bool readRegister(const std::uint16_t address, const std::uint16_t quantity, std::uint8_t data[], std::uint8_t& length);
-
-    bool writeFile(const FileService& service, const std::uint8_t data[]);
-
-    bool readFile(const FileService& service, std::uint8_t data[], std::uint8_t& length);
+    bool readRegister(const std::uint16_t address, const std::uint16_t quantity, std::uint8_t data[], std::uint8_t& length)
+    {
+        const std::uint16_t offset_address = address - modbus::holding_regs_offset;
+        if ((offset_address + quantity) <= registers.size())
+        {
+            data[0] = static_cast<std::uint8_t>((quantity * 2));
+            auto counter = 1;
+            for (int i = 0; i < quantity; ++i)
+            {
+                
+                if(registers[offset_address + i].property_read)
+                {
+                    insertHalfWord(&data[counter], registers[offset_address + i].value);
+                    counter += 2;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            length =  data[0] + 1;
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
     
-    std::uint16_t extractHalfWord(const std::uint8_t data[]);
-    
-    void insertHalfWord(std::uint8_t data[], const std::uint16_t half_word);
+    bool writeFile(const FileService& service, const std::uint8_t data[])
+    {
+        (void)(service);
+        (void)(data);
+        return true;
+    }
+
+    bool readFile(const FileService& service, std::uint8_t data[], std::uint8_t& length)
+    {
+        (void)(service);
+        (void)(data);
+        (void)(length);
+        return true;
+    }
+
+    std::uint16_t extractHalfWord(const std::uint8_t data[])
+    {
+        std::uint16_t half_word = data[1];
+        half_word |= static_cast<std::uint16_t>(data[0]) << 8;
+        return half_word;
+    }
+
+    void insertHalfWord(std::uint8_t data[], const std::uint16_t half_word)
+    {
+        data[0] = static_cast<std::uint8_t>((half_word >> 8));
+        data[1] = static_cast<std::uint8_t>(half_word);
+    }
 
     void setBufferSize(const std::uint8_t new_size){ buffer_size = new_size; }
     

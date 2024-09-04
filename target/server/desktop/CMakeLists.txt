@@ -4,15 +4,10 @@ project (sm_server_desktop)
 
 set (DIR_SRCS
         main.cpp
+        platform.cpp
     )
 
 add_executable (${PROJECT_NAME} ${DIR_SRCS})
-
-add_subdirectory(../../../core/server sm-server)
-
-target_link_directories(${PROJECT_NAME} PUBLIC ../../../core/server)
-
-target_link_libraries (${PROJECT_NAME} sm-server)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
         ../../../core/server/inc
