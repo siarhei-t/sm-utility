@@ -13,6 +13,7 @@ set(COMMON_SOURCES
 set(COMMON_HEADERS
         inc/sm_server.hpp
         inc/sm_resources.hpp
+        inc/sm_com.hpp
         ../common/sm_common.hpp
         ../common/sm_modbus.hpp
 )

@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.20)
 
-project (sm_target_demo)
+project (sm_server_desktop)
 
 set (DIR_SRCS
         main.cpp

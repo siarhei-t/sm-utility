@@ -22,30 +22,56 @@ class Timer
 {
 
 public:
+    std::atomic<bool> done{false};
     void start()
     {
-        done.store(false, std::memory_order_relaxed);
+        if(started)
+        {
+            stop();
+        }
         platformStart();
+        started = true;
     }
-    
-    std::atomic<bool> done{false};
+    void stop()
+    {
+        started = false;
+        done.store(false, std::memory_order_relaxed);
+        platformStop();
+    }
+    bool isStarted() const { return started; }
+    void setTimeout(const std::uint32_t timeout)
+    {
+        if(!started)
+        {
+            timeout_ms = timeout; 
+        }
+    }
+    std::uint32_t getTimeout() const { return timeout_ms; }
 
 private:
+    bool started = false; 
+    std::uint32_t timeout_ms = 0; 
     void platformStart()
     {
         done.store(true, std::memory_order_relaxed);
     };
-
+    void platformStop()
+    {
+        done.store(false, std::memory_order_relaxed);
+    };
 };
 
 class Com
 {
 public:
+    std::atomic<bool> data_ready{false};
+    std::atomic<bool> data_in_progress{false};
     void startReadData(std::uint8_t data[], const size_t amount);
     void startSendData(std::uint8_t data[], const size_t amount);
-    std::atomic<bool> data_ready{false};
+    void flush(){ platformFlush(); }
 
 private:
+    void platformFlush(){}
     void platformReadData(std::uint8_t data[], const size_t amount)
     {
         (void)(data);
@@ -58,7 +84,7 @@ private:
     }
 };
 
-template<size_t amount_of_regs, size_t amount_of_files, std::uint8_t record_define, typename c = Com> class DataNode
+template<size_t amount_of_regs, size_t amount_of_files, std::uint8_t record_define, typename c = Com, typename t = Timer> class DataNode
 {
 public:
     DataNode(std::uint8_t address) : server(address){}
@@ -67,11 +93,11 @@ public:
     std::uint8_t* getBufferPtr() { return buffer.data(); };
 
 private:
-    std::uint8_t rx_length = 0;
-    std::uint8_t tx_length = 0;
+    ServerExceptions last_error = ServerExceptions::no_error;
     ModbusServer<amount_of_regs,amount_of_files,record_define> server;
     std::array<std::uint8_t, modbus::max_adu_size> buffer;
     c com;
+    t timer;
 };
 
 } // namespace sm
