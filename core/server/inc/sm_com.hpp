@@ -13,6 +13,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <atomic>
+#include <cstdio>
 #include "../inc/sm_server.hpp"
 
 namespace sm
@@ -79,12 +80,13 @@ public:
 
 private:
     void platformFlush(){}
-    void platformReadData(std::uint8_t data[], const size_t amount)
+    virtual void platformReadData(std::uint8_t data[], const size_t amount)
     {
         (void)(data);
         (void)(amount);
+        std::printf("port reading started 1...\n");
     }
-    void platformSendData(std::uint8_t data[], const size_t amount)
+    virtual void platformSendData(std::uint8_t data[], const size_t amount)
     {
         (void)(data);
         (void)(amount);
@@ -124,7 +126,7 @@ public:
                 com.startReadData(buffer.data(),server.getReceiveBufferSize());
             }
         }
-    } 
+    }
     std::uint8_t* getBufferPtr() { return buffer.data(); };
 
 private:

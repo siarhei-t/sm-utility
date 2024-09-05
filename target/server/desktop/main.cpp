@@ -28,7 +28,9 @@ int main(int argc, char* argv[])
     assert(amount_of_regs == registers.getSize());
     assert(amount_of_files == files.getSize());
 
-    sm::DataNode<amount_of_regs, amount_of_files, record_size> data_node(1);
+    DesktopCom com;
+
+    sm::DataNode<amount_of_regs, amount_of_files, record_size,DesktopCom> data_node(address);
     
     data_node.start();
     data_node.loop();

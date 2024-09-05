@@ -7,6 +7,10 @@ set (DIR_SRCS
         platform.cpp
     )
 
+add_subdirectory(../../../core/external/simple-serial-port-1.03/lib serial-port)
+get_directory_property(TARGET_PLATFORM DIRECTORY ../../../core/external/simple-serial-port-1.03/lib DEFINITION TARGET_PLATFORM)
+
+
 add_executable (${PROJECT_NAME} ${DIR_SRCS})
 
 target_include_directories(${PROJECT_NAME} PRIVATE
@@ -15,6 +19,10 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         ../../../core/external/simple-serial-port-1.03/lib/inc/
         ../../../core/external/simple-serial-port-1.03/lib/inc/platform
         )
+
+target_link_directories(${PROJECT_NAME} PUBLIC ../../../core/external/simple-serial-port-1.03/lib)
+target_link_libraries (${PROJECT_NAME} simple-serial-port)
+target_compile_definitions(${PROJECT_NAME} PRIVATE ${TARGET_PLATFORM}=1)
 
 target_compile_options(${PROJECT_NAME} PRIVATE
         $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -Wpedantic>
