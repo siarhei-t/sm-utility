@@ -12,21 +12,49 @@
 
 #include "../../../core/server/inc/sm_com.hpp"
 #include "../../../core/external/simple-serial-port-1.03/lib/inc/serial_port.hpp"
+#include "sp_types.hpp"
 
-class DesktopCom : public sm::Com
+class PlatformSupport
 {
 public:
+    void setPath(std::string& new_path)
+    {
+        path = new_path;
+    }
+    void setConfig(sp::PortConfig& config)
+    {
+        this->config = config;
+    }
+    static std::string& getPath()
+    {
+        return path;
+    }
+    static sp::PortConfig& getConfig()
+    {
+        return config;
+    }
+private:
+    static std::string path;
+    static sp::PortConfig config;
+};
+
+class DesktopCom : public sm::Com<DesktopCom>
+{
+public:
+    bool platformInit();
+    void platformSendData(std::uint8_t data[], const size_t amount);
+    void platformReadData(std::uint8_t data[], const size_t amount);
+    void platformFlush();
 
 private:
     sp::SerialPort serial_port;
-    //void platformFlush();
-    void platformReadData(std::uint8_t data[], const size_t amount) override;
-    //void platformSendData(std::uint8_t data[], const size_t amount);
 };
 
-class DesktopTimer : public sm::Timer
+class DesktopTimer : public sm::Timer<DesktopTimer>
 {
-
+public:
+ void platformStart();
+ void platformStop();
 };
 
 #endif // PLATFORM_HPP

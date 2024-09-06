@@ -19,9 +19,9 @@
 namespace sm
 {
 
+template <class Impl>
 class Timer
 {
-
 public:
     std::atomic<bool> done{false};
     void start()
@@ -30,14 +30,14 @@ public:
         {
             stop();
         }
-        platformStart();
+        static_cast<Impl*>(this)->platformStart();
         started = true;
     }
     void stop()
     {
         started = false;
         done.store(false, std::memory_order_relaxed);
-        platformStop();
+        static_cast<Impl*>(this)->platformStop();
     }
     bool isStarted() const { return started; }
     void setTimeout(const std::uint32_t timeout)
@@ -51,60 +51,65 @@ public:
 
 private:
     bool started = false; 
-    std::uint32_t timeout_ms = 0; 
-    void platformStart()
-    {
-        done.store(true, std::memory_order_relaxed);
-    };
-    void platformStop()
-    {
-        done.store(false, std::memory_order_relaxed);
-    };
+    std::uint32_t timeout_ms = 0;
 };
 
+template <class Impl>
 class Com
 {
 public:
     std::atomic<bool> data_ready{false};
     std::atomic<bool> data_in_progress{false};
+    void init()
+    {
+        configured = static_cast<Impl*>(this)->platformInit();
+    }
     void startReadData(std::uint8_t data[], const size_t amount)
     {
-        data_ready.store(false, std::memory_order_relaxed);
-        platformReadData(data,amount);
+        if(configured)
+        {
+            data_ready.store(false, std::memory_order_relaxed);
+            static_cast<Impl*>(this)->platformReadData(data,amount);
+        }
     }
     void startSendData(std::uint8_t data[], const size_t amount)
     {
-        platformSendData(data,amount);
+        if(configured)
+        {
+            static_cast<Impl*>(this)->platformSendData(data,amount);
+        }
     }
-    void flush(){ platformFlush(); }
+    void flush()
+    {
+        if(configured)
+        {
+            static_cast<Impl*>(this)->platformFlush();
+        }
+    }
+    bool isConfigured() const { return configured; }
 
 private:
-    void platformFlush(){}
-    virtual void platformReadData(std::uint8_t data[], const size_t amount)
-    {
-        (void)(data);
-        (void)(amount);
-        std::printf("port reading started 1...\n");
-    }
-    virtual void platformSendData(std::uint8_t data[], const size_t amount)
-    {
-        (void)(data);
-        (void)(amount);
-    }
+    bool configured = false;
+
 };
 
-template<size_t amount_of_regs, size_t amount_of_files, std::uint8_t record_define, typename c = Com, typename t = Timer> class DataNode
+template<size_t amount_of_regs, size_t amount_of_files, std::uint8_t record_define, typename c, typename t> class DataNode
 {
 public:
     DataNode(std::uint8_t address) : server(address){}
     void start()
     {
-        com.startReadData(buffer.data(),server.getReceiveBufferSize());
+        com.init();
+        if(com.isConfigured())
+        {
+            com.startReadData(buffer.data(),server.getReceiveBufferSize());
+        }
     }
     void loop()
     {
         for(;;)
         {
+            if(!com.isConfigured()) { break; }
             //start receiver timeout timer
             if(com.data_in_progress.load(std::memory_order_relaxed) && !timer.isStarted())
             {
