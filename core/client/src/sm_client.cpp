@@ -338,7 +338,12 @@ std::error_code ModbusClient::taskReadFile(const std::uint8_t dev_addr, const st
     {
         return make_error_code(ClientErrors::internal);
     }
-    auto error_code = taskWriteRegister(dev_addr, registers.file_control, file_read_prepare);
+    auto error_code = taskWriteRegister(dev_addr, registers.record_counter, file.getNumOfRecords());
+    if (error_code)
+    {
+        return error_code;
+    }
+    error_code = taskWriteRegister(dev_addr, registers.file_control, file_read_prepare);
     if (error_code)
     {
         return error_code;
@@ -419,7 +424,12 @@ std::error_code ModbusClient::taskWriteFile(const std::uint8_t dev_addr, const b
     {
         return make_error_code(ClientErrors::max_record_length_not_configured);
     }
-    auto error_code = taskWriteRegister(dev_addr, registers.file_control, file_write_prepare);
+    auto error_code = taskWriteRegister(dev_addr, registers.record_counter, file.getNumOfRecords());
+    if (error_code)
+    {
+        return error_code;
+    }
+    error_code = taskWriteRegister(dev_addr, registers.file_control, file_write_prepare);
     if (error_code)
     {
         return error_code;
