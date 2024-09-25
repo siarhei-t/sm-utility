@@ -22,6 +22,7 @@ set(TARGET_PLATFORM PLATFORM_LINUX)
 set(PLATFORM_SOURCES
         src/sp_linux.cpp
 )
+
 set(PLATFORM_HEADERS
         inc/platform/sp_linux.hpp
 )
@@ -46,20 +47,14 @@ message( SEND_ERROR "target platform is not defined.")
 endif()
 
 project (simple-serial-port)
-add_library (${PROJECT_NAME} INTERFACE)
+
+add_library (${PROJECT_NAME} STATIC ${COMMON_SOURCES} ${PLATFORM_SOURCES} ${COMMON_HEADERS} ${PLATFORM_HEADERS} )
 
 enable_language(CXX)
 
-target_sources(${PROJECT_NAME} INTERFACE
-        ${COMMON_SOURCES}
-        ${PLATFORM_SOURCES}
-        ${COMMON_HEADERS}
-        ${PLATFORM_HEADERS}
-        )
+target_compile_definitions(${PROJECT_NAME} PRIVATE ${TARGET_PLATFORM}=1)
 
-target_compile_definitions(${PROJECT_NAME} INTERFACE ${TARGET_PLATFORM}=1)
-
-target_include_directories(${PROJECT_NAME} INTERFACE
+target_include_directories(${PROJECT_NAME} PRIVATE
         inc
         inc/platform
         )

@@ -10,10 +10,6 @@
 #ifndef SP_TYPES_H
 #define SP_TYPES_H
 
-// debug purpose, select one
-// #define PLATFORM_WINDOWS 1
-// #define PLATFORM_LINUX   1
-
 namespace sp
 {
 enum class PortState

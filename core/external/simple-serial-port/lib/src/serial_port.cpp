@@ -8,6 +8,7 @@
  */
 
 #include "../inc/serial_port.hpp"
+#include "../inc/sp_error.hpp"
 #if defined(PLATFORM_LINUX)
 #include <dirent.h>
 #include <sys/types.h>
@@ -19,17 +20,32 @@
 
 using namespace sp;
 
-SerialPort::SerialPort(std::string name) { (void)open(name); }
+SerialPort::SerialPort(std::string name)
+{
+    std::error_code error_code = open(name);
+    if(error_code)
+    {
+        throw std::system_error(error_code);
+    }
+}
 
 SerialPort::SerialPort(std::string name, sp::PortConfig config)
 {
-    (void)open(name);
-    (void)setup(config);
+    std::error_code error_code = open(name);
+    if(error_code)
+    {
+        throw std::system_error(error_code);
+    }
+    error_code = setup(config);
+    if(error_code)
+    {
+        throw std::system_error(error_code);
+    }
 }
 
 std::error_code SerialPort::open(const std::string name)
 {
-    std::error_code error(0, sp::sp_category());
+    std::error_code error_code = std::error_code();
     try
     {
         port.openPort(name);
@@ -39,15 +55,15 @@ std::error_code SerialPort::open(const std::string name)
     }
     catch (const std::system_error& e)
     {
-        error = e.code();
+        error_code = e.code();
     }
-    return error;
+    return error_code;
 }
 
 void SerialPort::close()
 {
     port.closePort();
-    state = sp::PortState::Open;
+    state = sp::PortState::Close;
     path = "dev/null";
 }
 
@@ -77,24 +93,28 @@ void SerialDevice::updateAvailableDevices()
 #else
     char dev_path[256];
 #endif
-
     for (auto i = 0; i < 255; ++i)
     {
-        std::string device = "COM" + std::to_string(i);
-#if defined(UNICODE)
-        std::wstring converted_device =
-            std::wstring(device.begin(), device.end());
-        DWORD result = QueryDosDevice(converted_device.c_str(), dev_path, 256);
-#else
-        DWORD result = QueryDosDevice(device.c_str(), dev_path, 256);
-#endif
-        if (result != 0)
+        std::string templates[] = {"COM" + std::to_string(i),
+                                   "CNCA" + std::to_string(i),
+                                   "CNCB" + std::to_string(i)};
+
+        for(std::string &device : templates)
         {
-            devices.push_back(device);
-        }
-        else
-        {
-            continue;
+            #if defined(UNICODE)
+            std::wstring converted_device = std::wstring(device.begin(), device.end());
+            DWORD result = QueryDosDevice(converted_device.c_str(), dev_path, 256);
+            #else
+            DWORD result = QueryDosDevice(device.c_str(), dev_path, 256);
+            #endif
+            if (result != 0)
+            {
+                devices.push_back(device);
+            }
+            else
+            {
+                continue;
+            }
         }
     }
 #elif defined(PLATFORM_LINUX)

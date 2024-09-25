@@ -10,6 +10,8 @@
 #include "../inc/platform/sp_windows.hpp"
 #include "../inc/sp_error.hpp"
 
+typedef int WINBOOL;
+
 void SerialPortWindows::openPort(const std::string& path)
 {
 #if defined(UNICODE)

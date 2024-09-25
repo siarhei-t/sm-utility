@@ -8,6 +8,7 @@
  */
 
 #include <iostream>
+#include <string>
 #include "serial_port.hpp"
 
 int main(void)
@@ -20,9 +21,19 @@ int main(void)
         {
             std::cout<<" available device : "<<actual_list[i]<<" | index : "<<i<<"\n";
         }
-        int index = 0;
+        std::string input;
+        int index = -1;
         std::cout<<" please select port to test (index no.) : ";
-        std::cin>>index;
+        std::cin>>input;
+        try
+        {
+            index = std::stoi(input);
+        }
+        catch (std::invalid_argument const& ex)
+        {
+            std::cout <<"invalid argumant passed, exit...\n";
+            return 0;
+        }
         if((index >= 0) &&  (index <= actual_list.size() - 1))
         {
             std::cout<<"selected index : "<<index<<"\n";
@@ -40,7 +51,7 @@ int main(void)
                 std::string received_data(data_to_read.begin(),data_to_read.end());
                 std::cout<<"DATA READ :"<<received_data<<"\n"<<"\n";
                 test.port.closePort();
-                std::cout<<" test finished, exit.." <<"\n";
+                std::cout<<" test finished, exit..." <<"\n";
             }
             else
             {

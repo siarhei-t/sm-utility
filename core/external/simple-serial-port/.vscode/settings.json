@@ -1,0 +1,10 @@
+{
+    "clangd.arguments": [
+        "-log=verbose",
+        "-pretty",
+        "--background-index",
+        "--compile-commands-dir=${workspaceFolder}/build-demo",
+        "--query-driver=**"
+    ],
+    "editor.formatOnSave": true
+}

@@ -10,11 +10,10 @@
 #ifndef SERIAL_PORT_H
 #define SERIAL_PORT_H
 
-#include <cstdint>
 #include <string>
 #include <vector>
+#include <system_error>
 
-#include "../inc/sp_error.hpp"
 #include "../inc/sp_types.hpp"
 #if defined(PLATFORM_LINUX)
 #include "../inc/platform/sp_linux.hpp"
