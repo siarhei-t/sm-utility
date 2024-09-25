@@ -9,28 +9,58 @@
 
 
 #include <iostream>
-
+#include <system_error>
 #include "../../../core/client/inc/sm_client.hpp"
-#include "../../../core/client/inc/sm_error.hpp"
 
 int main(int argc, char* argv[])
 {
-    (void)(argc);
-    (void)(argv);
-     //serial port configuration
+    if(argc < 3)
+    {
+        std::printf("incorrect agruments list passed, exit...\n");
+        return 0;
+    }
+    sm::ModbusClient client;
     sp::PortConfig config;
-    //hardcoded port baudrate
+    std::string path_to_port = argv[1];
+    std::string address_str  = argv[2];
+    std::uint8_t address;
+    
+    try
+    {
+        auto number = std::stoi(address_str);
+        if(number > modbus::max_rtu_address)
+        {
+            std::cout <<"out of range address passed, exit...\n";
+            return 0;
+        }
+        else if(number < modbus::min_rtu_address)
+        {
+            std::cout <<"broadcast is not supported, exit...\n";
+            return 0;
+        }
+        else
+        {
+            address = static_cast<std::uint8_t>(number);
+        }
+    }
+    catch (std::invalid_argument const& ex)
+    {
+        std::cout <<"invalid argumant passed, exit...\n";
+        return 0;
+    }
+    
+    //FIXME: fix it to read config from command line int the future 
     config.baudrate = sp::PortBaudRate::BD_57600;
     config.timeout_ms = 2000;
 
-    sm::ModbusClient client;
-    auto error_code = client.start("COM4");
+    auto error_code = client.start(path_to_port);
     if(error_code)
     {
         std::cout<<"failed to start client. \n"; 
         std::cout<<"error: "<<error_code.message()<<"\n";
         return 0;
     }
+
     error_code = client.configure(config);
     if(error_code)
     {
@@ -38,16 +68,19 @@ int main(int argc, char* argv[])
         std::cout<<"error: "<<error_code.message()<<"\n";
         return 0;
     }
-    std::uint8_t address = 1;
-    // (3) create master and slave server instances
+
+    // create server instance
     client.addServer(address);
+    
     // ping server, expected answer with modbus::Exceptions::exception_1
     error_code = client.taskPing(address);
     if (error_code)
     {
         std::cout<<"error: "<<error_code.message()<<"\n";
     }
-    error_code = client.taskReadRegisters(address,modbus::holding_regs_offset + 4,1);
+
+    // read first 6 registers from the server
+    error_code = client.taskReadRegisters(address,modbus::holding_regs_offset + 6,1);
     if (error_code)
     {
         std::cout<<"error: "<<error_code.message()<<"\n";
