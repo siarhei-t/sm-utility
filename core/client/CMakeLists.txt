@@ -20,8 +20,8 @@ set(COMMON_HEADERS
         ../common/sm_modbus.hpp
 )
 
-add_subdirectory(../external/simple-serial-port-1.03/lib serial-port)
-get_directory_property(TARGET_PLATFORM DIRECTORY ../external/simple-serial-port-1.03/lib DEFINITION TARGET_PLATFORM)
+add_subdirectory(../external/simple-serial-port serial-port)
+get_directory_property(TARGET_PLATFORM DIRECTORY ../external/simple-serial-port DEFINITION TARGET_PLATFORM)
 
 if(TARGET_PLATFORM STREQUAL "PLATFORM_WINDOWS")
 set(LIBRARY_NAME sm-client-win)
@@ -37,14 +37,14 @@ endif()
 
 add_library (${LIBRARY_NAME} STATIC ${COMMON_SOURCES} ${COMMON_HEADERS})
 
-target_link_directories(${LIBRARY_NAME} PUBLIC ../external/simple-serial-port-1.03/lib)
+target_link_directories(${LIBRARY_NAME} PUBLIC ../external/simple-serial-port)
 target_link_libraries (${LIBRARY_NAME} simple-serial-port)
 target_compile_definitions(${LIBRARY_NAME} PRIVATE ${TARGET_PLATFORM}=1)
 
 target_include_directories(${LIBRARY_NAME} PRIVATE
         inc
-        ../external/simple-serial-port-1.03/lib/inc
-        ../external/simple-serial-port-1.03/lib/inc/platform
+        ../external/simple-serial-port/inc
+        ../external/simple-serial-port/inc/platform
         )
 
 target_compile_options(${LIBRARY_NAME} PRIVATE

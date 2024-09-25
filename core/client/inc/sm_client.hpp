@@ -19,7 +19,7 @@
 #include <vector>
 
 #include "../../common/sm_modbus.hpp"
-#include "../../external/simple-serial-port-1.03/lib/inc/serial_port.hpp"
+#include "../../external/simple-serial-port/inc/serial_port.hpp"
 #include "../inc/sm_file.hpp"
 #include "../inc/sm_message.hpp"
 

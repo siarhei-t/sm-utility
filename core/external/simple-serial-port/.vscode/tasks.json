@@ -30,7 +30,7 @@
         {
             "type": "shell",
             "label": "WINDOWS-CFG-LIBRARY",
-            "command": "cmake lib -DTARGET_WINDOWS=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Release -Bbuild-lib",
+            "command": "cmake -DTARGET_WINDOWS=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Release -Bbuild-lib",
             "options": {
                 "cwd": "${workspaceFolder}"
             },
@@ -39,7 +39,7 @@
         {
             "type": "shell",
             "label": "LINUX-CFG-LIBRARY",
-            "command": "cmake lib -DTARGET_LINUX=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Release -Bbuild-lib",
+            "command": "cmake -DTARGET_LINUX=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Release -Bbuild-lib",
             "options": {
                 "cwd": "${workspaceFolder}"
             },

@@ -9,13 +9,13 @@ target_sources(${PROJECT_NAME} PRIVATE
         read_write.cpp
 )
 
-add_subdirectory(../lib serial-port)
-get_directory_property(TARGET_PLATFORM DIRECTORY ../lib DEFINITION TARGET_PLATFORM)
+add_subdirectory(../ serial-port)
+get_directory_property(TARGET_PLATFORM DIRECTORY ../ DEFINITION TARGET_PLATFORM)
 
 target_link_libraries (${PROJECT_NAME} simple-serial-port)
 target_compile_definitions(${PROJECT_NAME} PRIVATE ${TARGET_PLATFORM}=1)
 
 #common include path
 target_include_directories(${PROJECT_NAME} PRIVATE
-        ../lib/inc
+        ../inc
         )

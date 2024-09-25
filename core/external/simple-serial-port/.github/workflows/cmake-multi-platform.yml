@@ -59,7 +59,7 @@ jobs:
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       if: runner.os != 'Windows'
       run: >
-        cmake lib -DTARGET_LINUX=ON
+        cmake -DTARGET_LINUX=ON
         -B ${{github.workspace}}/build
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
         -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
@@ -70,7 +70,7 @@ jobs:
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       if: runner.os == 'Windows'
       run: >
-        cmake lib -DTARGET_WINDOWS=ON
+        cmake -DTARGET_WINDOWS=ON
         -B ${{github.workspace}}/build
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
         -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
