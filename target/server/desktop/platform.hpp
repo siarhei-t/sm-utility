@@ -11,8 +11,7 @@
 #define PLATFORM_HPP
 
 #include "../../../core/server/inc/sm_com.hpp"
-#include "../../../core/external/simple-serial-port-1.03/lib/inc/serial_port.hpp"
-#include "sp_types.hpp"
+#include "../../../core/external/simple-serial-port/inc/serial_port.hpp"
 
 class PlatformSupport
 {

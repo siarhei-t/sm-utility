@@ -8,7 +8,6 @@
  */
 
 #include "platform.hpp"
-#include "sp_types.hpp"
 #include <cstdio>
 #include <iostream>
 

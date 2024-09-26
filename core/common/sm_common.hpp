@@ -26,7 +26,7 @@ public:
     static const std::uint16_t status = 5;
     static const std::uint16_t gateway_buffer_size = 6;
 
-    std::uint16_t getSize() const { return size; }
+    static std::uint16_t getSize() { return size; }
 
 private:
     static const std::uint16_t size = 7;
@@ -38,7 +38,7 @@ public:
     static const std::uint16_t application = 1;
     static const std::uint16_t metadata = 2;
 
-    std::uint16_t getSize() const { return size; }
+    static std::uint16_t getSize() { return size; }
 
 private:
     static const std::uint16_t size = 2;

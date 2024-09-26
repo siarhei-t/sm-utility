@@ -7,8 +7,8 @@ set (DIR_SRCS
         platform.cpp
     )
 
-add_subdirectory(../../../core/external/simple-serial-port-1.03/lib serial-port)
-get_directory_property(TARGET_PLATFORM DIRECTORY ../../../core/external/simple-serial-port-1.03/lib DEFINITION TARGET_PLATFORM)
+add_subdirectory(../../../core/external/simple-serial-port serial-port)
+get_directory_property(TARGET_PLATFORM DIRECTORY ../../../core/external/simple-serial-port DEFINITION TARGET_PLATFORM)
 
 
 add_executable (${PROJECT_NAME} ${DIR_SRCS})
@@ -16,11 +16,11 @@ add_executable (${PROJECT_NAME} ${DIR_SRCS})
 target_include_directories(${PROJECT_NAME} PRIVATE
         ../../../core/server/inc
         ../../../core/common
-        ../../../core/external/simple-serial-port-1.03/lib/inc/
-        ../../../core/external/simple-serial-port-1.03/lib/inc/platform
+        ../../../core/external/simple-serial-portinc/
+        ../../../core/external/simple-serial-port/inc/platform
         )
 
-target_link_directories(${PROJECT_NAME} PUBLIC ../../../core/external/simple-serial-port-1.03/lib)
+target_link_directories(${PROJECT_NAME} PUBLIC ../../../core/external/simple-serial-port)
 target_link_libraries (${PROJECT_NAME} simple-serial-port)
 target_compile_definitions(${PROJECT_NAME} PRIVATE ${TARGET_PLATFORM}=1)
 

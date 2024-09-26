@@ -21,11 +21,6 @@
 namespace sm
 {
 
-namespace
-{
-RegisterDefinitions registers;
-}
-
 int ModbusClient::getActualTaskProgress() const 
 {
     auto volume = task_info.num_of_exchanges;
@@ -188,7 +183,7 @@ std::error_code ModbusClient::taskPing(const std::uint8_t dev_addr)
             return make_error_code(ClientErrors::gateway_not_connected);
         }
         std::uint16_t expected_length = getExpectedLength(ClientTasks::ping);
-        auto error_code = taskWriteRegister(servers[index].info.gateway_addr, registers.gateway_buffer_size, expected_length);
+        auto error_code = taskWriteRegister(servers[index].info.gateway_addr, RegisterDefinitions::gateway_buffer_size, expected_length);
         if (error_code)
         {
             return error_code;
@@ -233,7 +228,7 @@ std::error_code ModbusClient::taskWriteRegister(const std::uint8_t dev_addr, con
             return make_error_code(ClientErrors::gateway_not_connected);
         }
         std::uint16_t expected_length = getExpectedLength(ClientTasks::reg_write);
-        auto error_code = taskWriteRegister(servers[index].info.gateway_addr, registers.gateway_buffer_size, expected_length);
+        auto error_code = taskWriteRegister(servers[index].info.gateway_addr, RegisterDefinitions::gateway_buffer_size, expected_length);
         if (error_code)
         {
             recurced = false;
@@ -279,7 +274,7 @@ std::error_code ModbusClient::taskReadRegisters(const std::uint8_t dev_addr, con
             return make_error_code(ClientErrors::gateway_not_connected);
         }
         size_t expected_length = getExpectedLength(ClientTasks::regs_read, quantity * 2);
-        auto error_code = taskWriteRegister(servers[index].info.gateway_addr, registers.gateway_buffer_size, expected_length);
+        auto error_code = taskWriteRegister(servers[index].info.gateway_addr, RegisterDefinitions::gateway_buffer_size, expected_length);
         if (error_code)
         {
             return error_code;
@@ -338,12 +333,12 @@ std::error_code ModbusClient::taskReadFile(const std::uint8_t dev_addr, const st
     {
         return make_error_code(ClientErrors::internal);
     }
-    auto error_code = taskWriteRegister(dev_addr, registers.record_counter, file.getNumOfRecords());
+    auto error_code = taskWriteRegister(dev_addr, RegisterDefinitions::record_counter, file.getNumOfRecords());
     if (error_code)
     {
         return error_code;
     }
-    error_code = taskWriteRegister(dev_addr, registers.file_control, file_read_prepare);
+    error_code = taskWriteRegister(dev_addr, RegisterDefinitions::file_control, file_read_prepare);
     if (error_code)
     {
         return error_code;
@@ -357,17 +352,17 @@ std::error_code ModbusClient::taskReadFile(const std::uint8_t dev_addr, const st
             return make_error_code(ClientErrors::gateway_not_connected);
         }
         std::uint16_t expected_length = getExpectedLength(ClientTasks::file_read, record_size);
-        error_code = taskWriteRegister(servers[index].info.gateway_addr, registers.gateway_buffer_size, expected_length);
+        error_code = taskWriteRegister(servers[index].info.gateway_addr, RegisterDefinitions::gateway_buffer_size, expected_length);
         if (error_code)
         {
             return error_code;
         }
-        error_code = taskWriteRegister(servers[index].info.gateway_addr, registers.record_counter, file.getNumOfRecords());
+        error_code = taskWriteRegister(servers[index].info.gateway_addr, RegisterDefinitions::record_counter, file.getNumOfRecords());
         if (error_code)
         {
             return error_code;
         }
-        error_code = taskWriteRegister(servers[index].info.gateway_addr, registers.file_control, file_read_prepare);
+        error_code = taskWriteRegister(servers[index].info.gateway_addr, RegisterDefinitions::file_control, file_read_prepare);
         if (error_code)
         {
             return error_code;
@@ -424,12 +419,12 @@ std::error_code ModbusClient::taskWriteFile(const std::uint8_t dev_addr, const b
     {
         return make_error_code(ClientErrors::max_record_length_not_configured);
     }
-    auto error_code = taskWriteRegister(dev_addr, registers.record_counter, file.getNumOfRecords());
+    auto error_code = taskWriteRegister(dev_addr, RegisterDefinitions::record_counter, file.getNumOfRecords());
     if (error_code)
     {
         return error_code;
     }
-    error_code = taskWriteRegister(dev_addr, registers.file_control, file_write_prepare);
+    error_code = taskWriteRegister(dev_addr, RegisterDefinitions::file_control, file_write_prepare);
     if (error_code)
     {
         return error_code;
@@ -443,17 +438,17 @@ std::error_code ModbusClient::taskWriteFile(const std::uint8_t dev_addr, const b
             return make_error_code(ClientErrors::gateway_not_connected);
         }
         std::uint16_t expected_length = getExpectedLength(ClientTasks::file_write,record_size);
-        error_code = taskWriteRegister(servers[index].info.gateway_addr, registers.gateway_buffer_size, expected_length);
+        error_code = taskWriteRegister(servers[index].info.gateway_addr, RegisterDefinitions::gateway_buffer_size, expected_length);
         if (error_code)
         {
             return error_code;
         }
-        error_code = taskWriteRegister(servers[index].info.gateway_addr, registers.record_counter, file.getNumOfRecords());
+        error_code = taskWriteRegister(servers[index].info.gateway_addr, RegisterDefinitions::record_counter, file.getNumOfRecords());
         if (error_code)
         {
             return error_code;
         }
-        error_code = taskWriteRegister(servers[index].info.gateway_addr, registers.file_control, file_write_prepare);
+        error_code = taskWriteRegister(servers[index].info.gateway_addr, RegisterDefinitions::file_control, file_write_prepare);
         if (error_code)
         {
             return error_code;
@@ -529,11 +524,11 @@ void ModbusClient::exchangeCallback()
             index += 2;
         }
         auto amount_of_regs = server.registers.values.size();
-        if(server.registers.reg_start_address <= (modbus::holding_regs_offset + registers.record_size) &&
-           (server.registers.reg_start_address + amount_of_regs) >= (modbus::holding_regs_offset + registers.record_size)
+        if(server.registers.reg_start_address <= (modbus::holding_regs_offset + RegisterDefinitions::record_size) &&
+           (server.registers.reg_start_address + amount_of_regs) >= (modbus::holding_regs_offset + RegisterDefinitions::record_size)
           )
         {
-            server.info.record_size = server.registers.values[registers.record_size];
+            server.info.record_size = server.registers.values[RegisterDefinitions::record_size];
         }
     };
 
