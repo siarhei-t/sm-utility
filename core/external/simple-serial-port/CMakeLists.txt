@@ -48,13 +48,20 @@ endif()
 
 project (simple-serial-port)
 
-add_library (${PROJECT_NAME} STATIC ${COMMON_SOURCES} ${PLATFORM_SOURCES} ${COMMON_HEADERS} ${PLATFORM_HEADERS} )
+add_library (${PROJECT_NAME} INTERFACE)
 
 enable_language(CXX)
 
-target_compile_definitions(${PROJECT_NAME} PRIVATE ${TARGET_PLATFORM}=1)
+target_sources(${PROJECT_NAME} INTERFACE
+        ${COMMON_SOURCES}
+        ${PLATFORM_SOURCES}
+        ${COMMON_HEADERS}
+        ${PLATFORM_HEADERS}
+        )
 
-target_include_directories(${PROJECT_NAME} PRIVATE
+target_compile_definitions(${PROJECT_NAME} INTERFACE ${TARGET_PLATFORM}=1)
+
+target_include_directories(${PROJECT_NAME} INTERFACE
         inc
         inc/platform
         )
