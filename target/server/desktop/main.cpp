@@ -8,29 +8,51 @@
  */
 
 #include <cassert>
+#include <iostream>
 #include "platform.hpp"
-#include "../../../core/common/sm_common.hpp"
-
-
-sm::RegisterDefinitions registers;
-sm::FileDefinitions files;
 
 constexpr std::uint16_t amount_of_regs = 7;
 constexpr std::uint16_t amount_of_files = 2;
 constexpr std::uint8_t record_size = 208;
-constexpr std::uint8_t address = 1;
 
 PlatformSupport platform_support;
 
 int main(int argc, char* argv[])
 {
-    (void)(argc);
-    (void)(argv);
-    assert(amount_of_regs == registers.getSize());
-    assert(amount_of_files == files.getSize());
-    std::string path = "dev/null";
+    if(argc < 3)
+    {
+        std::printf("incorrect agruments list passed, exit...\n");
+        return 0;
+    }
+    std::string path_to_port = argv[1];
+    std::string address_str  = argv[2];
+    std::uint8_t address;
+    try
+    {
+        auto number = std::stoi(address_str);
+        if( (number > modbus::max_rtu_address) || (number < modbus::min_rtu_address) )
+        {
+            std::cout <<"out of range address passed, exit...\n";
+            return 0;
+        }
+        else
+        {
+            address = static_cast<std::uint8_t>(number);
+        }
+    }
+    catch (std::invalid_argument const& ex)
+    {
+        std::cout <<"invalid argumant passed, exit...\n";
+        return 0;
+    }
     
-    platform_support.setPath(path);
+    //FIXME: fix it to read config from command line int the future 
+    sp::PortConfig config;
+    config.baudrate = sp::PortBaudRate::BD_57600;
+    config.timeout_ms = 2000;
+    
+    platform_support.setPath(path_to_port);
+    platform_support.setConfig(config);
 
     sm::DataNode<amount_of_regs, amount_of_files, record_size,DesktopCom,DesktopTimer> data_node(address);
 
