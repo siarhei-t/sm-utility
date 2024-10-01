@@ -11,8 +11,7 @@
 #include <iostream>
 #include "platform.hpp"
 
-constexpr std::uint16_t amount_of_regs = 7;
-constexpr std::uint16_t amount_of_files = 2;
+
 constexpr std::uint8_t record_size = 208;
 
 PlatformSupport platform_support;
@@ -42,7 +41,7 @@ int main(int argc, char* argv[])
     }
     catch (std::invalid_argument const& ex)
     {
-        std::cout <<"invalid argumant passed, exit...\n";
+        std::cout <<"invalid argument passed, exit...\n";
         return 0;
     }
     
@@ -54,7 +53,7 @@ int main(int argc, char* argv[])
     platform_support.setPath(path_to_port);
     platform_support.setConfig(config);
 
-    sm::DataNode<amount_of_regs, amount_of_files, record_size,DesktopCom,DesktopTimer> data_node(address);
+    sm::DataNode<DesktopCom,DesktopTimer> data_node(address,record_size);
 
     data_node.start();
     data_node.loop();

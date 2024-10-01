@@ -38,9 +38,14 @@ void DesktopCom::serverThread()
         while(bytes_read != buffer_support.buffer_size)
         {
             bytes_read = serial_port.port.readBinary(data, buffer_support.buffer_size);
+            if(bytes_read != buffer_support.buffer_size)
+            {
+                std::printf("port reading timeout !\n");
+            }
         }
         std::copy(data.begin(), data.end(), buffer_support.buffer_ptr);
         data_ready.store(true, std::memory_order_relaxed);
+        std::printf("port reading finished.\n");
     }
 }
 
@@ -48,7 +53,7 @@ void DesktopCom::platformReadData(std::uint8_t data[], const size_t amount)
 {
     buffer_support.buffer_ptr = data;
     buffer_support.buffer_size = amount;
-    // reading started in separated thread
+    // start reading in separated thread
     blocker.notify_one();
 }
 
@@ -65,7 +70,7 @@ void DesktopCom::platformFlush()
 
 bool DesktopCom::platformInit()
 {
-    std::printf("platform init started...\n");
+    std::printf("platform init started...\n\n");
     std::string path = PlatformSupport::getPath();
     sp::PortConfig config = PlatformSupport::getConfig();
     auto error_code = serial_port.open(path);
@@ -82,6 +87,6 @@ bool DesktopCom::platformInit()
         std::cout<<"error: "<<error_code.message()<<"\n";
         return false;
     }
-    std::printf("platform configured.\n");
+    std::printf("platform configured.\n\n");
     return true;
 }

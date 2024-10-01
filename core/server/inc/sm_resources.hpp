@@ -14,6 +14,7 @@
 #include <cstddef>
 #include <cstdint>
 #include "../../common/sm_modbus.hpp"
+#include "../../common/sm_common.hpp"
 
 namespace sm
 {
@@ -53,9 +54,11 @@ struct RegisterInfo
     std::uint16_t value = 0;     // register value
 };
 
-template<size_t amount_of_regs, size_t amount_of_files> class ServerResources
+class ServerResources
 {
 public:
+    ServerResources(std::uint8_t record_size) : record_size(record_size) {}
+    
     bool writeRegister(const std::uint16_t address, const std::uint16_t value)
     {
         (void)(address);
@@ -126,8 +129,9 @@ public:
 
 private:
     std::uint8_t buffer_size = 0;
-    std::array<RegisterInfo, amount_of_regs> registers;
-    std::array<FileInfo, amount_of_files> files;
+    const std::uint8_t record_size;
+    std::array<RegisterInfo, RegisterDefinitions::getSize()> registers;
+    std::array<FileInfo, FileDefinitions::getSize()> files;
 };
 
 } // namespace sm

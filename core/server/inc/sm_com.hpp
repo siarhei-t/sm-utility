@@ -93,10 +93,10 @@ private:
 
 };
 
-template<size_t amount_of_regs, size_t amount_of_files, std::uint8_t record_define, typename c, typename t> class DataNode
+template<typename c, typename t> class DataNode
 {
 public:
-    DataNode(std::uint8_t address) : server(address){}
+    DataNode(std::uint8_t address, std::uint8_t record_size) : server(address,record_size) {}
     void start()
     {
         com.init();
@@ -136,7 +136,7 @@ public:
 
 private:
     ServerExceptions last_error = ServerExceptions::no_error;
-    ModbusServer<amount_of_regs,amount_of_files,record_define> server;
+    ModbusServer server;
     std::array<std::uint8_t, modbus::max_adu_size> buffer;
     c com;
     t timer;
