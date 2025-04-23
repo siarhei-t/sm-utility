@@ -1,0 +1,3 @@
+[submodule "core/external/simple-serial-port"]
+	path = core/external/simple-serial-port
+	url = git@github.com:siarhei-t/simple-serial-port.git
