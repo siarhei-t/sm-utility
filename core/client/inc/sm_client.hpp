@@ -222,7 +222,7 @@ private:
     std::thread client_thread;
     std::atomic<bool> thread_stop{false};
     std::future<void> task;
-    TaskInfo task_info = TaskInfo(ClientTasks::undefined, 0, -1);
+    TaskInfo task_info{ClientTasks::undefined, 0, -1};
     std::queue<std::function<void()>> q_exchange;
     std::queue<std::function<void()>> q_task;
     /**

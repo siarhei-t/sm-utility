@@ -629,7 +629,7 @@ void ModbusClient::callServerExchange()
     responce_data.clear();
     try
     {
-        serial_port.port.writeBinary(request_data);
+        serial_port.writeBinary(request_data);
     }
     catch (const std::system_error& e)
     {
@@ -638,7 +638,7 @@ void ModbusClient::callServerExchange()
     }
     try
     {
-        serial_port.port.readBinary(responce_data, task_info.attributes.length);
+        serial_port.readBinary(responce_data, task_info.attributes.length);
     }
     catch (const std::system_error& e)
     {
