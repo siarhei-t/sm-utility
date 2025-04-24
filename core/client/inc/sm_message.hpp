@@ -46,7 +46,7 @@ public:
 
     bool extractData(const std::vector<std::uint8_t>& buffer, std::vector<std::uint8_t>& pdu) const;
 
-    std::uint8_t getRequriedLength() const;
+    std::uint8_t getRequiredLength() const;
 
 private:
     ModbusMode mode = ModbusMode::pdu_only;

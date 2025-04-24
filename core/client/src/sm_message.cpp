@@ -32,7 +32,7 @@ void ModbusMessage::msgWriteFileRecord(std::vector<std::uint8_t>& buffer, const 
                                        const std::vector<std::uint8_t>& record_data, const std::uint8_t addr)
 {
     const std::uint8_t rec_data_length = record_data.size() + min_rw_file_byte_counter;
-    const std::uint16_t record_length = record_data.size() / 2; // record splited into half words
+    const std::uint16_t record_length = record_data.size() / 2; // record splitted into half words
     std::vector<std::uint8_t> record;
 
     record.insert(record.end(), {rec_data_length, rw_file_reference});
@@ -109,7 +109,7 @@ bool ModbusMessage::extractData(const std::vector<std::uint8_t>& data, std::vect
     }
 }
 
-std::uint8_t ModbusMessage::getRequriedLength() const
+std::uint8_t ModbusMessage::getRequiredLength() const
 {
     std::uint8_t length;
     switch (mode)

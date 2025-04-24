@@ -200,7 +200,7 @@ std::error_code ModbusClient::taskPing(const std::uint8_t dev_addr)
 
 std::error_code ModbusClient::taskWriteRegister(const std::uint8_t dev_addr, const std::uint16_t reg_addr, const std::uint16_t value, const bool print_progress)
 {
-    static bool recurced = false;
+    static bool recursed = false;
     auto lambda_write_reg = [this](const std::uint8_t dev_addr, const std::uint16_t reg_addr, const std::uint16_t value)
     {
         modbus_message.msgWriteRegister(request_data, reg_addr, value, dev_addr);
@@ -218,20 +218,20 @@ std::error_code ModbusClient::taskWriteRegister(const std::uint8_t dev_addr, con
         return make_error_code(ClientErrors::server_not_connected);
     }
     // we are trying to reach this server through the gateway, perform gateway setup first
-    if ((servers[index].info.gateway_addr != 0) && !recurced)
+    if ((servers[index].info.gateway_addr != 0) && !recursed)
     {
-        recurced = true;
+        recursed = true;
         auto gateway_index = getServerIndex(servers[index].info.gateway_addr);
         if(servers[gateway_index].info.status == ServerStatus::unavailable)
         {
-            recurced = false;
+            recursed = false;
             return make_error_code(ClientErrors::gateway_not_connected);
         }
         std::uint16_t expected_length = getExpectedLength(ClientTasks::reg_write);
         auto error_code = taskWriteRegister(servers[index].info.gateway_addr, RegisterDefinitions::gateway_buffer_size, expected_length);
         if (error_code)
         {
-            recurced = false;
+            recursed = false;
             return error_code;
         }
     }
@@ -242,7 +242,7 @@ std::error_code ModbusClient::taskWriteRegister(const std::uint8_t dev_addr, con
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(default_task_wait_delay_ms));
     }
-    recurced = false;
+    recursed = false;
     return task_info.error_code;
 }
 
@@ -508,14 +508,14 @@ void ModbusClient::exchangeCallback()
     auto readRegs = [](ServerData& server, const std::vector<uint8_t>& message)
     {
         server.registers.values.clear();
-        const int id_length = modbus::read_regs_responce_data_length_idx;
+        const int id_length = modbus::read_regs_response_data_length_idx;
         if (message[id_length] > (message.size() - modbus::function_size - 1))
         {
             return;
         }
         std::uint16_t reg = 0;
         std::uint8_t num_of_bytes = message[id_length];
-        int index = modbus::read_regs_responce_data_start_idx;
+        int index = modbus::read_regs_response_data_start_idx;
         for (int i = 0; i < num_of_bytes / 2; ++i)
         {
             reg = static_cast<std::uint16_t>(message[index]) << 8;
@@ -533,11 +533,11 @@ void ModbusClient::exchangeCallback()
     };
 
     ++task_info.counter;
-    if (modbus_message.isChecksumValid(responce_data))
+    if (modbus_message.isChecksumValid(response_data))
     {
         std::vector<std::uint8_t> message;
 
-        if ((responce_data.size() != task_info.attributes.length) || !modbus_message.extractData(responce_data, message))
+        if ((response_data.size() != task_info.attributes.length) || !modbus_message.extractData(response_data, message))
         {
             task_info.error_code = make_error_code(ClientErrors::server_exception);
         }
@@ -545,7 +545,7 @@ void ModbusClient::exchangeCallback()
         {
             switch (task_info.task)
             {
-                case ClientTasks::ping: // mark server as available if we have responce on this command
+                case ClientTasks::ping: // mark server as available if we have response on this command
                     servers[task_info.index].info.status = ServerStatus::available;
                     break;
 
@@ -573,7 +573,7 @@ void ModbusClient::exchangeCallback()
     }
     else
     {
-        if (responce_data.size() == 0)
+        if (response_data.size() == 0)
         {
             servers[task_info.index].info.status = ServerStatus::unavailable;
             task_info.error_code = make_error_code(ClientErrors::timeout);
@@ -593,19 +593,19 @@ size_t ModbusClient::getExpectedLength(const ClientTasks task, const size_t extr
         case sm::ClientTasks::undefined:
             return 0;
         case sm::ClientTasks::ping:
-            return modbus_message.getRequriedLength() + modbus::exception_pdu_size;
+            return modbus_message.getRequiredLength() + modbus::exception_pdu_size;
 
         case sm::ClientTasks::reg_write:
-            return modbus_message.getRequriedLength() + modbus::responce_write_reg_pdu_size;
+            return modbus_message.getRequiredLength() + modbus::response_write_reg_pdu_size;
 
         case sm::ClientTasks::regs_read:
-            return modbus_message.getRequriedLength() + modbus::responce_read_reg_pdu_part + extra;
+            return modbus_message.getRequiredLength() + modbus::response_read_reg_pdu_part + extra;
 
         case sm::ClientTasks::file_write:
-            return modbus_message.getRequriedLength() + modbus::responce_write_file_pdu_part + extra;
+            return modbus_message.getRequiredLength() + modbus::response_write_file_pdu_part + extra;
 
         case sm::ClientTasks::file_read:
-            return modbus_message.getRequriedLength() + modbus::responce_read_file_pdu_part + extra;
+            return modbus_message.getRequiredLength() + modbus::response_read_file_pdu_part + extra;
     };
     return 0;
 }
@@ -626,7 +626,7 @@ void ModbusClient::createServerRequest(const TaskAttributes& attr)
 
 void ModbusClient::callServerExchange()
 {
-    responce_data.clear();
+    response_data.clear();
     try
     {
         serial_port.writeBinary(request_data);
@@ -638,7 +638,7 @@ void ModbusClient::callServerExchange()
     }
     try
     {
-        serial_port.readBinary(responce_data, task_info.attributes.length);
+        serial_port.readBinary(response_data, task_info.attributes.length);
     }
     catch (const std::system_error& e)
     {

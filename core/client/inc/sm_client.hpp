@@ -122,10 +122,10 @@ public:
      */
     void stop();
     /**
-     * @brief adds erver to the vector with used servers
+     * @brief adds server to the vector with used servers
      *
      * @param dev_addr server address in Modbus application layer
-     * @param gateway_addr gateway address in case of gatewayed access
+     * @param gateway_addr gateway address in case of gateway access
      */
     void addServer(const std::uint8_t dev_addr, const std::uint8_t gateway_addr = 0);
     /**
@@ -216,7 +216,7 @@ public:
 
 private:
     std::vector<std::uint8_t> request_data;
-    std::vector<std::uint8_t> responce_data;
+    std::vector<std::uint8_t> response_data;
     modbus::ModbusMessage modbus_message = modbus::ModbusMessage(modbus::ModbusMode::rtu);
     std::vector<ServerData> servers;
     std::thread client_thread;
