@@ -16,7 +16,7 @@ int main(int argc, char* argv[])
 {
     if(argc < 3)
     {
-        std::printf("incorrect agruments list passed, exit...\n");
+        std::printf("incorrect arguments list passed, exit...\n");
         return 0;
     }
     sm::ModbusClient client;
@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
     }
     catch (std::invalid_argument const& ex)
     {
-        std::cout <<"invalid argumant passed, exit...\n";
+        std::cout <<"invalid argument passed, exit...\n";
         return 0;
     }
     

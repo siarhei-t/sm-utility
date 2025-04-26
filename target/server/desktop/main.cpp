@@ -20,7 +20,7 @@ int main(int argc, char* argv[])
 {
     if(argc < 3)
     {
-        std::printf("incorrect agruments list passed, exit...\n");
+        std::printf("incorrect arguments list passed, exit...\n");
         return 0;
     }
     std::string path_to_port = argv[1];
