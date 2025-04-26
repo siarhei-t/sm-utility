@@ -8,7 +8,6 @@
  */
 
 #include "platform.hpp"
-#include "sp_types.hpp"
 #include <cstdio>
 #include <iostream>
 #include <vector>
@@ -32,12 +31,12 @@ void DesktopCom::serverThread()
     
     while (!thread_stop.load(std::memory_order_relaxed))
     {
-        std::unique_lock lk(m);
+        std::unique_lock<std::mutex>lk(m);
         blocker.wait(lk);
         size_t bytes_read = 0;
         while(bytes_read != buffer_support.buffer_size)
         {
-            bytes_read = serial_port.port.readBinary(data, buffer_support.buffer_size);
+            bytes_read = serial_port.readBinary(data, buffer_support.buffer_size);
             if(bytes_read != buffer_support.buffer_size)
             {
                 std::printf("port reading timeout !\n");
@@ -60,12 +59,12 @@ void DesktopCom::platformReadData(std::uint8_t data[], const size_t amount)
 void DesktopCom::platformSendData(std::uint8_t data[], const size_t amount)
 {
     std::vector<std::uint8_t> tmp(data,data + amount);
-    serial_port.port.writeBinary(tmp);
+    serial_port.writeBinary(tmp);
 }
 
 void DesktopCom::platformFlush()
 {
-    serial_port.port.flushPort();
+    serial_port.flushPort();
 }
 
 bool DesktopCom::platformInit()

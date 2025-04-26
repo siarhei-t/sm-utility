@@ -1,7 +1,7 @@
 /**
  * @file sm_error.hpp
  *
- * @brief
+ * @brief overriding std::error_code for ModbusClient
  *
  * @author Siarhei Tatarchanka
  *
