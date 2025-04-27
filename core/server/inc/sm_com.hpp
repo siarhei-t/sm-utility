@@ -23,7 +23,6 @@ template <class Impl>
 class Timer
 {
 public:
-    std::atomic<bool> done{false};
     void start()
     {
         if(started)
@@ -31,15 +30,18 @@ public:
             stop();
         }
         static_cast<Impl*>(this)->platformStart();
+        done.store(false,std::memory_order_release);
         started = true;
     }
     void stop()
     {
-        started = false;
-        done.store(false, std::memory_order_relaxed);
         static_cast<Impl*>(this)->platformStop();
+        started = false;
+        done.store(false, std::memory_order_release);
     }
     bool isStarted() const { return started; }
+    bool isDone() const { return done.load(std::memory_order_acquire); }
+    void setDone() const { done.store(true,std::memory_order_release); }
     void setTimeout(const std::uint32_t timeout)
     {
         if(!started)
@@ -50,6 +52,7 @@ public:
     std::uint32_t getTimeout() const { return timeout_ms; }
 
 private:
+    std::atomic<bool> done{false};
     bool started = false; 
     std::uint32_t timeout_ms = 0;
 };
@@ -58,39 +61,42 @@ template <class Impl>
 class Com
 {
 public:
-    std::atomic<bool> data_ready{false};
-    std::atomic<bool> data_in_progress{false};
     void init()
     {
         configured = static_cast<Impl*>(this)->platformInit();
     }
-    void startReadData(std::uint8_t data[], const size_t amount)
+    void readData(std::uint8_t* data, const size_t amount)
     {
-        if(configured)
+        if(isConfigured())
         {
-            data_ready.store(false, std::memory_order_relaxed);
+            ready.store(false, std::memory_order_relaxed);
             static_cast<Impl*>(this)->platformReadData(data,amount);
         }
     }
-    void startSendData(std::uint8_t data[], const size_t amount)
+    void sendData(std::uint8_t* data, const size_t amount)
     {
-        if(configured)
+        if(isConfigured())
         {
             static_cast<Impl*>(this)->platformSendData(data,amount);
         }
     }
     void flush()
     {
-        if(configured)
+        if(isConfigured())
         {
             static_cast<Impl*>(this)->platformFlush();
         }
     }
-    bool isConfigured() const { return configured; }
+    [[nodiscard]] bool isConfigured() const { return configured; }
+    [[nodiscard]] bool isReady() const { return ready.load(std::memory_order_acquire); }
+    [[nodiscard]] bool isBusy() const { return busy.load(std::memory_order_acquire); }
+    void setReady() { ready.store(true,std::memory_order_release); }
+    void setBusy() { busy.store(true,std::memory_order_release); }
 
 private:
     bool configured = false;
-
+    std::atomic<bool> ready{false};
+    std::atomic<bool> busy{false};
 };
 
 template<typename c, typename t> class DataNode
@@ -102,7 +108,7 @@ public:
         com.init();
         if(com.isConfigured())
         {
-            com.startReadData(buffer.data(),server.getReceiveBufferSize());
+            com.readData(buffer.data(),server.getReceiveBufferSize());
         }
     }
     void loop()
@@ -111,24 +117,23 @@ public:
         {
             if(!com.isConfigured()) { break; }
             //start receiver timeout timer
-            if(com.data_in_progress.load(std::memory_order_relaxed) && !timer.isStarted())
+            if(com.isBusy() && !timer.isStarted())
             {
                 timer.start();
             }
-            // data process
-            if(com.data_ready.load(std::memory_order_relaxed))
-            {
-                com.data_ready.store(false, std::memory_order_relaxed);
-                last_error = server.serverTask(buffer.data(), server.getReceiveBufferSize());
-                com.startSendData(buffer.data(),server.getTransmitBufferSize());
-                com.startReadData(buffer.data(),server.getReceiveBufferSize());
-            }
             // port flush in case of timeout
-            if(timer.done.load(std::memory_order_relaxed) && com.data_in_progress.load(std::memory_order_relaxed))
+            if(timer.isDone() && com.isBusy())
             {
                 com.flush();
                 timer.stop();
-                com.startReadData(buffer.data(),server.getReceiveBufferSize());
+                com.readData(buffer.data(),server.getReceiveBufferSize());
+            }
+            // data process
+            if(com.isReady())
+            {
+                last_error = server.serverTask(buffer.data(), server.getReceiveBufferSize());
+                com.sendData(buffer.data(),server.getTransmitBufferSize());
+                com.readData(buffer.data(),server.getReceiveBufferSize());
             }
         }
     }

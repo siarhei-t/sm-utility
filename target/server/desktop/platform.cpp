@@ -43,7 +43,6 @@ void DesktopCom::serverThread()
             }
         }
         std::copy(data.begin(), data.end(), buffer_support.buffer_ptr);
-        data_ready.store(true, std::memory_order_relaxed);
         std::printf("port reading finished.\n");
     }
 }
