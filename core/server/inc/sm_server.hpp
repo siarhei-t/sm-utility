@@ -58,10 +58,10 @@ public:
             auto crc =  lambda_crc16(data, modbus::exception_pdu_size);
             data[3] = static_cast<std::uint8_t>(crc & 0xFF);
             data[4] = static_cast<std::uint8_t>((crc & 0xFF00) >> 8);
-            tramsmit_length = modbus::address_size + modbus::exception_pdu_size + modbus::crc_size;
+            transmit_length = modbus::address_size + modbus::exception_pdu_size + modbus::crc_size;
         };
         //recend what we have by default
-        tramsmit_length = length;
+        transmit_length = length;
 
         std::uint8_t received_address = data[0];
         std::uint8_t received_function = data[1];
@@ -117,7 +117,7 @@ public:
                 std::uint16_t new_crc = lambda_crc16(data, required_offset + generated_length);
                 data[required_offset + generated_length] = static_cast<std::uint8_t>(new_crc & 0xFF);
                 data[required_offset + generated_length + 1] = static_cast<std::uint8_t>((new_crc & 0xFF00) >> 8);
-                tramsmit_length = required_offset + generated_length + modbus::crc_size;
+                transmit_length = required_offset + generated_length + modbus::crc_size;
             }
             return ServerExceptions::no_error;
         }
@@ -125,11 +125,11 @@ public:
 
     std::uint8_t getReceiveBufferSize() const { return server_resources.getBufferSize(); }
 
-    std::uint8_t getTransmitBufferSize() const { return tramsmit_length; }
+    std::uint8_t getTransmitBufferSize() const { return transmit_length; }
 
 private:
     const std::uint8_t address;
-    std::uint8_t tramsmit_length = 0;
+    std::uint8_t transmit_length = 0;
 
     ServerResources server_resources;
 
