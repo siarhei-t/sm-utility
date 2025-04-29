@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
     platform_support.setPath(path_to_port);
     platform_support.setConfig(config);
 
-    sm::DataNode<DesktopCom,DesktopTimer> data_node(address,record_size);
+    sm::DataNode<DesktopCom,DesktopTimer,DesktopWaitPolicy> data_node(address,record_size);
 
     data_node.start();
     data_node.loop();

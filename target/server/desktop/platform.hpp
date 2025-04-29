@@ -47,6 +47,14 @@ private:
     static sp::PortConfig config;
 };
 
+struct DesktopWaitPolicy
+{
+    static void wait()
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+};
+
 class DesktopTimer : public sm::Timer<DesktopTimer>
 {
 public:

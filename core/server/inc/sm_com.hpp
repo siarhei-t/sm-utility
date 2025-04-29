@@ -19,6 +19,8 @@
 namespace sm
 {
 
+constexpr std::uint32_t receive_timeout_ms = 1000;
+
 template <class Impl>
 class Timer
 {
@@ -99,7 +101,7 @@ private:
     std::atomic<bool> busy{false};
 };
 
-template<typename c, typename t> class DataNode
+template<typename c, typename t, typename WaitPolicy> class DataNode
 {
 public:
     DataNode(std::uint8_t address, std::uint8_t record_size) : server(address,record_size) {}
@@ -116,25 +118,14 @@ public:
         for(;;)
         {
             if(!com.isConfigured()) { break; }
-            //start receiver timeout timer
             if(com.isBusy() && !timer.isStarted())
-            {
+            { 
+                timer.setTimeout(receive_timeout_ms);
                 timer.start();
             }
-            // port flush in case of timeout
-            if(timer.isDone() && com.isBusy())
-            {
-                com.flush();
-                timer.stop();
-                com.readData(buffer.data(),server.getReceiveBufferSize());
-            }
-            // data process
-            if(com.isReady())
-            {
-                last_error = server.serverTask(buffer.data(), server.getReceiveBufferSize());
-                com.sendData(buffer.data(),server.getTransmitBufferSize());
-                com.readData(buffer.data(),server.getReceiveBufferSize());
-            }
+            handleTimeOut();
+            handleReady();
+            WaitPolicy::wait();
         }
     }
     std::uint8_t* getBufferPtr() { return buffer.data(); };
@@ -145,6 +136,24 @@ private:
     std::array<std::uint8_t, modbus::max_adu_size> buffer;
     c com;
     t timer;
+    void handleTimeOut()
+    {
+        if(timer.isDone() && com.isBusy())
+        {
+            com.flush();
+            timer.stop();
+            com.readData(buffer.data(),server.getReceiveBufferSize());
+        }
+    }
+    void handleReady()
+    {
+        if(com.isReady())
+        {
+            last_error = server.serverTask(buffer.data(), server.getReceiveBufferSize());
+            com.sendData(buffer.data(),server.getTransmitBufferSize());
+            com.readData(buffer.data(),server.getReceiveBufferSize());
+        }
+    }
 };
 
 } // namespace sm
