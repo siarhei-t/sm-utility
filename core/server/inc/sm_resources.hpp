@@ -19,13 +19,16 @@
 namespace sm
 {
 
-struct FileService
+enum class OperationType
 {
-    FileService() = default;
-    FileService(std::uint16_t file_id, std::uint16_t record_id, std::uint16_t length) : file_id(file_id), record_id(record_id), length(length) {}
-    std::uint16_t file_id = 0;   // file id in modbus addressing model
-    std::uint16_t record_id = 0; // record id in modbus addressing model
-    std::uint16_t length = 0;    // received length from client in half words
+    read,
+    write
+};
+
+struct Attributes
+{
+    bool property_read = false;     // is readable
+    bool property_write = false;    // is writable
 };
 
 struct FileControl
@@ -35,23 +38,31 @@ struct FileControl
     std::uint8_t length = 0;          // actual record length in bytes
 };
 
+struct FileService
+{
+    FileService(std::uint16_t file_id, std::uint16_t record_id, std::uint16_t length) : file_id(file_id), record_id(record_id), length(length) {}
+    std::uint16_t file_id = 0;   // file id in modbus addressing model
+    std::uint16_t record_id = 0; // record id in modbus addressing model
+    std::uint16_t length = 0;    // received length from client in half words
+};
+
 struct FileInfo
 {
     FileInfo() = default;
-    FileInfo(bool is_read, bool is_write, std::uint32_t size, std::uint8_t* p_data) : property_read(is_read), property_write(is_write), size(size), p_data(p_data) {}
-    bool property_read = false;     // is file readable
-    bool property_write = false;    // is file writable
-    std::uint32_t size = 0;         // file size in bytes
-    std::uint8_t* p_data = nullptr; // pointer to file data
+    FileInfo(Attributes attributes, std::uint32_t size, std::uint8_t* p_data) : attributes(attributes), size(size),p_data(p_data) {}
+    Attributes attributes;
+    std::uint32_t size = 0;                      // file size in bytes
+    std::uint8_t* p_data = nullptr;              // pointer to file data
+    void (*callback)(const FileInfo*) = nullptr; // callback on the end of write operation
 };
 
 struct RegisterInfo
 {
     RegisterInfo() = default;
-    RegisterInfo(bool is_write, bool is_read, std::uint16_t value) : property_read(is_read), property_write(is_write), value(value) {}
-    bool property_read = false;  // is register readable
-    bool property_write = false; // is register writable
-    std::uint16_t value = 0;     // register value
+    RegisterInfo(Attributes attributes, std::uint16_t value) : attributes(attributes), value(value) {}
+    Attributes attributes;
+    std::uint16_t value = 0;                         // register value
+    void (*callback)(const RegisterInfo*) = nullptr; // callback on the end of write operation
 };
 
 class ServerResources
@@ -76,7 +87,7 @@ public:
             for (int i = 0; i < quantity; ++i)
             {
                 
-                if(registers[offset_address + i].property_read)
+                if(registers[offset_address + i].attributes.property_read)
                 {
                     insertHalfWord(&data[counter], registers[offset_address + i].value);
                     counter += 2;
