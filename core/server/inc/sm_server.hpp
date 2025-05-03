@@ -13,6 +13,7 @@
 #include <cstddef>
 #include <cstdint>
 #include "sm_resources.hpp"
+#include "../../common/sm_modbus.hpp"
 
 namespace sm
 {
