@@ -19,16 +19,16 @@
 namespace sm
 {
 
-enum class OperationType
+struct Data
 {
-    read,
-    write
+    std::uint8_t* p_data = nullptr;
+    std::uint32_t size = 0;
 };
 
 struct Attributes
 {
-    bool property_read = false;     // is readable
-    bool property_write = false;    // is writable
+    bool property_read = false;
+    bool property_write = false;
 };
 
 struct FileControl
@@ -49,10 +49,9 @@ struct FileService
 struct FileInfo
 {
     FileInfo() = default;
-    FileInfo(Attributes attributes, std::uint32_t size, std::uint8_t* p_data) : attributes(attributes), size(size),p_data(p_data) {}
+    FileInfo(Attributes attributes, Data data) : attributes(attributes), data(data) {}
     Attributes attributes;
-    std::uint32_t size = 0;                      // file size in bytes
-    std::uint8_t* p_data = nullptr;              // pointer to file data
+    Data data;
     void (*callback)(const FileInfo*) = nullptr; // callback on the end of write operation
 };
 
