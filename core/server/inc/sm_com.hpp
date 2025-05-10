@@ -10,54 +10,10 @@
 #ifndef SM_COM_HPP
 #define SM_COM_HPP
 
-#include <cstddef>
-#include <cstdint>
 #include <atomic>
-#include <cstdio>
-#include "../inc/sm_server.hpp"
 
 namespace sm
 {
-
-constexpr std::uint32_t receive_timeout_ms = 1000;
-
-template <class Impl>
-class Timer
-{
-public:
-    void start()
-    {
-        if(started)
-        {
-            stop();
-        }
-        static_cast<Impl*>(this)->platformStart();
-        done.store(false,std::memory_order_release);
-        started = true;
-    }
-    void stop()
-    {
-        static_cast<Impl*>(this)->platformStop();
-        started = false;
-        done.store(false, std::memory_order_release);
-    }
-    bool isStarted() const { return started; }
-    bool isDone() const { return done.load(std::memory_order_acquire); }
-    void setDone() const { done.store(true,std::memory_order_release); }
-    void setTimeout(const std::uint32_t timeout)
-    {
-        if(!started)
-        {
-            timeout_ms = timeout; 
-        }
-    }
-    std::uint32_t getTimeout() const { return timeout_ms; }
-
-private:
-    std::atomic<bool> done{false};
-    bool started = false; 
-    std::uint32_t timeout_ms = 0;
-};
 
 template <class Impl>
 class Com
@@ -99,61 +55,6 @@ private:
     bool configured = false;
     std::atomic<bool> ready{false};
     std::atomic<bool> busy{false};
-};
-
-template<typename c, typename t, typename WaitPolicy> class DataNode
-{
-public:
-    DataNode(std::uint8_t address, std::uint8_t record_size) : server(address,record_size) {}
-    void start()
-    {
-        com.init();
-        if(com.isConfigured())
-        {
-            com.readData(buffer.data(),server.getReceiveBufferSize());
-        }
-    }
-    void loop()
-    {
-        for(;;)
-        {
-            if(!com.isConfigured()) { break; }
-            if(com.isBusy() && !timer.isStarted())
-            { 
-                timer.setTimeout(receive_timeout_ms);
-                timer.start();
-            }
-            handleTimeOut();
-            handleReady();
-            WaitPolicy::wait();
-        }
-    }
-    std::uint8_t* getBufferPtr() { return buffer.data(); };
-
-private:
-    ServerExceptions last_error = ServerExceptions::no_error;
-    ModbusServer server;
-    std::array<std::uint8_t, modbus::max_adu_size> buffer;
-    c com;
-    t timer;
-    void handleTimeOut()
-    {
-        if(timer.isDone() && com.isBusy())
-        {
-            com.flush();
-            timer.stop();
-            com.readData(buffer.data(),server.getReceiveBufferSize());
-        }
-    }
-    void handleReady()
-    {
-        if(com.isReady())
-        {
-            last_error = server.serverTask(buffer.data(), server.getReceiveBufferSize());
-            com.sendData(buffer.data(),server.getTransmitBufferSize());
-            com.readData(buffer.data(),server.getReceiveBufferSize());
-        }
-    }
 };
 
 } // namespace sm
