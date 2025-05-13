@@ -31,10 +31,10 @@ class ModbusServer
 public:
     ModbusServer(std::uint8_t address, std::uint8_t record_size) : address(address), server_resources(record_size)
     {
-        setBufferSize(modbus::min_pdu_with_data_size);
+        setBufferSize(modbus::address_size + modbus::min_pdu_with_data_size + modbus::crc_size);
     }
 
-    ServerExceptions serverTask(std::uint8_t data[], const std::uint8_t length)
+    ServerExceptions serverTask(std::uint8_t* data, const std::uint8_t length)
     {
         //recend what we have by default
         transmit_length = length;
@@ -109,7 +109,7 @@ private:
 
     void setBufferSize(const std::uint8_t new_size){ server_resources.setBufferSize(new_size); }
 
-    modbus::Exceptions writeRegister(std::uint8_t data[])
+    modbus::Exceptions writeRegister(std::uint8_t* data)
     {
         std::uint16_t address = server_resources.extractHalfWord(data);
         std::uint16_t value = server_resources.extractHalfWord(data + sizeof(std::uint16_t));
@@ -146,7 +146,7 @@ private:
         }
     }
 
-    modbus::Exceptions writeFile(std::uint8_t data[])
+    modbus::Exceptions writeFile(std::uint8_t* data)
     {
         std::uint8_t byte_counter = data[0];
         std::uint8_t reference_type = data[1];
@@ -222,7 +222,6 @@ private:
         data[4] = static_cast<std::uint8_t>((crc & 0xFF00) >> 8);
         transmit_length = modbus::address_size + modbus::exception_pdu_size + modbus::crc_size;
     };
-
 
 };
 

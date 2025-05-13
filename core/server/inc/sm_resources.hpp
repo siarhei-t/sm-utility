@@ -24,6 +24,7 @@ struct Attributes
 {
     bool property_read = false;
     bool property_write = false;
+    bool property_flash = false;
 };
 
 struct FileData
@@ -78,8 +79,8 @@ public:
     static std::uint16_t extractHalfWord(const std::uint8_t* data);
     static void insertHalfWord(std::uint8_t* data, const std::uint16_t half_word);
 private:
-    std::uint8_t buffer_size = 0;
     const std::uint8_t record_size;
+    std::uint8_t buffer_size = 0;
     std::array<RegisterInfo, RegisterDefinitions::getSize()> registers;
     std::array<FileInfo, FileDefinitions::getSize()> files;
 };
