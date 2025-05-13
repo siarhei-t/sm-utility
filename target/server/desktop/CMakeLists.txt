@@ -6,6 +6,7 @@ set (DIR_SRCS
         main.cpp
         platform.cpp
         ../../../core/server/src/sm_resources.cpp
+        ../../../core/server/src/sm_server.cpp
     )
 
 add_executable (${PROJECT_NAME} ${DIR_SRCS})
