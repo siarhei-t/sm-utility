@@ -15,6 +15,8 @@
 #include <mutex>
 #include <thread>
 #include "../../../core/server/inc/sm_com.hpp"
+#include "../../../core/server/inc/sm_timer.hpp"
+#include "../../../core/server/inc/sm_node.hpp"
 #include "../../../core/external/simple-serial-port/inc/serial_port.hpp"
 
 struct BufferSupport

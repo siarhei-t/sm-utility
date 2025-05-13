@@ -20,16 +20,16 @@ namespace sm
 
 constexpr int not_found = -1;
 
-struct Data
-{
-    std::uint8_t* p_data = nullptr;
-    std::uint32_t size = 0;
-};
-
 struct Attributes
 {
     bool property_read = false;
     bool property_write = false;
+};
+
+struct FileData
+{
+    std::uint8_t* p_data = nullptr;
+    std::uint32_t size = 0;
 };
 
 struct FileControl
@@ -50,9 +50,9 @@ struct FileService
 struct FileInfo
 {
     FileInfo() = default;
-    FileInfo(Attributes attributes, Data data) : attributes(attributes), data(data) {}
+    FileInfo(Attributes attributes, FileData data) : attributes(attributes), data(data) {}
     Attributes attributes;
-    Data data;
+    FileData data;
     void (*callback)(const FileInfo*) = nullptr; // callback on the end of write operation
 };
 
@@ -70,9 +70,9 @@ class ServerResources
 public:
     ServerResources(std::uint8_t record_size) : record_size(record_size) {}
     bool writeRegister(const std::uint16_t address, const std::uint16_t value);
-    bool readRegister(const std::uint16_t address, const std::uint16_t quantity, Data& data);
+    bool readRegister(const std::uint16_t address, const std::uint16_t quantity, std::uint8_t* data, std::uint8_t& size);
     bool writeFile(const FileService& service, const std::uint8_t* data);
-    bool readFile(const FileService& service, Data& data);
+    bool readFile(const FileService& service, std::uint8_t* data, std::uint8_t& size);
     void setBufferSize(const std::uint8_t new_size){ buffer_size = new_size; }    
     std::uint8_t getBufferSize() const { return buffer_size; }
     static std::uint16_t extractHalfWord(const std::uint8_t* data);

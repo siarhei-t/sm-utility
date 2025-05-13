@@ -12,56 +12,12 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <atomic>
-#include <cstdio>
 #include "sm_server.hpp"
 
 namespace sm
 {
 
 constexpr std::uint32_t receive_timeout_ms = 1000;
-
-template <class Impl>
-class Com
-{
-public:
-    void init()
-    {
-        configured = static_cast<Impl*>(this)->platformInit();
-    }
-    void readData(std::uint8_t* data, const size_t amount)
-    {
-        if(isConfigured())
-        {
-            ready.store(false, std::memory_order_relaxed);
-            static_cast<Impl*>(this)->platformReadData(data,amount);
-        }
-    }
-    void sendData(std::uint8_t* data, const size_t amount)
-    {
-        if(isConfigured())
-        {
-            static_cast<Impl*>(this)->platformSendData(data,amount);
-        }
-    }
-    void flush()
-    {
-        if(isConfigured())
-        {
-            static_cast<Impl*>(this)->platformFlush();
-        }
-    }
-    [[nodiscard]] bool isConfigured() const { return configured; }
-    [[nodiscard]] bool isReady() const { return ready.load(std::memory_order_acquire); }
-    [[nodiscard]] bool isBusy() const { return busy.load(std::memory_order_acquire); }
-    void setReady() { ready.store(true,std::memory_order_release); }
-    void setBusy() { busy.store(true,std::memory_order_release); }
-
-private:
-    bool configured = false;
-    std::atomic<bool> ready{false};
-    std::atomic<bool> busy{false};
-};
 
 template<typename c, typename t, typename WaitPolicy> class DataNode
 {

@@ -36,31 +36,6 @@ public:
 
     ServerExceptions serverTask(std::uint8_t data[], const std::uint8_t length)
     {
-        auto lambda_crc16 = [](const std::uint8_t data[], const std::uint16_t length)
-        {
-            std::uint16_t crc = 0xFFFF;
-            std::uint16_t data_counter = length;
-            std::uint16_t mem_counter = 0;
-
-            for (; data_counter > 0; --data_counter)
-            {
-                std::uint8_t tmp = data[mem_counter] ^ crc;
-                ++mem_counter;
-                crc >>= 8;
-                crc ^= modbus::crc16_table[tmp];
-            }
-            return crc;
-        };
-
-        auto lambda_generate_exception = [this,lambda_crc16](std::uint8_t data[], const modbus::Exceptions exception)
-        {
-            data[1] |= modbus::function_error_mask;
-            data[2] = static_cast<std::uint8_t>(exception);
-            auto crc =  lambda_crc16(data, modbus::exception_pdu_size);
-            data[3] = static_cast<std::uint8_t>(crc & 0xFF);
-            data[4] = static_cast<std::uint8_t>((crc & 0xFF00) >> 8);
-            transmit_length = modbus::address_size + modbus::exception_pdu_size + modbus::crc_size;
-        };
         //recend what we have by default
         transmit_length = length;
 
@@ -71,12 +46,12 @@ public:
         {
             return ServerExceptions::address_not_recognized;
         }
-        std::uint16_t actual_crc = lambda_crc16(data, length - modbus::crc_size);
+        std::uint16_t actual_crc = crc16(data, length - modbus::crc_size);
         std::uint16_t received_crc = data[length - modbus::crc_size];
         received_crc |= data[length - modbus::crc_size + 1];
         if (received_crc != actual_crc)
         {
-            lambda_generate_exception(data, modbus::Exceptions::exception_3);
+            generateException(data, modbus::Exceptions::exception_3);
             return ServerExceptions::bad_crc;
         }
 
@@ -103,21 +78,20 @@ public:
                 break;
 
             default:
-                lambda_generate_exception(data, modbus::Exceptions::exception_1);
+                generateException(data, modbus::Exceptions::exception_1);
                 return ServerExceptions::function_exception;
         }
         if (exception != modbus::Exceptions::no_exception)
         {
-            lambda_generate_exception(data, exception);
+            generateException(data, exception);
             return ServerExceptions::function_exception;
         }
         else
         {
             if (generated_length != 0)
             {
-                std::uint16_t new_crc = lambda_crc16(data, required_offset + generated_length);
-                data[required_offset + generated_length] = static_cast<std::uint8_t>(new_crc & 0xFF);
-                data[required_offset + generated_length + 1] = static_cast<std::uint8_t>((new_crc & 0xFF00) >> 8);
+                std::uint16_t new_crc = crc16(data, required_offset + generated_length);
+                server_resources.insertHalfWord(data + required_offset +  generated_length, new_crc);
                 transmit_length = required_offset + generated_length + modbus::crc_size;
             }
             return ServerExceptions::no_error;
@@ -131,7 +105,6 @@ public:
 private:
     const std::uint8_t address;
     std::uint8_t transmit_length = 0;
-
     ServerResources server_resources;
 
     void setBufferSize(const std::uint8_t new_size){ server_resources.setBufferSize(new_size); }
@@ -151,7 +124,7 @@ private:
         }
     }
 
-    modbus::Exceptions readRegister(std::uint8_t data[], std::uint8_t& length)
+    modbus::Exceptions readRegister(std::uint8_t* data, std::uint8_t& length)
     {
         std::uint16_t address = server_resources.extractHalfWord(data);
         std::uint16_t quantity = server_resources.extractHalfWord(data + sizeof(std::uint16_t));
@@ -198,7 +171,7 @@ private:
         }
     }
 
-    modbus::Exceptions readFile(std::uint8_t data[], std::uint8_t& length)
+    modbus::Exceptions readFile(std::uint8_t* data, std::uint8_t& length)
     {
         std::uint8_t byte_counter = data[0];
         std::uint8_t reference_type = data[1];
@@ -223,6 +196,34 @@ private:
             }
         }
     }
+
+    static std::uint16_t crc16(const std::uint8_t* data, const std::uint16_t length)
+    {
+        std::uint16_t crc = 0xFFFF;
+        std::uint16_t data_counter = length;
+        std::uint16_t mem_counter = 0;
+
+        for (; data_counter > 0; --data_counter)
+        {
+            std::uint8_t tmp = data[mem_counter] ^ crc;
+            ++mem_counter;
+            crc >>= 8;
+            crc ^= modbus::crc16_table[tmp];
+        }
+        return crc;
+    };
+    
+    void generateException(std::uint8_t* data, const modbus::Exceptions exception)
+    {
+        data[1] |= modbus::function_error_mask;
+        data[2] = static_cast<std::uint8_t>(exception);
+        std::uint16_t crc =  crc16(data, modbus::exception_pdu_size);
+        data[3] = static_cast<std::uint8_t>(crc & 0xFF);
+        data[4] = static_cast<std::uint8_t>((crc & 0xFF00) >> 8);
+        transmit_length = modbus::address_size + modbus::exception_pdu_size + modbus::crc_size;
+    };
+
+
 };
 
 } // namespace sm
