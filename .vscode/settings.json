@@ -6,5 +6,9 @@
         "--compile-commands-dir=${workspaceFolder}/build-client",
         "--query-driver=**"
     ],
-    "editor.formatOnSave": true
+    "editor.formatOnSave": true,
+    "cSpell.words": [
+        "MSVC",
+        "Wextra"
+    ]
 }
