@@ -19,28 +19,25 @@ template <class Impl>
 class Com
 {
 public:
-    void init()
-    {
-        configured = static_cast<Impl*>(this)->platformInit();
-    }
+    void init() { configured = static_cast<Impl*>(this)->platformInit(); }
     void readData(std::uint8_t* data, const size_t amount)
     {
-        if(isConfigured())
+        if (isConfigured())
         {
             ready.store(false, std::memory_order_relaxed);
-            static_cast<Impl*>(this)->platformReadData(data,amount);
+            static_cast<Impl*>(this)->platformReadData(data, amount);
         }
     }
     void sendData(std::uint8_t* data, const size_t amount)
     {
-        if(isConfigured())
+        if (isConfigured())
         {
-            static_cast<Impl*>(this)->platformSendData(data,amount);
+            static_cast<Impl*>(this)->platformSendData(data, amount);
         }
     }
     void flush()
     {
-        if(isConfigured())
+        if (isConfigured())
         {
             static_cast<Impl*>(this)->platformFlush();
         }
@@ -48,8 +45,8 @@ public:
     [[nodiscard]] bool isConfigured() const { return configured; }
     [[nodiscard]] bool isReady() const { return ready.load(std::memory_order_acquire); }
     [[nodiscard]] bool isBusy() const { return busy.load(std::memory_order_acquire); }
-    void setReady() { ready.store(true,std::memory_order_release); }
-    void setBusy() { busy.store(true,std::memory_order_release); }
+    void setReady() { ready.store(true, std::memory_order_release); }
+    void setBusy() { busy.store(true, std::memory_order_release); }
 
 private:
     bool configured = false;

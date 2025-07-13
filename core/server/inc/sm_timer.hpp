@@ -10,8 +10,8 @@
 #ifndef SM_TIMER_HPP
 #define SM_TIMER_HPP
 
-#include <cstdint>
 #include <atomic>
+#include <cstdint>
 
 namespace sm
 {
@@ -22,13 +22,13 @@ class Timer
 public:
     void start()
     {
-        if(started)
+        if (started)
         {
             stop();
         }
         static_cast<Impl*>(this)->platformStart();
-        done.store(false,std::memory_order_release);
-        started.store(true,std::memory_order_release);
+        done.store(false, std::memory_order_release);
+        started.store(true, std::memory_order_release);
     }
     void stop()
     {
@@ -38,10 +38,13 @@ public:
     }
     bool isStarted() const { return started.load(std::memory_order_acquire); }
     bool isDone() const { return done.load(std::memory_order_acquire); }
-    void setDone() const { done.store(true,std::memory_order_release); }
+    void setDone() const { done.store(true, std::memory_order_release); }
     void setTimeout(const std::uint32_t timeout)
     {
-        if(!started.load(std::memory_order_acquire)) { timeout_ms = timeout; }
+        if (!started.load(std::memory_order_acquire))
+        {
+            timeout_ms = timeout;
+        }
     }
     std::uint32_t getTimeout() const { return timeout_ms; }
 

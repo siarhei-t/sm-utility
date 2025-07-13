@@ -60,7 +60,7 @@ bool File::fileReadSetup(const std::uint16_t id, const size_t file_size, const s
         data = std::make_unique<std::uint8_t[]>(file_size);
         this->file_size = file_size;
     }
-    if(data != nullptr)
+    if (data != nullptr)
     {
         this->id = id;
         this->record_size = record_size;

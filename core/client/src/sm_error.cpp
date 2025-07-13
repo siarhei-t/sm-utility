@@ -36,7 +36,7 @@ class sm_category_impl : public std::error_category
 
             case sm::ClientErrors::server_not_connected:
                 return "the server is not connected";
-            
+
             case sm::ClientErrors::gateway_not_connected:
                 return "the gateway for the server is not connected";
 
@@ -45,7 +45,7 @@ class sm_category_impl : public std::error_category
 
             case sm::ClientErrors::max_record_length_not_configured:
                 return "record size for file read/write function is zero";
-            
+
             case sm::ClientErrors::internal:
                 return "internal logic error";
 

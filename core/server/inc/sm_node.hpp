@@ -10,34 +10,38 @@
 #ifndef SM_NODE_HPP
 #define SM_NODE_HPP
 
+#include "sm_server.hpp"
 #include <cstddef>
 #include <cstdint>
-#include "sm_server.hpp"
 
 namespace sm
 {
 
 constexpr std::uint32_t receive_timeout_ms = 1000;
 
-template<typename c, typename t, typename WaitPolicy> class DataNode
+template <typename c, typename t, typename WaitPolicy>
+class DataNode
 {
 public:
-    DataNode(std::uint8_t address, std::uint8_t record_size) : server(address,record_size) {}
+    DataNode(std::uint8_t address, std::uint8_t record_size) : server(address, record_size) {}
     void start()
     {
         com.init();
-        if(com.isConfigured())
+        if (com.isConfigured())
         {
-            com.readData(buffer.data(),server.getReceiveBufferSize());
+            com.readData(buffer.data(), server.getReceiveBufferSize());
         }
     }
     void loop()
     {
-        for(;;)
+        for (;;)
         {
-            if(!com.isConfigured()) { break; }
-            if(com.isBusy() && !timer.isStarted())
-            { 
+            if (!com.isConfigured())
+            {
+                break;
+            }
+            if (com.isBusy() && !timer.isStarted())
+            {
                 timer.setTimeout(receive_timeout_ms);
                 timer.start();
             }
@@ -56,20 +60,20 @@ private:
     t timer;
     void handleTimeOut()
     {
-        if(timer.isDone() && com.isBusy())
+        if (timer.isDone() && com.isBusy())
         {
             com.flush();
             timer.stop();
-            com.readData(buffer.data(),server.getReceiveBufferSize());
+            com.readData(buffer.data(), server.getReceiveBufferSize());
         }
     }
     void handleReady()
     {
-        if(com.isReady())
+        if (com.isReady())
         {
             last_error = server.serverTask(buffer.data(), server.getReceiveBufferSize());
-            com.sendData(buffer.data(),server.getTransmitBufferSize());
-            com.readData(buffer.data(),server.getReceiveBufferSize());
+            com.sendData(buffer.data(), server.getTransmitBufferSize());
+            com.readData(buffer.data(), server.getReceiveBufferSize());
         }
     }
 };

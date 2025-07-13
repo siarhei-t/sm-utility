@@ -10,10 +10,10 @@
 #ifndef SM_RESOURCES_HPP
 #define SM_RESOURCES_HPP
 
+#include "../../common/sm_common.hpp"
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include "../../common/sm_common.hpp"
 
 namespace sm
 {
@@ -50,37 +50,47 @@ struct FileService
 
 struct FileInfo
 {
+    using Callback = void (*)(const FileInfo&);
     FileInfo() = default;
-    FileInfo(Attributes attributes, FileData data) : attributes(attributes), data(data) {}
+    FileInfo(Attributes attributes, FileData data, Callback callback = nullptr) : attributes(attributes), data(data), callback(callback) {}
     Attributes attributes;
     FileData data;
-    void (*callback)(const FileInfo*) = nullptr; // callback on the end of write operation
+    std::uint16_t amount_of_records = 0;
+    bool is_open = false;
+    Callback callback = nullptr; // callback on the end of write operation
 };
 
 struct RegisterInfo
 {
+    using Callback = void (*)(const RegisterInfo&);
     RegisterInfo() = default;
-    RegisterInfo(Attributes attributes, std::uint16_t value) : attributes(attributes), value(value) {}
+    RegisterInfo(Attributes attributes, std::uint16_t value, Callback callback = nullptr) : attributes(attributes), value(value), callback(callback) {}
     Attributes attributes;
-    std::uint16_t value = 0;                         // register value
-    void (*callback)(const RegisterInfo*) = nullptr; // callback on the end of write operation
+    std::uint16_t value = 0;
+    Callback callback = nullptr; // callback on the end of write operation
 };
 
 class ServerResources
 {
+    using FileAccess = bool (*)(const std::uint8_t* data, const size_t size);
+
 public:
     ServerResources(std::uint8_t record_size) : record_size(record_size) {}
     bool writeRegister(const std::uint16_t address, const std::uint16_t value);
     bool readRegister(const std::uint16_t address, const std::uint16_t quantity, std::uint8_t* data, std::uint8_t& size);
     bool writeFile(const FileService& service, const std::uint8_t* data);
     bool readFile(const FileService& service, std::uint8_t* data, std::uint8_t& size);
-    void setBufferSize(const std::uint8_t new_size){ buffer_size = new_size; }    
-    std::uint8_t getBufferSize() const { return buffer_size; }
+    bool setupFile(const FileInfo& reg, const int index);
+    bool setupRegister(const RegisterInfo& reg, const int index);
+    void setupFileFlashAccess(FileAccess write = nullptr) { fileWrite = write; }
     static std::uint16_t extractHalfWord(const std::uint8_t* data);
     static void insertHalfWord(std::uint8_t* data, const std::uint16_t half_word);
+
 private:
     const std::uint8_t record_size;
     std::uint8_t buffer_size = 0;
+    FileAccess fileWrite = nullptr;
+    bool getAccessToRecord(const FileService& service, FileControl& control);
     std::array<RegisterInfo, RegisterDefinitions::getSize()> registers;
     std::array<FileInfo, FileDefinitions::getSize()> files;
 };

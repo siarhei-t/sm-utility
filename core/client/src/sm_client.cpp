@@ -21,11 +21,11 @@
 namespace sm
 {
 
-int ModbusClient::getActualTaskProgress() const 
+int ModbusClient::getActualTaskProgress() const
 {
     auto volume = task_info.num_of_exchanges;
     auto progress = task_info.counter;
-    if((volume > 0) && (progress <= volume))
+    if ((volume > 0) && (progress <= volume))
     {
         return (progress * task_complete_value) / volume;
     }
@@ -92,13 +92,13 @@ void ModbusClient::printProgressBar(const int task_progress)
     int bar_width = 80;
     std::cout << "[";
     int pos = bar_width * progress;
-    for (int i = 0; i < bar_width; ++i) 
+    for (int i = 0; i < bar_width; ++i)
     {
         if (i < pos)
         {
             std::cout << "*";
         }
-        else if (i == pos) 
+        else if (i == pos)
         {
             std::cout << ")";
         }
@@ -109,9 +109,9 @@ void ModbusClient::printProgressBar(const int task_progress)
     }
     std::cout << "] " << int(progress * task_complete_value) << " %\r";
     std::cout.flush();
-    if(task_progress == task_complete_value)
+    if (task_progress == task_complete_value)
     {
-        std::cout<<std::endl;
+        std::cout << std::endl;
     }
 }
 
@@ -152,10 +152,7 @@ void ModbusClient::stop()
     task_info.reset();
 }
 
-std::error_code ModbusClient::configure(sp::PortConfig config)
-{
-    return serial_port.setup(config);
-}
+std::error_code ModbusClient::configure(sp::PortConfig config) { return serial_port.setup(config); }
 
 std::error_code ModbusClient::taskPing(const std::uint8_t dev_addr)
 {
@@ -178,7 +175,7 @@ std::error_code ModbusClient::taskPing(const std::uint8_t dev_addr)
     if (servers[index].info.gateway_addr != 0)
     {
         auto gateway_index = getServerIndex(servers[index].info.gateway_addr);
-        if(servers[gateway_index].info.status == ServerStatus::unavailable)
+        if (servers[gateway_index].info.status == ServerStatus::unavailable)
         {
             return make_error_code(ClientErrors::gateway_not_connected);
         }
@@ -222,7 +219,7 @@ std::error_code ModbusClient::taskWriteRegister(const std::uint8_t dev_addr, con
     {
         recursed = true;
         auto gateway_index = getServerIndex(servers[index].info.gateway_addr);
-        if(servers[gateway_index].info.status == ServerStatus::unavailable)
+        if (servers[gateway_index].info.status == ServerStatus::unavailable)
         {
             recursed = false;
             return make_error_code(ClientErrors::gateway_not_connected);
@@ -246,7 +243,8 @@ std::error_code ModbusClient::taskWriteRegister(const std::uint8_t dev_addr, con
     return task_info.error_code;
 }
 
-std::error_code ModbusClient::taskReadRegisters(const std::uint8_t dev_addr, const std::uint16_t reg_addr, const std::uint16_t quantity, const bool print_progress)
+std::error_code ModbusClient::taskReadRegisters(const std::uint8_t dev_addr, const std::uint16_t reg_addr, const std::uint16_t quantity,
+                                                const bool print_progress)
 {
     auto lambda_read_regs = [this](const std::uint8_t dev_addr, const std::uint16_t reg_addr, const std::uint16_t quantity)
     {
@@ -269,7 +267,7 @@ std::error_code ModbusClient::taskReadRegisters(const std::uint8_t dev_addr, con
     if (servers[index].info.gateway_addr != 0)
     {
         auto gateway_index = getServerIndex(servers[index].info.gateway_addr);
-        if(servers[gateway_index].info.status == ServerStatus::unavailable)
+        if (servers[gateway_index].info.status == ServerStatus::unavailable)
         {
             return make_error_code(ClientErrors::gateway_not_connected);
         }
@@ -280,7 +278,7 @@ std::error_code ModbusClient::taskReadRegisters(const std::uint8_t dev_addr, con
             return error_code;
         }
     }
-    task_info.reset(ClientTasks::regs_read, 1, index,print_progress);
+    task_info.reset(ClientTasks::regs_read, 1, index, print_progress);
     servers[index].registers.reg_start_address = reg_addr;
     servers[index].registers.values.clear();
     q_task.push([this, lambda_read_regs, dev_addr, reg_addr, quantity]()
@@ -311,12 +309,11 @@ std::error_code ModbusClient::taskReadFile(const std::uint8_t dev_addr, const st
         for (std::uint16_t i = 0; i < num_of_records; ++i)
         {
             auto words_in_record = file.getActualRecordLength(i) / 2;
-            q_exchange.push([words_in_record, file_id, i, lambda_read_record, dev_addr]
-                            { lambda_read_record(dev_addr, file_id, i, words_in_record); });
+            q_exchange.push([words_in_record, file_id, i, lambda_read_record, dev_addr] { lambda_read_record(dev_addr, file_id, i, words_in_record); });
         }
     };
     int index = getServerIndex(dev_addr);
-    if (index ==server_not_found)
+    if (index == server_not_found)
     {
         return make_error_code(ClientErrors::server_not_connected);
     }
@@ -325,7 +322,7 @@ std::error_code ModbusClient::taskReadFile(const std::uint8_t dev_addr, const st
         return make_error_code(ClientErrors::server_not_connected);
     }
     auto record_size = servers[index].info.record_size;
-    if(record_size == 0)
+    if (record_size == 0)
     {
         return make_error_code(ClientErrors::max_record_length_not_configured);
     }
@@ -347,7 +344,7 @@ std::error_code ModbusClient::taskReadFile(const std::uint8_t dev_addr, const st
     if (servers[index].info.gateway_addr != 0)
     {
         auto gateway_index = getServerIndex(servers[index].info.gateway_addr);
-        if(servers[gateway_index].info.status == ServerStatus::unavailable)
+        if (servers[gateway_index].info.status == ServerStatus::unavailable)
         {
             return make_error_code(ClientErrors::gateway_not_connected);
         }
@@ -433,11 +430,11 @@ std::error_code ModbusClient::taskWriteFile(const std::uint8_t dev_addr, const b
     if (servers[index].info.gateway_addr != 0)
     {
         auto gateway_index = getServerIndex(servers[index].info.gateway_addr);
-        if(servers[gateway_index].info.status == ServerStatus::unavailable)
+        if (servers[gateway_index].info.status == ServerStatus::unavailable)
         {
             return make_error_code(ClientErrors::gateway_not_connected);
         }
-        std::uint16_t expected_length = getExpectedLength(ClientTasks::file_write,record_size);
+        std::uint16_t expected_length = getExpectedLength(ClientTasks::file_write, record_size);
         error_code = taskWriteRegister(servers[index].info.gateway_addr, RegisterDefinitions::gateway_buffer_size, expected_length);
         if (error_code)
         {
@@ -524,9 +521,8 @@ void ModbusClient::exchangeCallback()
             index += 2;
         }
         auto amount_of_regs = server.registers.values.size();
-        if(server.registers.reg_start_address <= (modbus::holding_regs_offset + RegisterDefinitions::record_size) &&
-           (server.registers.reg_start_address + amount_of_regs) >= (modbus::holding_regs_offset + RegisterDefinitions::record_size)
-          )
+        if (server.registers.reg_start_address <= (modbus::holding_regs_offset + RegisterDefinitions::record_size) &&
+            (server.registers.reg_start_address + amount_of_regs) >= (modbus::holding_regs_offset + RegisterDefinitions::record_size))
         {
             server.info.record_size = server.registers.values[RegisterDefinitions::record_size];
         }
@@ -561,7 +557,7 @@ void ModbusClient::exchangeCallback()
                     // nothing to do for now
                     break;
             }
-            if(task_info.is_printable)
+            if (task_info.is_printable)
             {
                 printProgressBar(getActualTaskProgress());
             }

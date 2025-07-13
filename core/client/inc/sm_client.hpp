@@ -166,7 +166,8 @@ public:
      * @param quantity amount of registers
      * @return std::error_code
      */
-    std::error_code taskReadRegisters(const std::uint8_t dev_addr, const std::uint16_t reg_addr, const std::uint16_t quantity, const bool print_progress = false);
+    std::error_code taskReadRegisters(const std::uint8_t dev_addr, const std::uint16_t reg_addr, const std::uint16_t quantity,
+                                      const bool print_progress = false);
     /**
      * @brief read file from the server
      *
@@ -197,8 +198,8 @@ public:
      */
     void getLastServerRegList(const std::uint8_t dev_addr, ServerRegisters& registers);
     /**
-     * @brief forced setup server as available to skip ClientTasks::ping task 
-     * 
+     * @brief forced setup server as available to skip ClientTasks::ping task
+     *
      * @param dev_addr server address in Modbus application layer
      * @return true in case of success
      * @return false if server was not found
@@ -206,7 +207,7 @@ public:
     bool setServerAsAvailable(const std::uint8_t dev_addr);
     /**
      * @brief forced setup max record size for the server
-     * 
+     *
      * @param dev_addr server address in Modbus application layer
      * @param record_size record size in bytes
      * @return true in case of success
@@ -269,7 +270,7 @@ private:
     void fileReadCallback(std::vector<std::uint8_t>& message);
     /**
      * @brief print task progress to stdout
-     * 
+     *
      */
     void printProgressBar(const int task_progress);
 };

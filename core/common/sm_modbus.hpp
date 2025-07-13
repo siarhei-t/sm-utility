@@ -34,7 +34,7 @@ constexpr std::uint8_t max_rw_file_byte_counter = 245;
 constexpr std::uint8_t exception_pdu_size = function_size + 1;
 constexpr std::uint8_t min_pdu_with_data_size = function_size + 4;
 constexpr std::uint8_t read_regs_response_data_length_idx = 1;
-constexpr std::uint8_t read_regs_response_data_start_idx  = 2;
+constexpr std::uint8_t read_regs_response_data_start_idx = 2;
 constexpr std::uint8_t read_file_response_data_length_idx = 2;
 constexpr std::uint8_t read_file_response_data_start_idx = 4;
 constexpr std::uint8_t request_rw_reg_pdu_size = min_pdu_with_data_size;
@@ -63,7 +63,6 @@ constexpr std::uint16_t crc16_table[256] = {
     0X8801u, 0X48C0u, 0X4980u, 0X8941u, 0X4B00u, 0X8BC1u, 0X8A81u, 0X4A40u, 0X4E00u, 0X8EC1u, 0X8F81u, 0X4F40u, 0X8D01u, 0X4DC0u, 0X4C80u, 0X8C41u,
     0X4400u, 0X84C1u, 0X8581u, 0X4540u, 0X8701u, 0X47C0u, 0X4680u, 0X8641u, 0X8201u, 0X42C0u, 0X4380u, 0X8341u, 0X4100u, 0X81C1u, 0X8081u, 0X4040u};
 ////////////////////////////////////////////////////////////////////////////////
-
 
 // General Modbus function codes, for reference see https://modbus.org/
 enum class FunctionCodes
