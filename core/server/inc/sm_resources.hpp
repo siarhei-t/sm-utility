@@ -18,7 +18,7 @@
 namespace sm
 {
 
-constexpr int not_found = -1;
+constexpr size_t not_found = -1;
 
 struct Attributes
 {
@@ -35,7 +35,7 @@ struct FileData
 
 struct FileControl
 {
-    size_t index = 0;                 // file index in files array in chip memory
+    size_t index = 0;                 // file index in files array in server memory
     std::uint8_t* p_record = nullptr; // pointer to record
     std::uint8_t length = 0;          // actual record length in bytes
 };
@@ -70,6 +70,22 @@ struct RegisterInfo
     Callback callback = nullptr; // callback on the end of write operation
 };
 
+struct FileStatus
+{
+    size_t index = not_found;
+    std::uint8_t record_counter = 0;
+};
+
+class BufferControl
+{
+public:
+    void setSize(const std::uint8_t size) { buffer_size = size; }
+    std::uint8_t getSize() const { return buffer_size; }
+
+private:
+    std::uint8_t buffer_size = 0;
+};
+
 class ServerResources
 {
     using FileAccess = bool (*)(const std::uint8_t* data, const size_t size);
@@ -90,6 +106,7 @@ private:
     const std::uint8_t record_size;
     std::uint8_t buffer_size = 0;
     FileAccess fileWrite = nullptr;
+    FileStatus active_file_status;
     bool getAccessToRecord(const FileService& service, FileControl& control);
     std::array<RegisterInfo, RegisterDefinitions::getSize()> registers;
     std::array<FileInfo, FileDefinitions::getSize()> files;

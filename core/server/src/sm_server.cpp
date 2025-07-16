@@ -11,6 +11,9 @@
 
 namespace sm
 {
+
+constexpr int required_offset = modbus::address_size + modbus::function_size;
+
 ServerExceptions ModbusServer::serverTask(std::uint8_t* data, const std::uint8_t length)
 {
     // recend what we have by default
@@ -34,7 +37,6 @@ ServerExceptions ModbusServer::serverTask(std::uint8_t* data, const std::uint8_t
 
     modbus::Exceptions exception = modbus::Exceptions::no_exception;
     std::uint8_t generated_length = 0;
-    size_t required_offset = modbus::address_size + modbus::function_size;
     switch (received_function)
     {
         case static_cast<std::uint8_t>(modbus::FunctionCodes::write_reg):

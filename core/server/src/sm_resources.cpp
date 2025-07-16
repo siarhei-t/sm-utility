@@ -10,10 +10,10 @@
 #include "../inc/sm_resources.hpp"
 #include "../../common/sm_modbus.hpp"
 #include <cstddef>
+#include <cstring>
 
 namespace sm
 {
-
 
 bool ServerResources::getAccessToRecord(const FileService& service, FileControl& control)
 {
@@ -100,16 +100,57 @@ bool ServerResources::readRegister(const std::uint16_t address, const std::uint1
 
 bool ServerResources::writeFile(const FileService& service, const std::uint8_t* data)
 {
-    (void)(service);
-    (void)(data);
+    FileControl file_control;
+    if (!getAccessToRecord(service, file_control))
+    {
+        return false;
+    }
+    if (!files[file_control.index].attributes.property_write)
+    {
+        return false;
+    }
+
+    if (files[file_control.index].attributes.property_flash)
+    {
+        if (fileWrite == nullptr)
+        {
+            return false;
+        }
+        else
+        {
+            bool hw_status = fileWrite(file_control.p_record, file_control.length);
+            if (!hw_status)
+            {
+                // place for buffer reset to default size
+                return false;
+            }
+        }
+    }
+    else
+    {
+        std::memcpy(file_control.p_record, data, file_control.length);
+    }
+    // fileOperationUpdate_v(fileControl_s.index_u8);
+
     return true;
 }
 
 bool ServerResources::readFile(const FileService& service, std::uint8_t* data, std::uint8_t& size)
 {
-    (void)(service);
-    (void)(data);
-    (void)(size);
+    FileControl file_control;
+    if (!getAccessToRecord(service, file_control))
+    {
+        return false;
+    }
+    if (!files[file_control.index].attributes.property_read)
+    {
+        return false;
+    }
+    data[0] = file_control.length + 1;
+    data[1] = file_control.length;
+    data[2] = modbus::rw_file_reference;
+    std::memcpy(data + 3, file_control.p_record, file_control.length);
+    size = file_control.length + 3;
     return true;
 }
 
