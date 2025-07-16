@@ -8,7 +8,6 @@
  */
 
 #include "../inc/sm_resources.hpp"
-#include "../../common/sm_modbus.hpp"
 #include <cstddef>
 #include <cstring>
 
@@ -40,6 +39,29 @@ bool ServerResources::getAccessToRecord(const FileService& service, FileControl&
             control.p_record = (uint8_t*)(files[index].data.p_data) + service.record_id * record_size;
             return true;
         }
+    }
+}
+
+bool ServerResources::fileOperationProcess(const int index)
+{
+
+    if (index > (files.size() - 1))
+    {
+        resetFileOperation();
+        return false;
+    }
+    else
+    {
+        ++file_record_counter;
+        if (file_record_counter >= files[index].amount_of_records)
+        {
+            resetFileOperation();
+            if (files[index].callback != nullptr)
+            {
+                files[index].callback(files[index]);
+            }
+        }
+        return true;
     }
 }
 
@@ -121,7 +143,7 @@ bool ServerResources::writeFile(const FileService& service, const std::uint8_t* 
             bool hw_status = fileWrite(file_control.p_record, file_control.length);
             if (!hw_status)
             {
-                // place for buffer reset to default size
+                resetFileOperation();
                 return false;
             }
         }
@@ -130,9 +152,7 @@ bool ServerResources::writeFile(const FileService& service, const std::uint8_t* 
     {
         std::memcpy(file_control.p_record, data, file_control.length);
     }
-    // fileOperationUpdate_v(fileControl_s.index_u8);
-
-    return true;
+    return fileOperationProcess(file_control.index);
 }
 
 bool ServerResources::readFile(const FileService& service, std::uint8_t* data, std::uint8_t& size)
@@ -151,7 +171,7 @@ bool ServerResources::readFile(const FileService& service, std::uint8_t* data, s
     data[2] = modbus::rw_file_reference;
     std::memcpy(data + 3, file_control.p_record, file_control.length);
     size = file_control.length + 3;
-    return true;
+    return fileOperationProcess(file_control.index);
 }
 
 std::uint16_t ServerResources::extractHalfWord(const std::uint8_t* data)

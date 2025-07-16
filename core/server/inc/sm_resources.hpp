@@ -11,6 +11,7 @@
 #define SM_RESOURCES_HPP
 
 #include "../../common/sm_common.hpp"
+#include "../../common/sm_modbus.hpp"
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -19,7 +20,8 @@ namespace sm
 {
 
 constexpr size_t not_found = -1;
-
+constexpr std::uint8_t default_buffer_size = modbus::address_size + modbus::min_pdu_with_data_size + modbus::crc_size;
+;
 struct Attributes
 {
     bool property_read = false;
@@ -70,12 +72,6 @@ struct RegisterInfo
     Callback callback = nullptr; // callback on the end of write operation
 };
 
-struct FileStatus
-{
-    size_t index = not_found;
-    std::uint8_t record_counter = 0;
-};
-
 class BufferControl
 {
 public:
@@ -91,23 +87,31 @@ class ServerResources
     using FileAccess = bool (*)(const std::uint8_t* data, const size_t size);
 
 public:
-    ServerResources(std::uint8_t record_size) : record_size(record_size) {}
+    ServerResources(std::uint8_t record_size, FileAccess file_write, BufferControl* buffer_control)
+        : record_size(record_size), fileWrite(file_write), buffer_control(buffer_control)
+    {
+    }
     bool writeRegister(const std::uint16_t address, const std::uint16_t value);
     bool readRegister(const std::uint16_t address, const std::uint16_t quantity, std::uint8_t* data, std::uint8_t& size);
     bool writeFile(const FileService& service, const std::uint8_t* data);
     bool readFile(const FileService& service, std::uint8_t* data, std::uint8_t& size);
     bool setupFile(const FileInfo& reg, const int index);
     bool setupRegister(const RegisterInfo& reg, const int index);
-    void setupFileFlashAccess(FileAccess write = nullptr) { fileWrite = write; }
     static std::uint16_t extractHalfWord(const std::uint8_t* data);
     static void insertHalfWord(std::uint8_t* data, const std::uint16_t half_word);
 
 private:
     const std::uint8_t record_size;
-    std::uint8_t buffer_size = 0;
-    FileAccess fileWrite = nullptr;
-    FileStatus active_file_status;
+    BufferControl* buffer_control;
+    FileAccess fileWrite;
+    std::uint16_t file_record_counter;
     bool getAccessToRecord(const FileService& service, FileControl& control);
+    bool fileOperationProcess(const int index);
+    void resetFileOperation()
+    {
+        file_record_counter = 0;
+        buffer_control->setSize(default_buffer_size);
+    }
     std::array<RegisterInfo, RegisterDefinitions::getSize()> registers;
     std::array<FileInfo, FileDefinitions::getSize()> files;
 };
