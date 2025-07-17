@@ -29,19 +29,14 @@ enum class ServerExceptions
 class ModbusServer
 {
 public:
-    ModbusServer(std::uint8_t address, std::uint8_t record_size) : address(address), server_resources(record_size, nullptr, &buffer_control)
-    {
-        buffer_control.setSize(default_buffer_size);
-    }
+    ModbusServer(std::uint8_t address, ServerResources* server_resources) : address(address), server_resources(server_resources) {}
     ServerExceptions serverTask(std::uint8_t* data, const std::uint8_t length);
-    std::uint8_t getReceiveBufferSize() const { return buffer_control.getSize(); }
     std::uint8_t getTransmitBufferSize() const { return tx_length; }
 
 private:
     const std::uint8_t address;
     std::uint8_t tx_length = 0;
-    BufferControl buffer_control;
-    ServerResources server_resources;
+    ServerResources* server_resources;
 
     modbus::Exceptions writeRegister(std::uint8_t* data);
     modbus::Exceptions readRegister(std::uint8_t* data, std::uint8_t& length);

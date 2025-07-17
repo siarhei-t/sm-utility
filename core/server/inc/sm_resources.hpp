@@ -87,21 +87,19 @@ class ServerResources
     using FileAccess = bool (*)(const std::uint8_t* data, const size_t size);
 
 public:
-    ServerResources(std::uint8_t record_size, FileAccess file_write, BufferControl* buffer_control)
-        : record_size(record_size), fileWrite(file_write), buffer_control(buffer_control)
-    {
-    }
+    ServerResources(std::uint8_t record_size, BufferControl* buffer_control) : record_size(record_size), buffer_control(buffer_control) {}
     bool writeRegister(const std::uint16_t address, const std::uint16_t value);
     bool readRegister(const std::uint16_t address, const std::uint16_t quantity, std::uint8_t* data, std::uint8_t& size);
     bool writeFile(const FileService& service, const std::uint8_t* data);
     bool readFile(const FileService& service, std::uint8_t* data, std::uint8_t& size);
-    bool setupFile(const FileInfo& reg, const int index);
-    bool setupRegister(const RegisterInfo& reg, const int index);
+    bool setFile(const FileInfo& reg, const int index);
+    bool setRegister(const RegisterInfo& reg, const int index);
+    void setFlashAccess(FileAccess file_write) { fileWrite = file_write; }
 
 private:
     const std::uint8_t record_size;
     BufferControl* buffer_control;
-    FileAccess fileWrite;
+    FileAccess fileWrite = nullptr;
     std::uint16_t file_record_counter;
     bool getAccessToRecord(const FileService& service, FileControl& control);
     bool fileOperationProcess(const int index);

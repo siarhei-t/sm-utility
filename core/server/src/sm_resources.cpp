@@ -136,6 +136,7 @@ bool ServerResources::writeFile(const FileService& service, const std::uint8_t* 
     {
         if (fileWrite == nullptr)
         {
+            resetFileOperation();
             return false;
         }
         else

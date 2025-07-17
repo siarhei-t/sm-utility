@@ -82,7 +82,7 @@ modbus::Exceptions ModbusServer::writeRegister(std::uint8_t* data)
     std::uint16_t address = extract_half_word(data);
     std::uint16_t value = extract_half_word(data + sizeof(std::uint16_t));
 
-    if (server_resources.writeRegister(address, value))
+    if (server_resources->writeRegister(address, value))
     {
         return modbus::Exceptions::no_exception;
     }
@@ -103,7 +103,7 @@ modbus::Exceptions ModbusServer::readRegister(std::uint8_t* data, std::uint8_t& 
     }
     else
     {
-        if (server_resources.readRegister(address, quantity, data, length))
+        if (server_resources->readRegister(address, quantity, data, length))
         {
             return modbus::Exceptions::no_exception;
         }
@@ -127,7 +127,7 @@ modbus::Exceptions ModbusServer::writeFile(std::uint8_t* data)
     }
     else
     {
-        if (server_resources.writeFile(file_service, data + (sizeof(std::uint16_t) * 4)))
+        if (server_resources->writeFile(file_service, data + (sizeof(std::uint16_t) * 4)))
         {
             return modbus::Exceptions::no_exception;
         }
@@ -152,7 +152,7 @@ modbus::Exceptions ModbusServer::readFile(std::uint8_t* data, std::uint8_t& leng
     }
     else
     {
-        if (server_resources.readFile(file_service, data, length))
+        if (server_resources->readFile(file_service, data, length))
         {
             return modbus::Exceptions::no_exception;
         }
