@@ -55,6 +55,7 @@ public:
 private:
     ServerExceptions last_error = ServerExceptions::no_error;
     ModbusServer server;
+
     std::array<std::uint8_t, modbus::max_adu_size> buffer;
     c com;
     t timer;

@@ -108,7 +108,7 @@ bool ServerResources::readRegister(const std::uint16_t address, const std::uint1
     {
         if (registers[offset_address + i].attributes.property_read)
         {
-            insertHalfWord(&data[counter], registers[offset_address + i].value);
+            insert_half_word(&data[counter], registers[offset_address + i].value);
             counter += 2;
         }
         else
@@ -172,19 +172,6 @@ bool ServerResources::readFile(const FileService& service, std::uint8_t* data, s
     std::memcpy(data + 3, file_control.p_record, file_control.length);
     size = file_control.length + 3;
     return fileOperationProcess(file_control.index);
-}
-
-std::uint16_t ServerResources::extractHalfWord(const std::uint8_t* data)
-{
-    std::uint16_t half_word = data[1];
-    half_word |= static_cast<std::uint16_t>(data[0]) << 8;
-    return half_word;
-}
-
-void ServerResources::insertHalfWord(std::uint8_t* data, const std::uint16_t half_word)
-{
-    data[0] = static_cast<std::uint8_t>((half_word >> 8));
-    data[1] = static_cast<std::uint8_t>(half_word);
 }
 
 } // namespace sm

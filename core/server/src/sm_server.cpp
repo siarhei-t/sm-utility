@@ -70,7 +70,7 @@ ServerExceptions ModbusServer::serverTask(std::uint8_t* data, const std::uint8_t
         if (generated_length != 0)
         {
             std::uint16_t new_crc = crc16(data, required_offset + generated_length);
-            server_resources.insertHalfWord(data + required_offset + generated_length, new_crc);
+            insert_half_word(data + required_offset + generated_length, new_crc);
             tx_length = required_offset + generated_length + modbus::crc_size;
         }
         return ServerExceptions::no_error;
@@ -79,8 +79,8 @@ ServerExceptions ModbusServer::serverTask(std::uint8_t* data, const std::uint8_t
 
 modbus::Exceptions ModbusServer::writeRegister(std::uint8_t* data)
 {
-    std::uint16_t address = server_resources.extractHalfWord(data);
-    std::uint16_t value = server_resources.extractHalfWord(data + sizeof(std::uint16_t));
+    std::uint16_t address = extract_half_word(data);
+    std::uint16_t value = extract_half_word(data + sizeof(std::uint16_t));
 
     if (server_resources.writeRegister(address, value))
     {
@@ -94,8 +94,8 @@ modbus::Exceptions ModbusServer::writeRegister(std::uint8_t* data)
 
 modbus::Exceptions ModbusServer::readRegister(std::uint8_t* data, std::uint8_t& length)
 {
-    std::uint16_t address = server_resources.extractHalfWord(data);
-    std::uint16_t quantity = server_resources.extractHalfWord(data + sizeof(std::uint16_t));
+    std::uint16_t address = extract_half_word(data);
+    std::uint16_t quantity = extract_half_word(data + sizeof(std::uint16_t));
 
     if ((quantity < modbus::min_amount_of_regs) && (quantity > modbus::max_amount_of_regs))
     {
@@ -118,9 +118,8 @@ modbus::Exceptions ModbusServer::writeFile(std::uint8_t* data)
 {
     std::uint8_t byte_counter = data[0];
     std::uint8_t reference_type = data[1];
-    FileService file_service(server_resources.extractHalfWord(data + sizeof(std::uint16_t)),
-                             server_resources.extractHalfWord(data + (sizeof(std::uint16_t) * 2)),
-                             server_resources.extractHalfWord(data + (sizeof(std::uint16_t) * 3)));
+    FileService file_service(extract_half_word(data + sizeof(std::uint16_t)), extract_half_word(data + (sizeof(std::uint16_t) * 2)),
+                             extract_half_word(data + (sizeof(std::uint16_t) * 3)));
 
     if ((reference_type != modbus::rw_file_reference) || (byte_counter < modbus::min_rw_file_byte_counter) || (byte_counter > modbus::max_rw_file_byte_counter))
     {
@@ -144,9 +143,8 @@ modbus::Exceptions ModbusServer::readFile(std::uint8_t* data, std::uint8_t& leng
     std::uint8_t byte_counter = data[0];
     std::uint8_t reference_type = data[1];
 
-    FileService file_service(server_resources.extractHalfWord(data + sizeof(std::uint16_t)),
-                             server_resources.extractHalfWord(data + (sizeof(std::uint16_t) * 2)),
-                             server_resources.extractHalfWord(data + (sizeof(std::uint16_t) * 3)));
+    FileService file_service(extract_half_word(data + sizeof(std::uint16_t)), extract_half_word(data + (sizeof(std::uint16_t) * 2)),
+                             extract_half_word(data + (sizeof(std::uint16_t) * 3)));
 
     if ((reference_type != modbus::rw_file_reference) || (byte_counter < modbus::min_rw_file_byte_counter) || (byte_counter > modbus::max_rw_file_byte_counter))
     {

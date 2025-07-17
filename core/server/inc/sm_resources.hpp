@@ -97,8 +97,6 @@ public:
     bool readFile(const FileService& service, std::uint8_t* data, std::uint8_t& size);
     bool setupFile(const FileInfo& reg, const int index);
     bool setupRegister(const RegisterInfo& reg, const int index);
-    static std::uint16_t extractHalfWord(const std::uint8_t* data);
-    static void insertHalfWord(std::uint8_t* data, const std::uint16_t half_word);
 
 private:
     const std::uint8_t record_size;
