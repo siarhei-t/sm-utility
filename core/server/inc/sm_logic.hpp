@@ -11,20 +11,19 @@
 #define SM_INIT_HPP
 
 #include "sm_resources.hpp"
-#include "sm_server.hpp"
 
 namespace sm
 {
 
-class ServerInitializer
+class ServerLogic
 {
+
 public:
-    void initModbusServer(ServerResources& resources, ModbusServer& server, BufferControl& buffer);
+    ServerLogic(BufferControl* buffer_control);
+    void initModbusServer(ServerResources& resources);
 
 private:
     void initResources(ServerResources& resources);
-    void initServer(ModbusServer& server);
-    void initBuffer(BufferControl& buffer);
 };
 
 } // namespace sm

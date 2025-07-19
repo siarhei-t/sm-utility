@@ -6,7 +6,7 @@ enable_language(CXX)
 
 set(COMMON_SOURCES
         src/sm_server.cpp
-        src/sm_init.cpp
+        src/sm_logic.cpp
         src/sm_resources.cpp
 )
 
@@ -16,7 +16,7 @@ set(COMMON_HEADERS
         inc/sm_resources.hpp
         inc/sm_server.hpp
         inc/sm_timer.hpp
-        inc/sm_init.hpp
+        inc/sm_logic.hpp
         ../common/sm_common.hpp
         ../common/sm_modbus.hpp
 )

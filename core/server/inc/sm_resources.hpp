@@ -21,7 +21,7 @@ namespace sm
 
 constexpr size_t not_found = -1;
 constexpr std::uint8_t default_buffer_size = modbus::address_size + modbus::min_pdu_with_data_size + modbus::crc_size;
-;
+
 struct Attributes
 {
     bool property_read = false;
@@ -75,10 +75,45 @@ struct RegisterInfo
 class BufferControl
 {
 public:
-    void setSize(const std::uint8_t size) { buffer_size = size; }
+    BufferControl(std::uint8_t size) : default_size(size) { setSize(size); }
+    void setSize(const std::uint8_t size)
+    {
+        if (size < default_buffer_size)
+        {
+            return;
+        }
+        else if (size > default_buffer_size)
+        {
+            extended_mode = true;
+        }
+        buffer_size = size;
+    }
+    void setRecordCounter(const std::uint16_t counter) { record_counter = counter; }
     std::uint8_t getSize() const { return buffer_size; }
+    void updateRecordCounter()
+    {
+        if (extended_mode)
+        {
+            if (record_counter != 0)
+            {
+                --record_counter;
+                if (record_counter == 0)
+                {
+                    extended_mode = false;
+                    setSize(default_size);
+                }
+            }
+            else
+            {
+                extended_mode = false;
+            }
+        }
+    }
 
 private:
+    bool extended_mode = false;
+    const std::uint8_t default_size;
+    std::uint16_t record_counter = 0;
     std::uint8_t buffer_size = 0;
 };
 
@@ -92,9 +127,10 @@ public:
     bool readRegister(const std::uint16_t address, const std::uint16_t quantity, std::uint8_t* data, std::uint8_t& size);
     bool writeFile(const FileService& service, const std::uint8_t* data);
     bool readFile(const FileService& service, std::uint8_t* data, std::uint8_t& size);
-    bool setFile(const FileInfo& reg, const int index);
+    bool setFile(const FileInfo& file, const int index);
     bool setRegister(const RegisterInfo& reg, const int index);
     void setFlashAccess(FileAccess file_write) { fileWrite = file_write; }
+    std::uint8_t getRecordSize() const { return record_size; }
 
 private:
     const std::uint8_t record_size;

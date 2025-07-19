@@ -10,7 +10,8 @@
 #ifndef SM_NODE_HPP
 #define SM_NODE_HPP
 
-#include "sm_init.hpp"
+#include "sm_logic.hpp"
+#include "sm_resources.hpp"
 #include "sm_server.hpp"
 #include <cstddef>
 #include <cstdint>
@@ -24,10 +25,13 @@ template <typename c, typename t, typename WaitPolicy>
 class DataNode
 {
 public:
-    DataNode(std::uint8_t address, std::uint8_t record_size) : server(address, &server_resources), server_resources(record_size, &buffer_control) {}
+    DataNode(std::uint8_t address, std::uint8_t record_size)
+        : server_logic(&buffer_control), server(address, &server_resources), server_resources(record_size, &buffer_control)
+    {
+    }
     void start()
     {
-        initializer.initModbusServer(server_resources, server, buffer_control);
+        server_logic.initModbusServer(server_resources);
         com.init();
         if (com.isConfigured())
         {
@@ -56,10 +60,10 @@ public:
 
 private:
     ServerExceptions last_error = ServerExceptions::no_error;
-    ServerInitializer initializer;
+    ServerLogic server_logic;
     ModbusServer server;
     ServerResources server_resources;
-    BufferControl buffer_control;
+    BufferControl buffer_control = BufferControl(default_buffer_size);
     std::array<std::uint8_t, modbus::max_adu_size> buffer;
     c com;
     t timer;

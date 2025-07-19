@@ -8,11 +8,38 @@
  */
 
 #include "../inc/sm_resources.hpp"
+
 #include <cstddef>
 #include <cstring>
 
 namespace sm
 {
+
+bool ServerResources::setFile(const FileInfo& file, const int index)
+{
+    if ((index < 0) || (index > FileDefinitions::getSize()))
+    {
+        return false;
+    }
+    else
+    {
+        files[index] = file;
+        return true;
+    }
+}
+
+bool ServerResources::setRegister(const RegisterInfo& reg, const int index)
+{
+    if ((index < 0) || (index > RegisterDefinitions::getSize()))
+    {
+        return false;
+    }
+    else
+    {
+        registers[index] = reg;
+        return true;
+    }
+}
 
 bool ServerResources::getAccessToRecord(const FileService& service, FileControl& control)
 {

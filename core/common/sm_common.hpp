@@ -15,14 +15,21 @@
 namespace sm
 {
 
+class ServerCommands
+{
+public:
+    static constexpr std::uint16_t file_read_prepare = 1;
+    static constexpr std::uint16_t file_write_prepare = 2;
+};
+
 class RegisterDefinitions
 {
 public:
-    static constexpr std::uint16_t file_control = 0;
-    static constexpr std::uint16_t prepare_to_update = 1;
-    static constexpr std::uint16_t app_erase = 2;
-    static constexpr std::uint16_t record_size = 3;
-    static constexpr std::uint16_t record_counter = 4;
+    static constexpr std::uint16_t record_size = 0;
+    static constexpr std::uint16_t file_control = 1;
+    static constexpr std::uint16_t record_counter = 2;
+    static constexpr std::uint16_t prepare_to_update = 3;
+    static constexpr std::uint16_t app_erase = 4;
     static constexpr std::uint16_t status = 5;
     static constexpr std::uint16_t gateway_buffer_size = 6;
 
