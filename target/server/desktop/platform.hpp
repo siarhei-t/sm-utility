@@ -55,8 +55,8 @@ public:
     DesktopCom() : server_thread(&DesktopCom::serverThread, this) {}
     ~DesktopCom()
     {
-        blocker_reading.notify_one();
         thread_stop.store(true, std::memory_order_relaxed);
+        blocker_reading.notify_one();
         server_thread.join();
     }
     bool platformInit();

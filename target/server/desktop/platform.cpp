@@ -26,7 +26,7 @@ void DesktopCom::serverThread()
     while (!thread_stop.load(std::memory_order_relaxed))
     {
         std::unique_lock<std::mutex> lk(m);
-        blocker_reading.wait(lk, [this] { return buffer_support.ptr != nullptr; });
+        blocker_reading.wait(lk, [this] { return ((buffer_support.ptr != nullptr) || thread_stop.load(std::memory_order_relaxed)); });
         if (thread_stop.load(std::memory_order_relaxed))
         {
             break;
@@ -51,6 +51,7 @@ void DesktopCom::serverThread()
         if (buffer_support.size > 0)
         {
             std::copy(full_data.begin(), full_data.end(), buffer_support.ptr);
+            buffer_support = BufferSupport();
             reading_done = true;
             blocker_done.notify_one();
         }
