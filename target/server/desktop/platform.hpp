@@ -10,40 +10,28 @@
 #ifndef PLATFORM_HPP
 #define PLATFORM_HPP
 
+#include "../../../core/external/simple-serial-port/inc/serial_port.hpp"
+#include "../../../core/server/inc/sm_com.hpp"
+#include "../../../core/server/inc/sm_timer.hpp"
 #include <condition_variable>
 #include <cstddef>
 #include <mutex>
 #include <thread>
-#include "../../../core/server/inc/sm_com.hpp"
-#include "../../../core/server/inc/sm_timer.hpp"
-#include "../../../core/server/inc/sm_node.hpp"
-#include "../../../core/external/simple-serial-port/inc/serial_port.hpp"
 
 struct BufferSupport
 {
-    size_t buffer_size = 0;
-    std::uint8_t* buffer_ptr = nullptr;
+    size_t size = 0;
+    std::uint8_t* ptr = nullptr;
 };
 
 class PlatformSupport
 {
 public:
-    void setPath(std::string& new_path)
-    {
-        path = new_path;
-    }
-    void setConfig(sp::PortConfig& config)
-    {
-        this->config = config;
-    }
-    static std::string& getPath()
-    {
-        return path;
-    }
-    static sp::PortConfig& getConfig()
-    {
-        return config;
-    }
+    void setPath(std::string& new_path) { path = new_path; }
+    void setConfig(sp::PortConfig& config) { this->config = config; }
+    static std::string& getPath() { return path; }
+    static sp::PortConfig& getConfig() { return config; }
+
 private:
     static std::string path;
     static sp::PortConfig config;
@@ -51,10 +39,7 @@ private:
 
 struct DesktopWaitPolicy
 {
-    static void wait()
-    {
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    }
+    static void wait() { std::this_thread::sleep_for(std::chrono::milliseconds(1)); }
 };
 
 class DesktopTimer : public sm::Timer<DesktopTimer>
@@ -70,7 +55,7 @@ public:
     DesktopCom() : server_thread(&DesktopCom::serverThread, this) {}
     ~DesktopCom()
     {
-        blocker.notify_one();
+        blocker_reading.notify_one();
         thread_stop.store(true, std::memory_order_relaxed);
         server_thread.join();
     }
@@ -81,7 +66,9 @@ public:
 
 private:
     std::mutex m;
-    std::condition_variable blocker;
+    bool reading_done = false;
+    std::condition_variable blocker_reading;
+    std::condition_variable blocker_done;
     std::thread server_thread;
     std::atomic<bool> thread_stop{false};
     sp::SerialPort serial_port;
