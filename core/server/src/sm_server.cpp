@@ -8,7 +8,7 @@
  */
 
 #include "../inc/sm_server.hpp"
-#include <cstdio>
+#include "../../common/sm_log.hpp"
 
 namespace sm
 {
@@ -23,13 +23,7 @@ ServerExceptions ModbusServer::serverTask(std::uint8_t* data, const std::uint8_t
     std::uint8_t received_address = data[0];
     std::uint8_t received_function = data[1];
 
-    std::printf("received message : \n");
-    for (int i = 0; i < length; ++i)
-    {
-        std::printf("0x%x ", data[i]);
-    }
-    std::printf("\n");
-    std::printf("received address : %d , function : %d  \n", received_address, received_function);
+    LOG_DEBUG("received address : %d , function : %d  \n", received_address, received_function);
     if (address != received_address)
     {
         return ServerExceptions::address_not_recognized;
@@ -38,9 +32,7 @@ ServerExceptions ModbusServer::serverTask(std::uint8_t* data, const std::uint8_t
     std::uint16_t received_crc = extract_half_word_le(data + (length - modbus::crc_size));
     if (received_crc != actual_crc)
     {
-        std::printf("expected crc : 0x%x , actual crc : 0x%x \n", received_crc, actual_crc);
-        std::printf("bad crc in received request! \n");
-
+        LOG_DEBUG("crc error, expected crc : 0x%x , actual crc : 0x%x \n", received_crc, actual_crc);
         generateException(data, modbus::Exceptions::exception_3);
         return ServerExceptions::bad_crc;
     }
@@ -50,28 +42,24 @@ ServerExceptions ModbusServer::serverTask(std::uint8_t* data, const std::uint8_t
     switch (received_function)
     {
         case static_cast<std::uint8_t>(modbus::FunctionCodes::write_reg):
-            std::printf("write register request! \n");
             // we will resend the same data that we already have in buffer
             exception = writeRegister(data + required_offset);
             break;
 
         case static_cast<std::uint8_t>(modbus::FunctionCodes::read_regs):
-            std::printf("read registers request! \n");
             exception = readRegister(data + required_offset, generated_length);
             break;
 
         case static_cast<std::uint8_t>(modbus::FunctionCodes::write_file):
-            std::printf("write file request! \n");
             exception = writeFile(data + required_offset);
             break;
 
         case static_cast<std::uint8_t>(modbus::FunctionCodes::read_file):
-            std::printf("read file request! \n");
             exception = readFile(data + required_offset, generated_length);
             break;
 
         default:
-            std::printf("unsupported function passed! \n");
+            LOG_INFO("unsupported function received. \n");
             generateException(data, modbus::Exceptions::exception_1);
             return ServerExceptions::function_exception;
     }
@@ -96,7 +84,7 @@ modbus::Exceptions ModbusServer::writeRegister(std::uint8_t* data)
 {
     std::uint16_t address = extract_half_word_be(data);
     std::uint16_t value = extract_half_word_be(data + sizeof(std::uint16_t));
-
+    LOG_INFO("writing 0x%x to register 0x%x \n", value, address);
     if (server_resources->writeRegister(address, value))
     {
         return modbus::Exceptions::no_exception;
@@ -112,7 +100,7 @@ modbus::Exceptions ModbusServer::readRegister(std::uint8_t* data, std::uint8_t& 
     std::uint16_t address = extract_half_word_be(data);
     std::uint16_t quantity = extract_half_word_be(data + sizeof(std::uint16_t));
 
-    std::printf(" reading %d registers from 0x%x address...", quantity, address);
+    LOG_INFO("reading %d registers from 0x%x address... \n", quantity, address);
     if ((quantity < modbus::min_amount_of_regs) && (quantity > modbus::max_amount_of_regs))
     {
         return modbus::Exceptions::exception_3;
@@ -136,7 +124,7 @@ modbus::Exceptions ModbusServer::writeFile(std::uint8_t* data)
     std::uint8_t reference_type = data[1];
     FileService file_service(extract_half_word_be(data + sizeof(std::uint16_t)), extract_half_word_be(data + (sizeof(std::uint16_t) * 2)),
                              extract_half_word_be(data + (sizeof(std::uint16_t) * 3)));
-
+    LOG_INFO("writing record %d  to file 0x%x \n", file_service.record_id, file_service.file_id);
     if ((reference_type != modbus::rw_file_reference) || (byte_counter < modbus::min_rw_file_byte_counter) || (byte_counter > modbus::max_rw_file_byte_counter))
     {
         return modbus::Exceptions::exception_3;
@@ -161,7 +149,7 @@ modbus::Exceptions ModbusServer::readFile(std::uint8_t* data, std::uint8_t& leng
 
     FileService file_service(extract_half_word_be(data + sizeof(std::uint16_t)), extract_half_word_be(data + (sizeof(std::uint16_t) * 2)),
                              extract_half_word_be(data + (sizeof(std::uint16_t) * 3)));
-
+    LOG_INFO("reading record %d  from file 0x%x \n", file_service.record_id, file_service.file_id);
     if ((reference_type != modbus::rw_file_reference) || (byte_counter < modbus::min_rw_file_byte_counter) || (byte_counter > modbus::max_rw_file_byte_counter))
     {
         return modbus::Exceptions::exception_3;

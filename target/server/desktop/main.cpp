@@ -7,10 +7,23 @@
  *
  */
 
+#include "../../../core/common/sm_log.hpp"
 #include "../../../core/server/inc/sm_node.hpp"
 #include "platform.hpp"
 #include <cassert>
-#include <iostream>
+
+#define ENABLE_LOG_INFO
+// #define ENABLE_LOG_DEBUG
+
+#ifdef ENABLE_LOG_INFO
+#undef LOG_INFO
+#define LOG_INFO std::printf
+#endif
+
+#ifdef ENABLE_LOG_DEBUG
+#undef LOG_DEBUG
+#define LOG_DEBUG std::printf
+#endif
 
 constexpr std::uint8_t record_size = 208;
 
@@ -20,7 +33,7 @@ int main(int argc, char* argv[])
 {
     if (argc < 3)
     {
-        std::printf("incorrect arguments list passed, exit...\n");
+        LOG_INFO("incorrect arguments list passed, exit...\n");
         return 0;
     }
     std::string path_to_port = argv[1];
@@ -31,7 +44,7 @@ int main(int argc, char* argv[])
         auto number = std::stoi(address_str);
         if ((number > modbus::max_rtu_address) || (number < modbus::min_rtu_address))
         {
-            std::cout << "out of range address passed, exit...\n";
+            LOG_INFO("out of range address passed, exit...\n");
             return 0;
         }
         else
@@ -41,7 +54,7 @@ int main(int argc, char* argv[])
     }
     catch (std::invalid_argument const& ex)
     {
-        std::cout << "invalid argument passed, exit...\n";
+        LOG_INFO("invalid argument passed, exit...\n");
         return 0;
     }
 

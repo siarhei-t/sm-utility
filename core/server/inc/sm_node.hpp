@@ -15,7 +15,6 @@
 #include "sm_server.hpp"
 #include <cstddef>
 #include <cstdint>
-#include <cstdio>
 
 namespace sm
 {
@@ -82,12 +81,6 @@ private:
         if (com.isReady())
         {
             last_error = server.serverTask(buffer.data(), buffer_control.getSize());
-            std::printf("generated answer  : \n");
-            for (int i = 0; i < server.getTransmitBufferSize(); ++i)
-            {
-                std::printf("0x%x ", buffer.data()[i]);
-            }
-            std::printf("\n");
             com.sendData(buffer.data(), server.getTransmitBufferSize());
             com.readData(buffer.data(), buffer_control.getSize());
         }
