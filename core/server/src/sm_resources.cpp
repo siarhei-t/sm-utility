@@ -135,7 +135,7 @@ bool ServerResources::readRegister(const std::uint16_t address, const std::uint1
     {
         if (registers[offset_address + i].attributes.property_read)
         {
-            insert_half_word(&data[counter], registers[offset_address + i].value);
+            insert_half_word_be(&data[counter], registers[offset_address + i].value);
             counter += 2;
         }
         else

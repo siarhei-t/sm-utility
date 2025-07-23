@@ -51,17 +51,30 @@ private:
     static constexpr std::uint16_t size = 2;
 };
 
-inline std::uint16_t extract_half_word(const std::uint8_t* data)
+inline std::uint16_t extract_half_word_le(const std::uint8_t* data)
 {
     std::uint16_t half_word = data[0];
     half_word |= static_cast<std::uint16_t>(data[1]) << 8;
     return half_word;
 }
 
-inline void insert_half_word(std::uint8_t* data, const std::uint16_t half_word)
+inline void insert_half_word_le(std::uint8_t* data, const std::uint16_t half_word)
 {
     data[0] = static_cast<std::uint8_t>(half_word);
     data[1] = static_cast<std::uint8_t>((half_word >> 8));
+}
+
+inline std::uint16_t extract_half_word_be(const std::uint8_t* data)
+{
+    std::uint16_t half_word = data[1];
+    half_word |= static_cast<std::uint16_t>(data[0]) << 8;
+    return half_word;
+}
+
+inline void insert_half_word_be(std::uint8_t* data, const std::uint16_t half_word)
+{
+    data[1] = static_cast<std::uint8_t>(half_word);
+    data[0] = static_cast<std::uint8_t>((half_word >> 8));
 }
 
 } // namespace sm

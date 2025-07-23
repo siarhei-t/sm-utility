@@ -80,10 +80,10 @@ bool ModbusMessage::isChecksumValid(const std::vector<std::uint8_t>& data) const
     }
     else
     {
-        std::uint16_t crc_lo = data[data.size() - crc_size];     // Low byte
-        std::uint16_t crc_hi = data[data.size() - crc_size + 1]; // High byte
+        std::uint16_t crc_lo = data[data.size() - crc_size];
+        std::uint16_t crc_hi = data[data.size() - crc_size + 1];
         std::uint16_t rec_crc = (crc_hi << 8) | crc_lo;
-        std::uint16_t actual_crc = modbus::crc16(data.data(), 3);
+        std::uint16_t actual_crc = modbus::crc16(data.data(), static_cast<std::uint16_t>(data.size()) - crc_size);
         if (actual_crc == rec_crc)
         {
             return true;

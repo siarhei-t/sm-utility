@@ -77,4 +77,10 @@ int main(int argc, char* argv[])
     {
         std::cout << "error: " << error_code.message() << "\n";
     }
+    std::cout << "ping success. \n";
+    error_code = client.taskReadRegisters(address, modbus::holding_regs_offset, 1);
+    if (error_code)
+    {
+        std::cout << "error: " << error_code.message() << "\n";
+    }
 }

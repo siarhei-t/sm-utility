@@ -43,7 +43,7 @@ void DesktopCom::serverThread()
             size_t bytes_read = serial_port.readBinary(partial_buf, remaining);
             if (bytes_read == 0)
             {
-                std::printf("reading timeout, bytes to read left : %d \n", (int)remaining);
+                // std::printf("reading timeout, bytes to read left : %d \n", (int)remaining);
                 continue;
             }
             full_data.insert(full_data.end(), partial_buf.begin(), partial_buf.begin() + bytes_read);
