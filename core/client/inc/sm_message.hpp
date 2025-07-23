@@ -52,8 +52,6 @@ private:
     ModbusMode mode = ModbusMode::pdu_only;
 
     void createMessage(std::vector<std::uint8_t>& buffer, const std::uint8_t func, const std::vector<std::uint8_t>& data, const std::uint8_t addr = 0);
-
-    std::uint16_t crc16(const std::vector<std::uint8_t>& data) const;
 };
 
 } // namespace modbus

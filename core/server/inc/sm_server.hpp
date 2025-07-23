@@ -43,7 +43,6 @@ private:
     modbus::Exceptions writeFile(std::uint8_t* data);
     modbus::Exceptions readFile(std::uint8_t* data, std::uint8_t& length);
     void generateException(std::uint8_t* data, const modbus::Exceptions exception);
-    static std::uint16_t crc16(const std::uint8_t* data, const std::uint16_t length);
 };
 
 } // namespace sm

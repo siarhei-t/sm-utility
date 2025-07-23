@@ -546,6 +546,11 @@ void ModbusClient::callServerExchange()
         task_info.error_code = e.code();
         return;
     }
+    for (int i = 0; i < response_data.size(); ++i)
+    {
+        std::printf("0x%x ", response_data[i]);
+    }
+    std::printf("\n");
 }
 
 } // namespace sm

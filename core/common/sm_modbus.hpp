@@ -84,6 +84,20 @@ enum class Exceptions
     exception_4 = 4
 };
 
+inline std::uint16_t crc16(const std::uint8_t* data, const std::uint16_t length)
+{
+    std::uint16_t crc = 0xFFFF;
+
+    for (std::uint16_t i = 0; i < length; ++i)
+    {
+        std::uint8_t tmp = data[i] ^ (crc & 0xFF);
+        crc >>= 8;
+        crc ^= modbus::crc16_table[tmp];
+    }
+
+    return crc;
+}
+
 } // namespace modbus
 
 #endif // SM_MODBUS_HPP

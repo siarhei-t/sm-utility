@@ -77,11 +77,4 @@ int main(int argc, char* argv[])
     {
         std::cout << "error: " << error_code.message() << "\n";
     }
-
-    // read first 6 registers from the server
-    error_code = client.taskReadRegisters(address, modbus::holding_regs_offset + 6, 1);
-    if (error_code)
-    {
-        std::cout << "error: " << error_code.message() << "\n";
-    }
 }

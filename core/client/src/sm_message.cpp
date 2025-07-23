@@ -9,6 +9,7 @@
 
 #include "../inc/sm_message.hpp"
 #include "../../common/sm_modbus.hpp"
+#include <cstdio>
 namespace
 {
 
@@ -79,17 +80,23 @@ bool ModbusMessage::isChecksumValid(const std::vector<std::uint8_t>& data) const
     }
     else
     {
-        std::vector<std::uint8_t> message;
-        message.insert(message.end(), data.begin(), data.end() - crc_size);
-        std::uint16_t rec_crc = data[data.size() - crc_size + 1];
-        rec_crc = (rec_crc << 8) | data[data.size() - crc_size];
-        std::uint16_t actual_crc = crc16(message);
+        std::uint16_t crc_lo = data[data.size() - crc_size];     // Low byte
+        std::uint16_t crc_hi = data[data.size() - crc_size + 1]; // High byte
+        std::uint16_t rec_crc = (crc_hi << 8) | crc_lo;
+        std::uint16_t actual_crc = modbus::crc16(data.data(), 3);
         if (actual_crc == rec_crc)
         {
             return true;
         }
         else
         {
+            std::printf("vector size : %d \n", (int)data.size());
+            for (int i = 0; i < data.size(); ++i)
+            {
+                std::printf("0x%x ", data[i]);
+            }
+            std::printf("\n");
+            std::printf("expected crc : 0x%x , actual crc : 0x%x \n", rec_crc, actual_crc);
             return false;
         }
     }
@@ -136,36 +143,10 @@ void ModbusMessage::createMessage(std::vector<std::uint8_t>& buffer, const std::
     buffer.insert(buffer.end(), data.begin(), data.end());
     if (mode == ModbusMode::rtu)
     {
-        uint16_t crc = crc16(buffer);
+        uint16_t crc = modbus::crc16(buffer.data(), static_cast<std::uint16_t>(buffer.size()));
         buffer.push_back(crc & 0xFF);
         buffer.push_back((crc >> 8) & 0xFF);
     }
-}
-
-std::uint16_t ModbusMessage::crc16(const std::vector<std::uint8_t>& data) const
-{
-    const std::uint16_t ibm_poly = 0xA001U;
-    std::uint16_t result = 0xFFFFU;
-
-    auto ibm_byte{[](std::uint16_t crc, std::uint8_t data) -> std::uint16_t
-                  {
-                      const std::uint16_t table[2] = {0x0000, ibm_poly};
-                      std::uint8_t xOr = 0;
-                      crc ^= data;
-                      for (std::uint8_t bit = 0; bit < 8; bit++)
-                      {
-                          xOr = crc & 0x01;
-                          crc >>= 1;
-                          crc ^= table[xOr];
-                      }
-                      return crc;
-                  }};
-
-    for (std::size_t i = 0; i < data.size(); ++i)
-    {
-        result = ibm_byte(result, data[i]);
-    }
-    return result;
 }
 
 } // namespace modbus

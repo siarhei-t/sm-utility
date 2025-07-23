@@ -8,6 +8,7 @@
  */
 
 #include "../inc/sm_server.hpp"
+#include <cstdio>
 
 namespace sm
 {
@@ -22,15 +23,24 @@ ServerExceptions ModbusServer::serverTask(std::uint8_t* data, const std::uint8_t
     std::uint8_t received_address = data[0];
     std::uint8_t received_function = data[1];
 
+    std::printf("received message : \n");
+    for (int i = 0; i < length; ++i)
+    {
+        std::printf("0x%x ", data[i]);
+    }
+    std::printf("\n");
+    std::printf("received address : %d , function : %d  \n", received_address, received_function);
     if (address != received_address)
     {
         return ServerExceptions::address_not_recognized;
     }
-    std::uint16_t actual_crc = crc16(data, length - modbus::crc_size);
-    std::uint16_t received_crc = data[length - modbus::crc_size];
-    received_crc |= data[length - modbus::crc_size + 1];
+    std::uint16_t actual_crc = modbus::crc16(data, length - modbus::crc_size);
+    std::uint16_t received_crc = extract_half_word(data + (length - modbus::crc_size));
+    std::printf("expected crc : 0x%x , actual crc : 0x%x \n", received_crc, actual_crc);
     if (received_crc != actual_crc)
     {
+        std::printf("bad crc in received request! \n");
+
         generateException(data, modbus::Exceptions::exception_3);
         return ServerExceptions::bad_crc;
     }
@@ -57,6 +67,7 @@ ServerExceptions ModbusServer::serverTask(std::uint8_t* data, const std::uint8_t
             break;
 
         default:
+            std::printf("unsupported function passed! \n");
             generateException(data, modbus::Exceptions::exception_1);
             return ServerExceptions::function_exception;
     }
@@ -69,7 +80,7 @@ ServerExceptions ModbusServer::serverTask(std::uint8_t* data, const std::uint8_t
     {
         if (generated_length != 0)
         {
-            std::uint16_t new_crc = crc16(data, required_offset + generated_length);
+            std::uint16_t new_crc = modbus::crc16(data, required_offset + generated_length);
             insert_half_word(data + required_offset + generated_length, new_crc);
             tx_length = required_offset + generated_length + modbus::crc_size;
         }
@@ -167,26 +178,9 @@ void ModbusServer::generateException(std::uint8_t* data, const modbus::Exception
 {
     data[1] |= modbus::function_error_mask;
     data[2] = static_cast<std::uint8_t>(exception);
-    std::uint16_t crc = crc16(data, modbus::exception_pdu_size);
-    data[3] = static_cast<std::uint8_t>(crc & 0xFF);
-    data[4] = static_cast<std::uint8_t>((crc & 0xFF00) >> 8);
+    std::uint16_t crc = modbus::crc16(data, modbus::exception_pdu_size + modbus::address_size);
+    insert_half_word(data + modbus::address_size + modbus::exception_pdu_size, crc);
     tx_length = modbus::address_size + modbus::exception_pdu_size + modbus::crc_size;
-};
-
-std::uint16_t ModbusServer::crc16(const std::uint8_t* data, const std::uint16_t length)
-{
-    std::uint16_t crc = 0xFFFF;
-    std::uint16_t data_counter = length;
-    std::uint16_t mem_counter = 0;
-
-    for (; data_counter > 0; --data_counter)
-    {
-        std::uint8_t tmp = data[mem_counter] ^ crc;
-        ++mem_counter;
-        crc >>= 8;
-        crc ^= modbus::crc16_table[tmp];
-    }
-    return crc;
 };
 
 } // namespace sm
