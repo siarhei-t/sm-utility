@@ -67,6 +67,7 @@ void DesktopCom::platformReadData(std::uint8_t data[], const size_t amount)
     blocker_reading.notify_one();
     std::unique_lock<std::mutex> lk(m);
     blocker_done.wait(lk, [this] { return reading_done; });
+    setReady();
 }
 
 void DesktopCom::platformSendData(std::uint8_t data[], const size_t amount)
