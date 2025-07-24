@@ -30,9 +30,6 @@ constexpr int server_not_found = -1;
 constexpr int default_task_wait_delay_ms = 50;
 constexpr int task_complete_value = 100;
 constexpr int task_not_started_value = 0;
-constexpr std::uint16_t file_read_prepare = 1;
-constexpr std::uint16_t file_write_prepare = 2;
-constexpr std::uint16_t app_erase_request = 1;
 
 enum class ClientTasks
 {
@@ -87,21 +84,13 @@ struct ServerInfo
 {
     std::uint8_t addr = 0;
     // record size will be configured automatically if register with ServerRegisters::record_size index will be read
-    std::uint8_t record_size = 0;
+    std::uint16_t record_size = 0;
+    // start address of last read registers vector
+    std::uint16_t reg_start_address = 0;
+    // vector contains last set of registers read
+    std::vector<uint8_t> regs;
     // the server will be marked as available if ClientTasks::ping completes successfully
     ServerStatus status = ServerStatus::unavailable;
-};
-
-struct ServerRegisters
-{
-    std::uint16_t reg_start_address = modbus::holding_regs_offset;
-    std::vector<std::uint16_t> values;
-};
-
-struct ServerData
-{
-    ServerInfo info;
-    ServerRegisters registers;
 };
 
 class ModbusClient
@@ -189,13 +178,6 @@ public:
      */
     int getActualTaskProgress() const;
     /**
-     * @brief Get vector with actual values of server registers
-     *
-     * @param dev_addr server address in Modbus application layer
-     * @param registers reference to vector with registers
-     */
-    void getLastServerRegList(const std::uint8_t dev_addr, ServerRegisters& registers);
-    /**
      * @brief forced setup server as available to skip ClientTasks::ping task
      *
      * @param dev_addr server address in Modbus application layer
@@ -217,7 +199,7 @@ private:
     std::vector<std::uint8_t> request_data;
     std::vector<std::uint8_t> response_data;
     modbus::ModbusMessage modbus_message = modbus::ModbusMessage(modbus::ModbusMode::rtu);
-    std::vector<ServerData> servers;
+    std::vector<ServerInfo> servers;
     std::thread client_thread;
     std::atomic<bool> thread_stop{false};
     std::future<void> task;

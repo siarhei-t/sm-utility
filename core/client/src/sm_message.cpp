@@ -8,8 +8,9 @@
  */
 
 #include "../inc/sm_message.hpp"
+#include "../../common/sm_log.hpp"
 #include "../../common/sm_modbus.hpp"
-#include <cstdio>
+
 namespace
 {
 
@@ -90,13 +91,7 @@ bool ModbusMessage::isChecksumValid(const std::vector<std::uint8_t>& data) const
         }
         else
         {
-            std::printf("vector size : %d \n", (int)data.size());
-            for (int i = 0; i < data.size(); ++i)
-            {
-                std::printf("0x%x ", data[i]);
-            }
-            std::printf("\n");
-            std::printf("expected crc : 0x%x , actual crc : 0x%x \n", rec_crc, actual_crc);
+            LOG_INFO("error, expected crc : 0x%x , actual crc : 0x%x \n", rec_crc, actual_crc);
             return false;
         }
     }

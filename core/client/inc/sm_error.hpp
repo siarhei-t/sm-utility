@@ -1,7 +1,7 @@
 /**
  * @file sm_error.hpp
  *
- * @brief overriding std::error_code for ModbusClient
+ * @brief header for sm_error.cpp
  *
  * @author Siarhei Tatarchanka
  *
@@ -32,6 +32,7 @@ enum class ClientErrors
 const std::error_category& sm_category();
 
 inline std::error_code make_error_code(ClientErrors error) noexcept { return std::error_code(static_cast<int>(error), sm_category()); }
+
 } // namespace sm
 
 #endif // SM_ERROR_H

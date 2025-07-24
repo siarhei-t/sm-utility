@@ -37,7 +37,7 @@ int ModbusClient::getActualTaskProgress() const
 
 int ModbusClient::getServerIndex(const std::uint8_t address) const
 {
-    auto it = std::find_if(servers.begin(), servers.end(), [address](const ServerData& server) { return server.info.addr == address; });
+    auto it = std::find_if(servers.begin(), servers.end(), [address](const ServerInfo& server) { return server.addr == address; });
     if (it != servers.end())
     {
         return std::distance(servers.begin(), it);
@@ -48,22 +48,12 @@ int ModbusClient::getServerIndex(const std::uint8_t address) const
     }
 }
 
-void ModbusClient::getLastServerRegList(const std::uint8_t dev_addr, ServerRegisters& registers)
-{
-    registers = ServerRegisters();
-    auto index = getServerIndex(dev_addr);
-    if (index != server_not_found)
-    {
-        registers = servers[index].registers;
-    }
-}
-
 bool ModbusClient::setServerAsAvailable(const std::uint8_t dev_addr)
 {
     auto index = getServerIndex(dev_addr);
     if (index != server_not_found)
     {
-        servers[index].info.status = ServerStatus::available;
+        servers[index].status = ServerStatus::available;
         return true;
     }
     else
@@ -77,7 +67,7 @@ bool ModbusClient::setServerRecordMaxSize(const std::uint8_t dev_addr, const std
     auto index = getServerIndex(dev_addr);
     if (index != server_not_found)
     {
-        servers[index].info.record_size = record_size;
+        servers[index].record_size = record_size;
         return true;
     }
     else
@@ -119,8 +109,8 @@ void ModbusClient::addServer(const std::uint8_t addr)
 {
     if (getServerIndex(addr) == server_not_found)
     {
-        servers.push_back(ServerData());
-        servers.back().info.addr = addr;
+        servers.push_back(ServerInfo());
+        servers.back().addr = addr;
     }
 }
 
@@ -194,7 +184,7 @@ std::error_code ModbusClient::taskWriteRegister(const std::uint8_t dev_addr, con
     {
         return make_error_code(ClientErrors::server_not_connected);
     }
-    if (servers[index].info.status == ServerStatus::unavailable)
+    if (servers[index].status == ServerStatus::unavailable)
     {
         return make_error_code(ClientErrors::server_not_connected);
     }
@@ -226,14 +216,12 @@ std::error_code ModbusClient::taskReadRegisters(const std::uint8_t dev_addr, con
     {
         return make_error_code(ClientErrors::server_not_connected);
     }
-    if (servers[index].info.status == ServerStatus::unavailable)
+    if (servers[index].status == ServerStatus::unavailable)
     {
         return make_error_code(ClientErrors::server_not_connected);
     }
-
+    servers[index].reg_start_address = reg_addr;
     task_info.reset(ClientTasks::regs_read, 1, index, print_progress);
-    servers[index].registers.reg_start_address = reg_addr;
-    servers[index].registers.values.clear();
     q_task.push([this, lambda_read_regs, dev_addr, reg_addr, quantity]()
                 { q_exchange.push([lambda_read_regs, dev_addr, reg_addr, quantity] { lambda_read_regs(dev_addr, reg_addr, quantity); }); });
     while (!task_info.done.load(std::memory_order_relaxed))
@@ -270,11 +258,11 @@ std::error_code ModbusClient::taskReadFile(const std::uint8_t dev_addr, const st
     {
         return make_error_code(ClientErrors::server_not_connected);
     }
-    if (servers[index].info.status == ServerStatus::unavailable)
+    if (servers[index].status == ServerStatus::unavailable)
     {
         return make_error_code(ClientErrors::server_not_connected);
     }
-    auto record_size = servers[index].info.record_size;
+    auto record_size = servers[index].record_size;
     if (record_size == 0)
     {
         return make_error_code(ClientErrors::max_record_length_not_configured);
@@ -288,7 +276,7 @@ std::error_code ModbusClient::taskReadFile(const std::uint8_t dev_addr, const st
     {
         return error_code;
     }
-    error_code = taskWriteRegister(dev_addr, RegisterDefinitions::file_control, file_read_prepare);
+    error_code = taskWriteRegister(dev_addr, RegisterDefinitions::file_control, ServerCommands::file_read_prepare);
     if (error_code)
     {
         return error_code;
@@ -332,7 +320,7 @@ std::error_code ModbusClient::taskWriteFile(const std::uint8_t dev_addr, const b
     {
         return make_error_code(ClientErrors::server_not_connected);
     }
-    if (servers[index].info.status == ServerStatus::unavailable)
+    if (servers[index].status == ServerStatus::unavailable)
     {
         return make_error_code(ClientErrors::server_not_connected);
     }
@@ -340,7 +328,7 @@ std::error_code ModbusClient::taskWriteFile(const std::uint8_t dev_addr, const b
     {
         return make_error_code(ClientErrors::file_buffer_is_empty);
     }
-    auto record_size = servers[index].info.record_size;
+    auto record_size = servers[index].record_size;
     if (record_size == 0)
     {
         return make_error_code(ClientErrors::max_record_length_not_configured);
@@ -350,7 +338,7 @@ std::error_code ModbusClient::taskWriteFile(const std::uint8_t dev_addr, const b
     {
         return error_code;
     }
-    error_code = taskWriteRegister(dev_addr, RegisterDefinitions::file_control, file_write_prepare);
+    error_code = taskWriteRegister(dev_addr, RegisterDefinitions::file_control, ServerCommands::file_write_prepare);
     if (error_code)
     {
         return error_code;
@@ -407,9 +395,9 @@ void ModbusClient::clientThread()
 
 void ModbusClient::exchangeCallback()
 {
-    auto readRegs = [](ServerData& server, const std::vector<uint8_t>& message)
+    auto readRegs = [](ServerInfo& server, const std::vector<uint8_t>& message)
     {
-        server.registers.values.clear();
+        server.regs.clear();
         const int id_length = modbus::read_regs_response_data_length_idx;
         if (message[id_length] > (message.size() - modbus::function_size - 1))
         {
@@ -422,14 +410,14 @@ void ModbusClient::exchangeCallback()
         {
             reg = static_cast<std::uint16_t>(message[index]) << 8;
             reg |= message[index + 1];
-            server.registers.values.push_back(reg);
+            server.regs.push_back(reg);
             index += 2;
         }
-        auto amount_of_regs = server.registers.values.size();
-        if (server.registers.reg_start_address <= (modbus::holding_regs_offset + RegisterDefinitions::record_size) &&
-            (server.registers.reg_start_address + amount_of_regs) >= (modbus::holding_regs_offset + RegisterDefinitions::record_size))
+        auto amount_of_regs = server.regs.size();
+        if (server.reg_start_address <= (modbus::holding_regs_offset + RegisterDefinitions::record_size) &&
+            (server.reg_start_address + amount_of_regs) >= (modbus::holding_regs_offset + RegisterDefinitions::record_size))
         {
-            server.info.record_size = server.registers.values[RegisterDefinitions::record_size];
+            server.record_size = server.regs[RegisterDefinitions::record_size];
         }
     };
 
@@ -447,7 +435,7 @@ void ModbusClient::exchangeCallback()
             switch (task_info.task)
             {
                 case ClientTasks::ping: // mark server as available if we have response on this command
-                    servers[task_info.index].info.status = ServerStatus::available;
+                    servers[task_info.index].status = ServerStatus::available;
                     break;
 
                 case ClientTasks::regs_read:
@@ -476,7 +464,7 @@ void ModbusClient::exchangeCallback()
     {
         if (response_data.size() == 0)
         {
-            servers[task_info.index].info.status = ServerStatus::unavailable;
+            servers[task_info.index].status = ServerStatus::unavailable;
             task_info.error_code = make_error_code(ClientErrors::timeout);
         }
         else

@@ -1,7 +1,7 @@
 /**
  * @file sm_error.cpp
  *
- * @brief
+ * @brief overriding std::error_code for ModbusClient
  *
  * @author Siarhei Tatarchanka
  *
@@ -12,6 +12,7 @@
 
 namespace
 {
+
 class sm_category_impl : public std::error_category
 {
     const char* name() const noexcept override { return "sm client"; }
@@ -54,13 +55,16 @@ class sm_category_impl : public std::error_category
         }
     }
 };
+
 } // namespace
 
 namespace sm
 {
+
 const std::error_category& sm_category()
 {
     static sm_category_impl obj;
     return obj;
 }
+
 } // namespace sm

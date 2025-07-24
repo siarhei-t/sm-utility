@@ -20,6 +20,7 @@ class ServerCommands
 public:
     static constexpr std::uint16_t file_read_prepare = 1;
     static constexpr std::uint16_t file_write_prepare = 2;
+    static constexpr std::uint16_t app_erase_request = 1;
 };
 
 class RegisterDefinitions
