@@ -32,7 +32,6 @@ public:
     static constexpr std::uint16_t prepare_to_update = 3;
     static constexpr std::uint16_t app_erase = 4;
     static constexpr std::uint16_t status = 5;
-    static constexpr std::uint16_t gateway_buffer_size = 6;
 
     static constexpr std::uint16_t getSize() { return size; }
 
@@ -50,6 +49,12 @@ public:
 
 private:
     static constexpr std::uint16_t size = 2;
+};
+
+struct ServerMetaData
+{
+    char version[16];
+    char name[32];
 };
 
 inline std::uint16_t extract_half_word_le(const std::uint8_t* data)
