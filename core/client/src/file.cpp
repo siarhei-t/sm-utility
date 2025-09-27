@@ -3,12 +3,10 @@
  *
  * @brief
  *
- * @author Siarhei Tatarchanka
- *
  */
 
-#include "../inc/sm_file.hpp"
-#include "../../common/sm_modbus.hpp"
+#include "../inc/file.hpp"
+#include "../../common/modbus.hpp"
 #include <cstring>
 #include <fstream>
 #include <vector>

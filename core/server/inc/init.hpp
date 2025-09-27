@@ -1,5 +1,5 @@
 /**
- * @file sm_init.hpp
+ * @file init.hpp
  *
  * @brief
  *
@@ -10,7 +10,7 @@
 #ifndef SM_INIT_HPP
 #define SM_INIT_HPP
 
-#include "sm_resources.hpp"
+#include "resources.hpp"
 
 namespace sm
 {

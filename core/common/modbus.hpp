@@ -3,8 +3,6 @@
  *
  * @brief
  *
- * @author
- *
  */
 
 #ifndef SM_MODBUS_HPP

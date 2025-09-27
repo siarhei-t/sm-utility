@@ -1,9 +1,7 @@
 /**
- * @file sm_timer.hpp
+ * @file timer.hpp
  *
  * @brief
- *
- * @author
  *
  */
 

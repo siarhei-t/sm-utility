@@ -7,8 +7,8 @@
  *
  */
 
-#include "../../../core/common/sm_log.hpp"
-#include "../../../core/server/inc/sm_node.hpp"
+#include "../../../core/common/log.hpp"
+#include "../../../core/server/inc/node.hpp"
 #include "platform.hpp"
 #include <cassert>
 

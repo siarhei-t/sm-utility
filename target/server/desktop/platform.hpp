@@ -11,8 +11,8 @@
 #define PLATFORM_HPP
 
 #include "../../../core/external/simple-serial-port/inc/serial_port.hpp"
-#include "../../../core/server/inc/sm_com.hpp"
-#include "../../../core/server/inc/sm_timer.hpp"
+#include "../../../core/server/inc/com.hpp"
+#include "../../../core/server/inc/timer.hpp"
 #include <condition_variable>
 #include <cstddef>
 #include <mutex>

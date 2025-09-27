@@ -1,13 +1,11 @@
 /**
- * @file sm_init.cpp
+ * @file init.cpp
  *
  * @brief
  *
- * @author Siarhei Tatarchanka
- *
  */
 
-#include "../inc/sm_logic.hpp"
+#include "../inc/init.hpp"
 
 namespace sm
 {

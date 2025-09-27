@@ -7,7 +7,7 @@
  *
  */
 
-#include "sm_log_config.hpp"
+#include "log_config.hpp"
 
 #define LOG_LEVEL_NONE 0
 #define LOG_LEVEL_INFO 1

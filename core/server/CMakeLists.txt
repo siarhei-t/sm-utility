@@ -5,20 +5,20 @@ project (sm-server)
 enable_language(CXX)
 
 set(COMMON_SOURCES
-        src/sm_server.cpp
-        src/sm_logic.cpp
-        src/sm_resources.cpp
+        src/server.cpp
+        src/init.cpp
+        src/resources.cpp
 )
 
 set(COMMON_HEADERS
-        inc/sm_node.hpp
-        inc/sm_com.hpp
-        inc/sm_resources.hpp
-        inc/sm_server.hpp
-        inc/sm_timer.hpp
-        inc/sm_logic.hpp
-        ../common/sm_common.hpp
-        ../common/sm_modbus.hpp
+        inc/node.hpp
+        inc/com.hpp
+        inc/resources.hpp
+        inc/server.hpp
+        inc/timer.hpp
+        inc/init.hpp
+        ../common/common.hpp
+        ../common/modbus.hpp
 )
 
 set(LIBRARY_NAME sm-server)

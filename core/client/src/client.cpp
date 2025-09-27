@@ -1,9 +1,7 @@
 /**
- * @file sm_client.cpp
+ * @file client.cpp
  *
  * @brief
- *
- * @author Siarhei Tatarchanka
  *
  */
 
@@ -14,9 +12,9 @@
 #include <cstring>
 #include <iostream>
 
-#include "../../common/sm_common.hpp"
-#include "../inc/sm_client.hpp"
-#include "../inc/sm_error.hpp"
+#include "../../common/common.hpp"
+#include "../inc/client.hpp"
+#include "../inc/error.hpp"
 
 namespace sm
 {

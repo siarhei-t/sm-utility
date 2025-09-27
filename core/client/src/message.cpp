@@ -3,13 +3,11 @@
  *
  * @brief
  *
- * @author Siarhei Tatarchanka
- *
  */
 
-#include "../inc/sm_message.hpp"
-#include "../../common/sm_log.hpp"
-#include "../../common/sm_modbus.hpp"
+#include "../inc/message.hpp"
+#include "../../common/log.hpp"
+#include "../../common/modbus.hpp"
 
 namespace
 {

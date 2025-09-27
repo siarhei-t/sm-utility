@@ -1,9 +1,7 @@
 /**
- * @file sm_modbus.hpp
+ * @file message.hpp
  *
- * @brief
- *
- * @author Siarhei Tatarchanka
+ * @brief header for message.cpp
  *
  */
 

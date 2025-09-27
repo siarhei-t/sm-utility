@@ -1,17 +1,15 @@
 /**
- * @file sm_server.hpp
+ * @file server.hpp
  *
  * @brief
- *
- * @author
  *
  */
 
 #ifndef SM_SERVER_HPP
 #define SM_SERVER_HPP
 
-#include "../../common/sm_modbus.hpp"
-#include "sm_resources.hpp"
+#include "../../common/modbus.hpp"
+#include "resources.hpp"
 #include <cstddef>
 #include <cstdint>
 

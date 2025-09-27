@@ -1,9 +1,7 @@
 /**
- * @file sm_client.hpp
+ * @file client.hpp
  *
- * @brief
- *
- * @author Siarhei Tatarchanka
+ * @brief  header for client.cpp
  *
  */
 
@@ -18,10 +16,10 @@
 #include <thread>
 #include <vector>
 
-#include "../../common/sm_modbus.hpp"
+#include "../../common/modbus.hpp"
 #include "../../external/simple-serial-port/inc/serial_port.hpp"
-#include "../inc/sm_file.hpp"
-#include "../inc/sm_message.hpp"
+#include "../inc/file.hpp"
+#include "../inc/message.hpp"
 
 namespace sm
 {

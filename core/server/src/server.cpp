@@ -1,14 +1,12 @@
 /**
- * @file sm_server.cpp
+ * @file server.cpp
  *
  * @brief
  *
- * @author Siarhei Tatarchanka
- *
  */
 
-#include "../inc/sm_server.hpp"
-#include "../../common/sm_log.hpp"
+#include "../inc/server.hpp"
+#include "../../common/log.hpp"
 
 namespace sm
 {

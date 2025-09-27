@@ -1,9 +1,7 @@
 /**
- * @file sm_com.hpp
+ * @file com.hpp
  *
  * @brief
- *
- * @author
  *
  */
 

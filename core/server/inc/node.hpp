@@ -10,9 +10,9 @@
 #ifndef SM_NODE_HPP
 #define SM_NODE_HPP
 
-#include "sm_logic.hpp"
-#include "sm_resources.hpp"
-#include "sm_server.hpp"
+#include "init.hpp"
+#include "resources.hpp"
+#include "server.hpp"
 #include <cstddef>
 #include <cstdint>
 

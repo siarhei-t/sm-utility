@@ -1,13 +1,11 @@
 /**
- * @file sm_resources.cpp
+ * @file resources.cpp
  *
  * @brief
  *
- * @author Siarhei Tatarchanka
- *
  */
 
-#include "../inc/sm_resources.hpp"
+#include "../inc/resources.hpp"
 
 #include <cstddef>
 #include <cstring>

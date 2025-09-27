@@ -1,9 +1,7 @@
 /**
- * @file sm_common.hpp
+ * @file common.hpp
  *
  * @brief
- *
- * @author
  *
  */
 
@@ -53,8 +51,8 @@ private:
 
 struct ServerMetaData
 {
-    char version[16];
-    char name[32];
+    char boot_version[16];
+    char app_version[32];
 };
 
 inline std::uint16_t extract_half_word_le(const std::uint8_t* data)

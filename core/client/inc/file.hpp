@@ -1,9 +1,7 @@
 /**
- * @file sm_file.hpp
+ * @file file.hpp
  *
- * @brief
- *
- * @author Siarhei Tatarchanka
+ * @brief header for file.cpp
  *
  */
 

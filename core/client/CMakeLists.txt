@@ -5,19 +5,19 @@ project (sm-client)
 enable_language(CXX)
 
 set(COMMON_SOURCES
-        src/sm_client.cpp
-        src/sm_message.cpp
-        src/sm_error.cpp
-        src/sm_file.cpp
+        src/client.cpp
+        src/message.cpp
+        src/error.cpp
+        src/file.cpp
 )
 
 set(COMMON_HEADERS
-        inc/sm_client.hpp
-        inc/sm_message.hpp
-        inc/sm_error.hpp
-        inc/sm_file.hpp
-        ../common/sm_common.hpp
-        ../common/sm_modbus.hpp
+        inc/client.hpp
+        inc/message.hpp
+        inc/error.hpp
+        inc/file.hpp
+        ../common/common.hpp
+        ../common/modbus.hpp
 )
 
 add_subdirectory(../external/simple-serial-port serial-port)

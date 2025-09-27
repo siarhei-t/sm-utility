@@ -1,5 +1,5 @@
 /**
- * @file sm_log_config.hpp
+ * @file log_config.hpp
  *
  * @brief
  *

@@ -1,9 +1,7 @@
 /**
- * @file sm_error.hpp
+ * @file error.hpp
  *
- * @brief header for sm_error.cpp
- *
- * @author Siarhei Tatarchanka
+ * @brief header for error.cpp
  *
  */
 

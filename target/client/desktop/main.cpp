@@ -7,7 +7,7 @@
  *
  */
 
-#include "../../../core/client/inc/sm_client.hpp"
+#include "../../../core/client/inc/client.hpp"
 #include <iostream>
 #include <system_error>
 

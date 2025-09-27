@@ -8,7 +8,7 @@
  */
 
 #include "platform.hpp"
-#include "../../../core/common/sm_log.hpp"
+#include "../../../core/common/log.hpp"
 #include <cstdio>
 #include <iostream>
 #include <vector>

@@ -1,17 +1,15 @@
 /**
- * @file sm_resources.hpp
+ * @file resources.hpp
  *
  * @brief
- *
- * @author
  *
  */
 
 #ifndef SM_RESOURCES_HPP
 #define SM_RESOURCES_HPP
 
-#include "../../common/sm_common.hpp"
-#include "../../common/sm_modbus.hpp"
+#include "../../common/common.hpp"
+#include "../../common/modbus.hpp"
 #include <array>
 #include <cstddef>
 #include <cstdint>

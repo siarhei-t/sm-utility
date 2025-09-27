@@ -1,13 +1,11 @@
 /**
- * @file sm_error.cpp
+ * @file error.cpp
  *
  * @brief overriding std::error_code for ModbusClient
  *
- * @author Siarhei Tatarchanka
- *
  */
 
-#include "../inc/sm_error.hpp"
+#include "../inc/error.hpp"
 #include <cstring>
 
 namespace
