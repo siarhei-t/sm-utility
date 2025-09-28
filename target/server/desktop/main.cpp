@@ -12,19 +12,6 @@
 #include "platform.hpp"
 #include <cassert>
 
-#define ENABLE_LOG_INFO
-// #define ENABLE_LOG_DEBUG
-
-#ifdef ENABLE_LOG_INFO
-#undef LOG_INFO
-#define LOG_INFO std::printf
-#endif
-
-#ifdef ENABLE_LOG_DEBUG
-#undef LOG_DEBUG
-#define LOG_DEBUG std::printf
-#endif
-
 constexpr std::uint8_t record_size = 208;
 
 PlatformSupport platform_support;

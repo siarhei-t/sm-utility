@@ -1,0 +1,20 @@
+/**
+ * @file config.hpp.in
+ *
+ * @brief
+ *
+ */
+
+#pragma once
+
+// clang-format off
+namespace cfg
+{
+
+} // namespace cfg
+
+#define LOG_LEVEL @LOG_LEVEL@
+
+#define LOG_OUTPUT_FN @LOG_OUTPUT_FN@
+
+// clang-format on

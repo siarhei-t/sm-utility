@@ -1,20 +1,20 @@
 /**
- * @file sm_log.hpp
+ * @file log.hpp
  *
  * @brief
  *
- * @author
- *
  */
 
-#include "log_config.hpp"
+#pragma once
+
+#include "config.hpp"
 
 #define LOG_LEVEL_NONE 0
 #define LOG_LEVEL_INFO 1
 #define LOG_LEVEL_DEBUG 2
 
 #ifndef LOG_LEVEL
-#define LOG_LEVEL LOG_LEVEL_INFO
+#define LOG_LEVEL LOG_LEVEL_NONE
 #endif
 
 #if LOG_LEVEL >= LOG_LEVEL_INFO

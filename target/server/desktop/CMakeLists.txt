@@ -7,19 +7,33 @@ set (DIR_SRCS
         platform.cpp
     )
 
+set(PATH_TO_LIBRARY ../../../core/server)
+set(PATH_TO_SERIAL ../../../core/external/simple-serial-port)
+
+set(LOG_LEVEL "1")
+set(LOG_OUTPUT_FN "std::printf")
+
 add_executable (${PROJECT_NAME} ${DIR_SRCS})
 
-add_subdirectory(../../../core/external/simple-serial-port serial-port)
-add_subdirectory(../../../core/server sm-server)
+configure_file(
+    ${PATH_TO_LIBRARY}/config.hpp.in
+    ${CMAKE_CURRENT_BINARY_DIR}/sm-server/config.hpp
+)
+
+add_subdirectory(${PATH_TO_SERIAL} serial-port)
+add_subdirectory(${PATH_TO_LIBRARY} sm-server)
+
+target_include_directories(sm-server PUBLIC "${CMAKE_CURRENT_BINARY_DIR}/sm-server")
+
 
 target_include_directories(${PROJECT_NAME} PRIVATE
-        ../../../core/server/inc
-        ../../../core/common
-        ../../../core/external/simple-serial-port/inc
+        ${PATH_TO_LIBRARY}/inc
+        ${PATH_TO_LIBRARY}/../common
+        ${PATH_TO_SERIAL}/inc
         )
 
-target_link_directories(${PROJECT_NAME} PUBLIC ../../../core/external/simple-serial-port)
-target_link_directories(${PROJECT_NAME} PUBLIC ../../../core/server)
+target_link_directories(${PROJECT_NAME} PUBLIC ${PATH_TO_SERIAL})
+target_link_directories(${PROJECT_NAME} PUBLIC ${PATH_TO_LIBRARY})
 
 target_link_libraries (${PROJECT_NAME} simple-serial-port)
 target_link_libraries (${PROJECT_NAME} sm-server)

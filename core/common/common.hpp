@@ -52,7 +52,7 @@ private:
 struct ServerMetaData
 {
     char boot_version[16];
-    char app_version[32];
+    uint32_t flash_available;
 };
 
 inline std::uint16_t extract_half_word_le(const std::uint8_t* data)

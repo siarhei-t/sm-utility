@@ -26,6 +26,7 @@ set(LIBRARY_NAME sm-server)
 add_library (${LIBRARY_NAME} STATIC ${COMMON_SOURCES} ${COMMON_HEADERS})
 
 target_include_directories(${LIBRARY_NAME} PRIVATE
+        .
         inc
         ../common
         )

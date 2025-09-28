@@ -1,5 +1,5 @@
 /**
- * @file sm_node.hpp
+ * @file node.hpp
  *
  * @brief
  *
