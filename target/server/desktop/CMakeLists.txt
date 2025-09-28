@@ -19,12 +19,12 @@ configure_file(
     ${PATH_TO_LIBRARY}/config.hpp.in
     ${CMAKE_CURRENT_BINARY_DIR}/sm-server/config.hpp
 )
+include_directories("${CMAKE_CURRENT_BINARY_DIR}/sm-server")
 
 add_subdirectory(${PATH_TO_SERIAL} serial-port)
 add_subdirectory(${PATH_TO_LIBRARY} sm-server)
 
 target_include_directories(sm-server PUBLIC "${CMAKE_CURRENT_BINARY_DIR}/sm-server")
-
 
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${PATH_TO_LIBRARY}/inc
