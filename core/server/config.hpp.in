@@ -7,9 +7,17 @@
 
 #pragma once
 
+#include <cstdint>
+
 // clang-format off
 namespace cfg
 {
+
+constexpr std::uint32_t service_page_address = @SERVICE_PAGE_ADDRESS@;
+
+constexpr std::uint32_t application_address = @APPLICATION_ADDRESS@;
+
+constexpr std::uint32_t application_size = @APPLICATION_SIZE@;
 
 } // namespace cfg
 

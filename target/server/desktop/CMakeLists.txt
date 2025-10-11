@@ -12,6 +12,9 @@ set(PATH_TO_SERIAL ../../../core/external/simple-serial-port)
 
 set(LOG_LEVEL "1")
 set(LOG_OUTPUT_FN "std::printf")
+set(SERVICE_PAGE_ADDRESS "0x1000")
+set(APPLICATION_ADDRESS "0x2000")
+set(APPLICATION_SIZE "0x10000")
 
 add_executable (${PROJECT_NAME} ${DIR_SRCS})
 
