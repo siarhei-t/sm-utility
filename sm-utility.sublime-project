@@ -1,0 +1,29 @@
+{
+	"folders":
+	[
+		{
+			"path": "."
+		}
+	],
+	"build_systems": [
+        {
+            "name": "CMake",
+            "working_dir": "${folder}",
+            "variants": [
+                {
+                    "name": "CONFIGURE-SERVER",
+                    "cmd": ["/opt/homebrew/bin/cmake","target/server/desktop", "-DCMAKE_EXPORT_COMPILE_COMMANDS=1", "-Bbuild"]
+                },
+                {
+                    "name": "CONFIGURE-CLIENT",
+                    "cmd": ["/opt/homebrew/bin/cmake","target/client/desktop", "-DCMAKE_EXPORT_COMPILE_COMMANDS=1", "-Bbuild"]
+                },
+                {
+                    "name": "BUILD",
+                    "cmd": ["/opt/homebrew/bin/cmake", "--build", "build"]
+                }
+            ],
+            "quiet": false
+        }
+    ]
+}
