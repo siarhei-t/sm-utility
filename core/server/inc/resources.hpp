@@ -125,8 +125,8 @@ public:
     bool readRegister(const std::uint16_t address, const std::uint16_t quantity, std::uint8_t* data, std::uint8_t& size);
     bool writeFile(const FileService& service, const std::uint8_t* data);
     bool readFile(const FileService& service, std::uint8_t* data, std::uint8_t& size);
-    bool setFile(const FileInfo& file, const int index);
-    bool setRegister(const RegisterInfo& reg, const int index);
+    bool setFile(const FileInfo& file, const std::uint16_t index);
+    bool setRegister(const RegisterInfo& reg, const std::uint16_t index);
     void setFlashAccess(FileAccess file_write) { fileWrite = file_write; }
     std::uint8_t getRecordSize() const { return record_size; }
 
@@ -142,8 +142,8 @@ private:
         file_record_counter = 0;
         buffer_control->setSize(default_buffer_size);
     }
-    std::array<RegisterInfo, RegisterDefinitions::getSize()> registers;
-    std::array<FileInfo, FileDefinitions::getSize()> files;
+    std::array<RegisterInfo, registers_count> registers;
+    std::array<FileInfo, files_count> files;
 };
 
 } // namespace sm

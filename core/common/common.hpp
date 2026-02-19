@@ -13,41 +13,38 @@
 namespace sm
 {
 
-class ServerCommands
+enum class ServerCommands : std::uint16_t
 {
-public:
-    static constexpr std::uint16_t file_read_prepare = 1;
-    static constexpr std::uint16_t file_write_prepare = 2;
-    static constexpr std::uint16_t app_erase_request = 1;
+    file_read_prepare = 1,
+    file_write_prepare = 2,
+    app_erase_request = 3
 };
 
-class RegisterDefinitions
+enum class RegisterDefinitions : std::uint16_t
 {
-public:
-    static constexpr std::uint16_t record_size = 0;
-    static constexpr std::uint16_t file_control = 1;
-    static constexpr std::uint16_t record_counter = 2;
-    static constexpr std::uint16_t prepare_to_update = 3;
-    static constexpr std::uint16_t app_erase = 4;
-    static constexpr std::uint16_t status = 5;
-
-    static constexpr std::uint16_t getSize() { return size; }
-
-private:
-    static constexpr std::uint16_t size = 7;
+    record_size = 0,
+    control = 1,
+    record_counter = 2,
+    status = 3,
+    _count,
 };
 
-class FileDefinitions
+enum class FileDefinitions : std::uint16_t
 {
-public:
-    static constexpr std::uint16_t application = 1;
-    static constexpr std::uint16_t metadata = 2;
-
-    static constexpr std::uint16_t getSize() { return size; }
-
-private:
-    static constexpr std::uint16_t size = 2;
+    application = 1,
+    metadata = 2,
+    _count,
 };
+
+template <typename type>
+constexpr std::uint16_t toU16(type value)
+{
+    return static_cast<std::uint16_t>(value);
+}
+
+constexpr std::uint16_t files_offset = 1;
+constexpr std::uint16_t registers_count = static_cast<std::uint16_t>(RegisterDefinitions::_count);
+constexpr std::uint16_t files_count = static_cast<std::uint16_t>(FileDefinitions::_count) - files_offset;
 
 struct ServerMetaData
 {

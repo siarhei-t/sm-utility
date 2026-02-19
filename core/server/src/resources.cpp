@@ -13,30 +13,24 @@
 namespace sm
 {
 
-bool ServerResources::setFile(const FileInfo& file, const int index)
+bool ServerResources::setFile(const FileInfo& file, const std::uint16_t index)
 {
-    if ((index < 0) || (index > FileDefinitions::getSize()))
+    if (index >= files.size())
     {
         return false;
     }
-    else
-    {
-        files[index] = file;
-        return true;
-    }
+    files[index] = file;
+    return true;
 }
 
-bool ServerResources::setRegister(const RegisterInfo& reg, const int index)
+bool ServerResources::setRegister(const RegisterInfo& reg, const std::uint16_t index)
 {
-    if ((index < 0) || (index > RegisterDefinitions::getSize()))
+    if (index >= registers.size())
     {
         return false;
     }
-    else
-    {
-        registers[index] = reg;
-        return true;
-    }
+    registers[index] = reg;
+    return true;
 }
 
 bool ServerResources::getAccessToRecord(const FileService& service, FileControl& control)

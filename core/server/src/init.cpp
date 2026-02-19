@@ -17,11 +17,11 @@ void file_control(const RegisterInfo& info)
 {
     switch (info.value)
     {
-        case ServerCommands::file_read_prepare:
+        case toU16<ServerCommands>(ServerCommands::file_read_prepare):
             local_buffer_control->setSize(modbus::request_read_file_pdu_size + modbus::address_size + modbus::crc_size);
             break;
 
-        case ServerCommands::file_write_prepare:
+        case toU16<ServerCommands>(ServerCommands::file_write_prepare):
             local_buffer_control->setSize(modbus::request_read_file_pdu_size + modbus::address_size + modbus::crc_size + local_record_size);
             break;
 
@@ -50,19 +50,20 @@ void ServerLogic::initResources(ServerResources& resources)
     FileInfo file;
 
     // record control register
+
     reg.attributes.property_read = true;
     reg.value = resources.getRecordSize();
-    resources.setRegister(reg, RegisterDefinitions::record_size);
+    resources.setRegister(reg, toU16<RegisterDefinitions>(RegisterDefinitions::record_size));
     reg = RegisterInfo();
     // file control register
     reg.attributes.property_write = true;
     reg.callback = file_control;
-    resources.setRegister(reg, RegisterDefinitions::file_control);
+    resources.setRegister(reg, toU16<RegisterDefinitions>(RegisterDefinitions::control));
     reg = RegisterInfo();
     // record counter register
     reg.attributes.property_write = true;
     reg.callback = set_record_counter;
-    resources.setRegister(reg, RegisterDefinitions::record_counter);
+    resources.setRegister(reg, toU16<RegisterDefinitions>(RegisterDefinitions::record_counter));
     reg = RegisterInfo();
 }
 
