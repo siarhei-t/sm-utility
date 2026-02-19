@@ -100,7 +100,7 @@ bool ServerResources::writeRegister(const std::uint16_t address, const std::uint
         registers[offset_address].value = value;
         if (registers[offset_address].callback != nullptr)
         {
-            registers[offset_address].callback(registers[offset_address]);
+            registers[offset_address].callback(registers[offset_address], buffer_control);
         }
         return true;
     }

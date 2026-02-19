@@ -19,11 +19,12 @@ class ServerLogic
 {
 
 public:
-    ServerLogic(BufferControl* buffer_control);
-    void initModbusServer(ServerResources& resources);
+    ServerLogic() {}
+    void init(ServerResources& resources);
 
 private:
-    void initResources(ServerResources& resources);
+    static void control(const RegisterInfo& info, BufferControl& buffer_control);
+    static void setRecordCounter(const RegisterInfo& info, BufferControl& buffer_control);
 };
 
 } // namespace sm

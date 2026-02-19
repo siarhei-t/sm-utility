@@ -26,16 +26,16 @@ class DataNode
 {
 public:
     DataNode(std::uint8_t address, std::uint8_t record_size)
-        : server_logic(&buffer_control), server(address, &server_resources), server_resources(record_size, &buffer_control)
+        : server(address, &server_resources), server_resources(record_size, buffer_control), buffer_control(record_size)
     {
     }
     void start()
     {
-        server_logic.initModbusServer(server_resources);
+        server_logic.init(server_resources);
         com.init();
         if (com.isConfigured())
         {
-            com.readData(buffer.data(), buffer_control.getSize());
+            com.readData(buffer.data(), buffer_control.getBufferSize());
         }
     }
     void loop()
@@ -63,7 +63,7 @@ private:
     ServerLogic server_logic;
     ModbusServer server;
     ServerResources server_resources;
-    BufferControl buffer_control = BufferControl(default_buffer_size);
+    BufferControl buffer_control;
     std::array<std::uint8_t, modbus::max_adu_size> buffer;
     c com;
     t timer;
@@ -73,16 +73,16 @@ private:
         {
             com.flush();
             timer.stop();
-            com.readData(buffer.data(), buffer_control.getSize());
+            com.readData(buffer.data(), buffer_control.getBufferSize());
         }
     }
     void handleReady()
     {
         if (com.isReady())
         {
-            last_error = server.serverTask(buffer.data(), buffer_control.getSize());
+            last_error = server.serverTask(buffer.data(), buffer_control.getBufferSize());
             com.sendData(buffer.data(), server.getTransmitBufferSize());
-            com.readData(buffer.data(), buffer_control.getSize());
+            com.readData(buffer.data(), buffer_control.getBufferSize());
         }
     }
 };

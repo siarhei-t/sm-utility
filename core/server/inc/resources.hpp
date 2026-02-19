@@ -20,6 +20,52 @@ namespace sm
 constexpr size_t not_found = -1;
 constexpr std::uint8_t default_buffer_size = modbus::address_size + modbus::min_pdu_with_data_size + modbus::crc_size;
 
+class BufferControl
+{
+public:
+    BufferControl(std::uint8_t record_size) : record_size(record_size) {}
+    void setBufferSize(const std::uint8_t size)
+    {
+        if (size < default_buffer_size)
+        {
+            return;
+        }
+        else if (size > default_buffer_size)
+        {
+            extended_mode = true;
+        }
+        buffer_size = size;
+    }
+    void setRecordCounter(const std::uint16_t counter) { record_counter = counter; }
+    std::uint8_t getBufferSize() const { return buffer_size; }
+    std::uint8_t getRecordSize() const { return record_size; }
+    void updateRecordCounter()
+    {
+        if (extended_mode)
+        {
+            if (record_counter != 0)
+            {
+                --record_counter;
+                if (record_counter == 0)
+                {
+                    extended_mode = false;
+                    setBufferSize(default_buffer_size);
+                }
+            }
+            else
+            {
+                extended_mode = false;
+            }
+        }
+    }
+
+private:
+    bool extended_mode = false;
+    const std::uint8_t record_size;
+    std::uint16_t record_counter = 0;
+    std::uint8_t buffer_size = default_buffer_size;
+};
+
 struct Attributes
 {
     bool property_read = false;
@@ -62,7 +108,7 @@ struct FileInfo
 
 struct RegisterInfo
 {
-    using Callback = void (*)(const RegisterInfo&);
+    using Callback = void (*)(const RegisterInfo&, BufferControl& buffer_control);
     RegisterInfo() = default;
     RegisterInfo(Attributes attributes, std::uint16_t value, Callback callback = nullptr) : attributes(attributes), value(value), callback(callback) {}
     Attributes attributes;
@@ -70,57 +116,12 @@ struct RegisterInfo
     Callback callback = nullptr; // callback on the end of write operation
 };
 
-class BufferControl
-{
-public:
-    BufferControl(std::uint8_t size) : default_size(size) { setSize(size); }
-    void setSize(const std::uint8_t size)
-    {
-        if (size < default_buffer_size)
-        {
-            return;
-        }
-        else if (size > default_buffer_size)
-        {
-            extended_mode = true;
-        }
-        buffer_size = size;
-    }
-    void setRecordCounter(const std::uint16_t counter) { record_counter = counter; }
-    std::uint8_t getSize() const { return buffer_size; }
-    void updateRecordCounter()
-    {
-        if (extended_mode)
-        {
-            if (record_counter != 0)
-            {
-                --record_counter;
-                if (record_counter == 0)
-                {
-                    extended_mode = false;
-                    setSize(default_size);
-                }
-            }
-            else
-            {
-                extended_mode = false;
-            }
-        }
-    }
-
-private:
-    bool extended_mode = false;
-    const std::uint8_t default_size;
-    std::uint16_t record_counter = 0;
-    std::uint8_t buffer_size = 0;
-};
-
 class ServerResources
 {
     using FileAccess = bool (*)(const std::uint8_t* data, const size_t size);
 
 public:
-    ServerResources(std::uint8_t record_size, BufferControl* buffer_control) : record_size(record_size), buffer_control(buffer_control) {}
+    ServerResources(std::uint8_t record_size, BufferControl& buffer_control) : record_size(record_size), buffer_control(buffer_control) {}
     bool writeRegister(const std::uint16_t address, const std::uint16_t value);
     bool readRegister(const std::uint16_t address, const std::uint16_t quantity, std::uint8_t* data, std::uint8_t& size);
     bool writeFile(const FileService& service, const std::uint8_t* data);
@@ -132,7 +133,7 @@ public:
 
 private:
     const std::uint8_t record_size;
-    BufferControl* buffer_control;
+    BufferControl& buffer_control;
     FileAccess fileWrite = nullptr;
     std::uint16_t file_record_counter;
     bool getAccessToRecord(const FileService& service, FileControl& control);
@@ -140,7 +141,7 @@ private:
     void resetFileOperation()
     {
         file_record_counter = 0;
-        buffer_control->setSize(default_buffer_size);
+        buffer_control.setBufferSize(default_buffer_size);
     }
     std::array<RegisterInfo, registers_count> registers;
     std::array<FileInfo, files_count> files;
