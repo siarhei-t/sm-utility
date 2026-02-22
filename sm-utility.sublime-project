@@ -21,6 +21,10 @@
                 {
                     "name": "BUILD",
                     "cmd": ["/opt/homebrew/bin/cmake", "--build", "build"]
+                },
+                {
+                    "name": "CLEAR",
+                    "cmd": ["rm", "-r", "build"]
                 }
             ],
             "quiet": false

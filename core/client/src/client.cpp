@@ -251,6 +251,8 @@ std::error_code ModbusClient::taskReadFile(const std::uint8_t dev_addr, const st
             q_exchange.push([words_in_record, file_id, i, lambda_read_record, dev_addr] { lambda_read_record(dev_addr, file_id, i, words_in_record); });
         }
     };
+    std::uint16_t reg;
+    std::uint16_t cmd;
     int index = getServerIndex(dev_addr);
     if (index == server_not_found)
     {
@@ -265,16 +267,19 @@ std::error_code ModbusClient::taskReadFile(const std::uint8_t dev_addr, const st
     {
         return make_error_code(ClientErrors::max_record_length_not_configured);
     }
-    if (file.fileReadSetup(file_id, file_size, record_size) != true)
+    if (file.setupRead(file_id, file_size, record_size) != true)
     {
         return make_error_code(ClientErrors::internal);
     }
-    auto error_code = taskWriteRegister(dev_addr, RegisterDefinitions::record_counter, file.getNumOfRecords());
+    reg = toU16<RegisterDefinitions>(RegisterDefinitions::record_counter);
+    auto error_code = taskWriteRegister(dev_addr, reg, file.getNumOfRecords());
     if (error_code)
     {
         return error_code;
     }
-    error_code = taskWriteRegister(dev_addr, RegisterDefinitions::file_control, ServerCommands::file_read_prepare);
+    reg = toU16<RegisterDefinitions>(RegisterDefinitions::control);
+    cmd = toU16<ServerCommands>(ServerCommands::file_read_prepare);
+    error_code = taskWriteRegister(dev_addr, reg, cmd);
     if (error_code)
     {
         return error_code;
@@ -313,6 +318,8 @@ std::error_code ModbusClient::taskWriteFile(const std::uint8_t dev_addr, const b
             q_exchange.push([lambda_write_record, dev_addr, file_id, i, data] { lambda_write_record(dev_addr, file_id, i, data); });
         }
     };
+    std::uint16_t reg;
+    std::uint16_t cmd;
     int index = getServerIndex(dev_addr);
     if (index == server_not_found)
     {
@@ -331,12 +338,15 @@ std::error_code ModbusClient::taskWriteFile(const std::uint8_t dev_addr, const b
     {
         return make_error_code(ClientErrors::max_record_length_not_configured);
     }
-    auto error_code = taskWriteRegister(dev_addr, RegisterDefinitions::record_counter, file.getNumOfRecords());
+    reg = toU16<RegisterDefinitions>(RegisterDefinitions::record_counter);
+    auto error_code = taskWriteRegister(dev_addr, reg, file.getNumOfRecords());
     if (error_code)
     {
         return error_code;
     }
-    error_code = taskWriteRegister(dev_addr, RegisterDefinitions::file_control, ServerCommands::file_write_prepare);
+    reg = toU16<RegisterDefinitions>(RegisterDefinitions::control);
+    cmd = toU16<ServerCommands>(ServerCommands::file_write_prepare);
+    error_code = taskWriteRegister(dev_addr, reg, cmd);
     if (error_code)
     {
         return error_code;
@@ -411,11 +421,12 @@ void ModbusClient::exchangeCallback()
             server.regs.push_back(reg);
             index += 2;
         }
+
         auto amount_of_regs = server.regs.size();
-        if (server.reg_start_address <= (modbus::holding_regs_offset + RegisterDefinitions::record_size) &&
-            (server.reg_start_address + amount_of_regs) >= (modbus::holding_regs_offset + RegisterDefinitions::record_size))
+        if (server.reg_start_address <= (modbus::holding_regs_offset + first_register) &&
+            (server.reg_start_address + amount_of_regs) >= (modbus::holding_regs_offset + first_register))
         {
-            server.record_size = server.regs[RegisterDefinitions::record_size];
+            server.record_size = server.regs[first_register];
         }
     };
 
@@ -499,7 +510,7 @@ size_t ModbusClient::getExpectedLength(const ClientTasks task, const size_t extr
 
 void ModbusClient::fileReadCallback(std::vector<std::uint8_t>& message)
 {
-    if (!file.getRecordFromMessage(message))
+    if (!file.loadRecordFromMessage(message))
     {
         task_info.error_code = make_error_code(ClientErrors::internal);
     }

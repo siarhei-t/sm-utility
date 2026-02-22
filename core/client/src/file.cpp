@@ -28,7 +28,7 @@ size_t File::getFileSize(const std::string path_to_file) const
     return length;
 }
 
-void File::fileDelete()
+void File::flush()
 {
     data.reset();
     num_of_records = 0;
@@ -38,11 +38,11 @@ void File::fileDelete()
     ready = false;
 }
 
-bool File::fileReadSetup(const std::uint16_t id, const size_t file_size, const std::uint8_t record_size)
+bool File::setupRead(const std::uint16_t id, const size_t file_size, const std::uint8_t record_size)
 {
     if (data)
     {
-        fileDelete();
+        flush();
     }
     if (record_size == 0)
     {
@@ -71,11 +71,11 @@ bool File::fileReadSetup(const std::uint16_t id, const size_t file_size, const s
     }
 }
 
-bool File::fileWriteSetupFromDrive(const std::uint16_t id, const std::string path_to_file, const std::uint8_t record_size)
+bool File::setupWriteFromDrive(const std::uint16_t id, const std::string path_to_file, const std::uint8_t record_size)
 {
     if (data)
     {
-        fileDelete();
+        flush();
     }
     size_t length = getFileSize(path_to_file);
     if (length > 0)
@@ -88,7 +88,6 @@ bool File::fileWriteSetupFromDrive(const std::uint16_t id, const std::string pat
             num_of_records = calcNumOfRecords(length);
             data = std::make_unique<std::uint8_t[]>(num_of_records * record_size);
             std::memset(&data.get()[(num_of_records - 1) * record_size], 0xFF, record_size);
-            // load all file to RAM buffer at one time
             tmp.read(reinterpret_cast<char*>(data.get()), length);
             if (tmp)
             {
@@ -116,11 +115,11 @@ bool File::fileWriteSetupFromDrive(const std::uint16_t id, const std::string pat
     }
 }
 
-bool File::fileWriteSetupFromMemory(const std::uint16_t id, const std::vector<std::uint8_t>& file_data, const std::uint8_t record_size)
+bool File::setupWriteFromMemory(const std::uint16_t id, const std::vector<std::uint8_t>& file_data, const std::uint8_t record_size)
 {
     if (data)
     {
-        fileDelete();
+        flush();
     }
     if (file_data.size() > 0)
     {
@@ -139,7 +138,7 @@ bool File::fileWriteSetupFromMemory(const std::uint16_t id, const std::vector<st
     }
 }
 
-bool File::getRecordFromMessage(const std::vector<std::uint8_t>& message)
+bool File::loadRecordFromMessage(const std::vector<std::uint8_t>& message)
 {
     const std::uint8_t data_idx = modbus::read_file_response_data_start_idx;
     const std::uint8_t data_length = message[modbus::read_file_response_data_length_idx];

@@ -15,7 +15,6 @@ void ServerLogic::init(ServerResources& resources)
     RegisterInfo reg;
     FileInfo file;
     // record control register
-
     reg.attributes.property_read = true;
     reg.value = resources.getRecordSize();
     resources.setRegister(reg, toU16<RegisterDefinitions>(RegisterDefinitions::record_size));

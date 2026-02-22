@@ -1,0 +1,18 @@
+/**
+ * @file config.hpp.in
+ *
+ * @brief
+ *
+ */
+
+#pragma once
+
+#include <cstdint>
+
+// clang-format off
+
+#define LOG_LEVEL @LOG_LEVEL@
+
+#define LOG_OUTPUT_FN @LOG_OUTPUT_FN@
+
+// clang-format on

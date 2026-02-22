@@ -43,7 +43,9 @@ constexpr std::uint16_t toU16(type value)
 }
 
 constexpr std::uint16_t files_offset = 1;
+constexpr std::uint16_t first_register = static_cast<std::uint16_t>(RegisterDefinitions::record_size);
 constexpr std::uint16_t registers_count = static_cast<std::uint16_t>(RegisterDefinitions::_count);
+constexpr std::uint16_t first_file = static_cast<std::uint16_t>(FileDefinitions::application);
 constexpr std::uint16_t files_count = static_cast<std::uint16_t>(FileDefinitions::_count) - files_offset;
 
 struct ServerMetaData

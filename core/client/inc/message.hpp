@@ -13,6 +13,7 @@
 
 namespace modbus
 {
+
 enum class ModbusMode
 {
     pdu_only,
