@@ -12,6 +12,8 @@ set(LOG_OUTPUT_FN "std::printf")
 
 add_executable (${PROJECT_NAME} ${DIR_SRCS})
 
+target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
+
 configure_file(
     ${PATH_TO_LIBRARY}/config.hpp.in
     ${CMAKE_CURRENT_BINARY_DIR}/sm-client/config.hpp
