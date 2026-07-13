@@ -50,20 +50,18 @@ struct TaskAttributes
 struct TaskInfo
 {
     TaskInfo() = default;
-    TaskInfo(ClientTasks task, int num_of_exchanges, int index) : task(task), num_of_exchanges(num_of_exchanges), index(index) {};
+    TaskInfo(ClientTasks task, int num_of_exchanges) : task(task), num_of_exchanges(num_of_exchanges) {};
     ClientTasks task = ClientTasks::undefined;
     TaskAttributes attributes;
     std::error_code error_code;
     int num_of_exchanges = 0;
     int counter = 0;
-    int index = -1;
     bool is_printable = false;
     std::atomic<bool> done{false};
-    void reset(ClientTasks task = ClientTasks::undefined, int num_of_exchanges = 0, int index = -1, bool is_printable = false)
+    void reset(ClientTasks task = ClientTasks::undefined, int num_of_exchanges = 0, bool is_printable = false)
     {
         this->task = task;
         this->num_of_exchanges = num_of_exchanges;
-        this->index = index;
         this->is_printable = is_printable;
         counter = 0;
         done.store(false, std::memory_order_relaxed);
@@ -105,7 +103,8 @@ public:
     File file;
 
     void stop();
-    void addServer(const std::uint8_t dev_addr);
+    void setAddress(const std::uint8_t addr) { server.addr = addr; }
+
     std::error_code start(std::string device);
     std::error_code configure(sp::PortConfig config);
 
@@ -117,21 +116,19 @@ public:
     std::error_code taskWriteFile(const std::uint8_t dev_addr, const bool print_progress = false);
 
     int getActualTaskProgress() const;
-    bool setServerAsAvailable(const std::uint8_t dev_addr);
-    bool setServerRecordMaxSize(const std::uint8_t dev_addr, const std::uint8_t record_size);
 
 private:
     std::vector<std::uint8_t> request_data;
     std::vector<std::uint8_t> response_data;
     modbus::ModbusMessage modbus_message = modbus::ModbusMessage(modbus::ModbusMode::rtu);
-    std::vector<ServerInfo> servers;
+    ServerInfo server;
     std::thread client_thread;
     std::atomic<bool> thread_stop{false};
     std::future<void> task;
-    TaskInfo task_info{ClientTasks::undefined, 0, -1};
+    TaskInfo task_info{ClientTasks::undefined, 0};
     std::queue<std::function<void()>> q_exchange;
     std::queue<std::function<void()>> q_task;
-    int getServerIndex(const std::uint8_t dev_addr) const;
+
     size_t getExpectedLength(const ClientTasks task, const size_t extra = 0) const;
     void clientThread();
     void createServerRequest(const TaskAttributes& attr);
