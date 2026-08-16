@@ -83,7 +83,7 @@ struct ServerInfo
     std::uint16_t record_size = 0;
     // start address of last read registers vector
     std::uint16_t reg_start_address = 0;
-    // vector contains last set of registers read
+    // vector contains all registers read
     std::vector<uint8_t> regs;
     // the server will be marked as available if ClientTasks::ping completes successfully
     ServerStatus status = ServerStatus::unavailable;

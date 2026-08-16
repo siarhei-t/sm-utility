@@ -1,13 +1,14 @@
 /**
  * @file common.hpp
  *
- * @brief
+ * @brief TBD
  *
  */
 
 #ifndef SM_COMMON_HPP
 #define SM_COMMON_HPP
 
+#include <cstddef>
 #include <cstdint>
 
 namespace sm
@@ -15,24 +16,32 @@ namespace sm
 
 enum class ServerCommands : std::uint16_t
 {
-    file_read_prepare = 1,
-    file_write_prepare = 2,
-    app_erase_request = 3
+    read_file = 1,
+    write_file = 2,
+    delete_file = 3
+};
+
+enum class ServerResponces : std::uint16_t
+{
+    unknown = 0,
+    success = 1,
+    timeout = 2,
+    unspecified_error = 255
 };
 
 enum class RegisterDefinitions : std::uint16_t
 {
-    record_size = 0,
-    control = 1,
-    record_counter = 2,
-    status = 3,
+    record_counter = 1,
+    status = 2,
+    control = 3,
+    value = 4,
     _count,
 };
 
 enum class FileDefinitions : std::uint16_t
 {
-    application = 1,
-    metadata = 2,
+    metadata = 1,
+    application = 2,
     _count,
 };
 
@@ -42,16 +51,17 @@ constexpr std::uint16_t toU16(type value)
     return static_cast<std::uint16_t>(value);
 }
 
-constexpr std::uint16_t files_offset = 1;
-constexpr std::uint16_t first_register = static_cast<std::uint16_t>(RegisterDefinitions::record_size);
+constexpr std::uint16_t first_register = static_cast<std::uint16_t>(RegisterDefinitions::record_counter);
 constexpr std::uint16_t registers_count = static_cast<std::uint16_t>(RegisterDefinitions::_count);
-constexpr std::uint16_t first_file = static_cast<std::uint16_t>(FileDefinitions::application);
-constexpr std::uint16_t files_count = static_cast<std::uint16_t>(FileDefinitions::_count) - files_offset;
+constexpr std::uint32_t protocol_version = 1;
+constexpr size_t info_max_size = 64;
 
-struct ServerMetaData
+struct alignas(4) ServerMetaData
 {
-    char boot_version[16];
-    uint32_t flash_available;
+    char info[info_max_size];
+    std::uint32_t flash_size;
+    std::uint32_t protocol_version;
+    std::uint16_t record_size;
 };
 
 inline std::uint16_t extract_half_word_le(const std::uint8_t* data)
